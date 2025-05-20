@@ -12,6 +12,7 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Transactions from "./pages/Transactions";
 import Customers from "./pages/Customers";
+import Reports from "./pages/Reports";
 import NotFound from "./pages/NotFound";
 
 // Layout
@@ -35,9 +36,9 @@ const App = () => (
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/transactions" element={<Transactions />} />
                 <Route path="/customers" element={<Customers />} />
+                <Route path="/reports" element={<Reports />} />
                 <Route path="/deliveries" element={<Navigate to="/transactions" replace />} />
                 <Route path="/expenses" element={<Navigate to="/dashboard" replace />} />
-                <Route path="/reports" element={<Navigate to="/dashboard" replace />} />
               </Route>
               
               <Route path="*" element={<NotFound />} />
