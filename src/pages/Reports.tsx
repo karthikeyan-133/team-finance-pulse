@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,7 +11,7 @@ const Reports: React.FC = () => {
 
   // Calculate monthly sales data
   const calculateMonthlySales = () => {
-    const salesByMonth = {};
+    const salesByMonth: Record<string, { total: number; count: number; paid: number; pending: number }> = {};
     
     transactions.forEach(transaction => {
       const date = new Date(transaction.date);
@@ -41,7 +40,10 @@ const Reports: React.FC = () => {
     
     return Object.entries(salesByMonth).map(([month, data]) => ({
       month,
-      ...data
+      total: data.total,
+      count: data.count,
+      paid: data.paid,
+      pending: data.pending
     })).sort((a, b) => {
       const [aMonth, aYear] = a.month.split(' ');
       const [bMonth, bYear] = b.month.split(' ');
@@ -90,7 +92,7 @@ const Reports: React.FC = () => {
   };
 
   // Generate CSV data for export
-  const generateCsvData = (data, type) => {
+  const generateCsvData = (data: any[], type: string) => {
     let csvContent = '';
     
     if (type === 'transactions') {
@@ -114,7 +116,7 @@ const Reports: React.FC = () => {
   };
 
   // Handle export data to CSV
-  const handleExport = (type) => {
+  const handleExport = (type: string) => {
     let data;
     let filename;
     
@@ -129,11 +131,11 @@ const Reports: React.FC = () => {
       filename = `expenses_${formatDateForFilename()}.csv`;
     }
     
-    const blob = new Blob([data], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob([data as BlobPart], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
-    link.setAttribute('download', filename);
+    link.setAttribute('download', filename as string);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
