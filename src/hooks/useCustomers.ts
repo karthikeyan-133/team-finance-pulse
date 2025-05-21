@@ -15,6 +15,8 @@ export const useCustomers = (initialCustomers: Customer[] = []) => {
     
     setCustomers(prev => [...prev, newCustomer]);
     toast.success('Customer added successfully');
+    
+    return newCustomer.id; // Return the ID so it can be used in transactions
   };
 
   const getCustomerById = (id: string) => {

@@ -14,6 +14,7 @@ import Transactions from "./pages/Transactions";
 import Customers from "./pages/Customers";
 import Reports from "./pages/Reports";
 import NotFound from "./pages/NotFound";
+import AddDelivery from "./pages/AddDelivery"; // Add the new page import
 
 // Layout
 import AppLayout from "./components/layout/AppLayout";
@@ -37,6 +38,7 @@ const App = () => (
                 <Route path="/transactions" element={<Transactions />} />
                 <Route path="/customers" element={<Customers />} />
                 <Route path="/reports" element={<Reports />} />
+                <Route path="/add-delivery" element={<AddDelivery />} /> {/* Add the new route */}
                 <Route path="/deliveries" element={<Navigate to="/transactions" replace />} />
                 <Route path="/expenses" element={<Navigate to="/dashboard" replace />} />
               </Route>

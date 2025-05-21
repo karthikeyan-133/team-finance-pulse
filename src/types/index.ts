@@ -15,11 +15,16 @@ export interface Customer {
   address?: string;
   isNew: boolean;
   createdAt: string;
+  customerLocation?: string; // Added for location coordinates
 }
 
 export interface Transaction {
   id: string;
   customerId: string;
+  customerName?: string; // Added for form submission
+  customerPhone?: string; // Added for form submission
+  customerLocation?: string; // Added for location coordinates
+  isNewCustomer?: string; // Added for form submission
   shopName: string;
   date: string;
   amount: number;
