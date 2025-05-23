@@ -2,11 +2,9 @@
 import { useState } from 'react';
 import { Transaction } from '../types';
 import { toast } from '@/components/ui/sonner';
-import { useCustomers } from './useCustomers';
 
 export const useTransactions = (initialTransactions: Transaction[] = []) => {
   const [transactions, setTransactions] = useState<Transaction[]>(initialTransactions);
-  const { addCustomer } = useCustomers();
 
   const addTransaction = (transaction: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt'>) => {
     const now = new Date().toISOString();
@@ -17,24 +15,7 @@ export const useTransactions = (initialTransactions: Transaction[] = []) => {
       updatedAt: now,
     };
     
-    // If the transaction is for a new customer (starts with temp-), create a customer record
-    if (transaction.customerId.startsWith('temp-') && 
-        transaction.customerName && 
-        transaction.customerPhone) {
-      // Add customer to the system
-      const customerId = addCustomer({
-        name: transaction.customerName,
-        phone: transaction.customerPhone,
-        address: transaction.customerLocation,
-        isNew: transaction.isNewCustomer === 'true',
-      });
-      
-      // Update the transaction with the real customer ID
-      newTransaction.customerId = customerId;
-    }
-    
     setTransactions(prev => [...prev, newTransaction]);
-    toast.success('Transaction added successfully');
     
     return newTransaction.id;
   };

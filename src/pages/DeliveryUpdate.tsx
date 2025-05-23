@@ -12,7 +12,7 @@ import { toast } from '@/components/ui/sonner';
 import { Navigate } from 'react-router-dom';
 
 const DeliveryUpdate = () => {
-  const { addTransaction } = useData();
+  const { addTransaction, addCustomer, customers, getCustomerById } = useData();
   const { user } = useAuth();
   
   // Redirect admins to admin analytics page as they should use that page
@@ -33,6 +33,10 @@ const DeliveryUpdate = () => {
     paymentMethod: 'upi'
   });
 
+  // Add state for customer selection
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string>('');
+  const [isNewCustomerEntry, setIsNewCustomerEntry] = useState(true);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -40,6 +44,22 @@ const DeliveryUpdate = () => {
 
   const handleSelectChange = (name: string, value: string) => {
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleCustomerSelect = (customerId: string) => {
+    setSelectedCustomerId(customerId);
+    
+    // Populate form with existing customer data
+    const selectedCustomer = getCustomerById(customerId);
+    if (selectedCustomer) {
+      setFormData(prev => ({
+        ...prev,
+        customerName: selectedCustomer.name,
+        customerPhone: selectedCustomer.phone,
+        customerLocation: selectedCustomer.address || selectedCustomer.customerLocation || '',
+        customerStatus: selectedCustomer.isNew ? 'new' : 'old'
+      }));
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -50,9 +70,23 @@ const DeliveryUpdate = () => {
       return;
     }
 
+    let customerId = selectedCustomerId;
+
+    // If this is a new customer entry, create a new customer record
+    if (isNewCustomerEntry) {
+      customerId = addCustomer({
+        name: formData.customerName,
+        phone: formData.customerPhone,
+        address: formData.customerLocation,
+        isNew: formData.customerStatus === 'new',
+        customerLocation: formData.customerLocation
+      });
+      toast.success('New customer added');
+    }
+
     const newTransaction = {
       shopName: formData.shopName,
-      customerId: 'temp-' + Date.now(),
+      customerId: customerId,
       customerName: formData.customerName,
       customerPhone: formData.customerPhone,
       customerLocation: formData.customerLocation,
@@ -83,6 +117,8 @@ const DeliveryUpdate = () => {
       commission: '',
       paymentMethod: 'upi'
     });
+    setSelectedCustomerId('');
+    setIsNewCustomerEntry(true);
 
     toast.success('Delivery details updated successfully!');
   };
@@ -114,6 +150,51 @@ const DeliveryUpdate = () => {
                 />
               </div>
 
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <Label>Customer Entry</Label>
+                  <div className="flex items-center space-x-2">
+                    <Button 
+                      type="button" 
+                      variant={isNewCustomerEntry ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setIsNewCustomerEntry(true)}
+                    >
+                      New Entry
+                    </Button>
+                    <Button 
+                      type="button" 
+                      variant={!isNewCustomerEntry ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setIsNewCustomerEntry(false)}
+                    >
+                      Existing
+                    </Button>
+                  </div>
+                </div>
+
+                {!isNewCustomerEntry ? (
+                  <div>
+                    <Label htmlFor="customerId">Select Customer</Label>
+                    <Select 
+                      value={selectedCustomerId} 
+                      onValueChange={handleCustomerSelect}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select customer" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {customers.map((customer) => (
+                          <SelectItem key={customer.id} value={customer.id}>
+                            {customer.name} - {customer.phone}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                ) : null}
+              </div>
+
               <div>
                 <Label htmlFor="customerName">Customer Name</Label>
                 <Input
@@ -123,6 +204,8 @@ const DeliveryUpdate = () => {
                   onChange={handleInputChange}
                   placeholder="e.g., Hevana"
                   required
+                  readOnly={!isNewCustomerEntry && selectedCustomerId !== ''}
+                  className={!isNewCustomerEntry && selectedCustomerId !== '' ? "bg-gray-100" : ""}
                 />
               </div>
 
@@ -131,6 +214,7 @@ const DeliveryUpdate = () => {
                 <Select 
                   value={formData.customerStatus} 
                   onValueChange={(value) => handleSelectChange('customerStatus', value)}
+                  disabled={!isNewCustomerEntry && selectedCustomerId !== ''}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -151,6 +235,8 @@ const DeliveryUpdate = () => {
                   onChange={handleInputChange}
                   placeholder="e.g., 9633981130"
                   required
+                  readOnly={!isNewCustomerEntry && selectedCustomerId !== ''}
+                  className={!isNewCustomerEntry && selectedCustomerId !== '' ? "bg-gray-100" : ""}
                 />
               </div>
 
