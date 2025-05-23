@@ -16,6 +16,8 @@ import Customers from "./pages/Customers";
 import Reports from "./pages/Reports";
 import NotFound from "./pages/NotFound";
 import AddDelivery from "./pages/AddDelivery";
+import DeliveryUpdate from "./pages/DeliveryUpdate";
+import AdminAnalytics from "./pages/AdminAnalytics";
 
 // Layout
 import AppLayout from "./components/layout/AppLayout";
@@ -42,6 +44,8 @@ const App = () => {
                   <Route path="/customers" element={<Customers />} />
                   <Route path="/reports" element={<Reports />} />
                   <Route path="/add-delivery" element={<AddDelivery />} />
+                  <Route path="/delivery-update" element={<DeliveryUpdate />} />
+                  <Route path="/admin-analytics" element={<AdminAnalytics />} />
                   <Route path="/deliveries" element={<Navigate to="/transactions" replace />} />
                   <Route path="/expenses" element={<Navigate to="/dashboard" replace />} />
                 </Route>
