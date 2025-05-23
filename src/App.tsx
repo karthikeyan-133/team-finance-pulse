@@ -10,12 +10,6 @@ import React from 'react'; // Standard React import
 
 // Pages
 import Login from "./pages/Login";
-import Dashboard from "./pages/Dashboard";
-import Transactions from "./pages/Transactions";
-import Customers from "./pages/Customers";
-import Reports from "./pages/Reports";
-import NotFound from "./pages/NotFound";
-import AddDelivery from "./pages/AddDelivery";
 import DeliveryUpdate from "./pages/DeliveryUpdate";
 import AdminAnalytics from "./pages/AdminAnalytics";
 
@@ -39,18 +33,11 @@ const App = () => {
                 <Route path="/login" element={<Login />} />
                 
                 <Route path="/" element={<AppLayout />}>
-                  <Route path="/dashboard" element={<Dashboard />} />
-                  <Route path="/transactions" element={<Transactions />} />
-                  <Route path="/customers" element={<Customers />} />
-                  <Route path="/reports" element={<Reports />} />
-                  <Route path="/add-delivery" element={<AddDelivery />} />
                   <Route path="/delivery-update" element={<DeliveryUpdate />} />
                   <Route path="/admin-analytics" element={<AdminAnalytics />} />
-                  <Route path="/deliveries" element={<Navigate to="/transactions" replace />} />
-                  <Route path="/expenses" element={<Navigate to="/dashboard" replace />} />
                 </Route>
                 
-                <Route path="*" element={<NotFound />} />
+                <Route path="*" element={<Navigate to="/delivery-update" replace />} />
               </Routes>
             </BrowserRouter>
           </DataProvider>

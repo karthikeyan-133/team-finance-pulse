@@ -3,14 +3,10 @@ import React, { useState } from 'react';
 import { Link, Outlet, useLocation, Navigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { 
-  LayoutDashboard, 
-  Package, 
-  Users, 
-  Receipt, 
-  DollarSign, 
+  Truck, 
+  BarChart3, 
   Menu, 
-  LogOut,
-  FileText
+  LogOut
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -18,12 +14,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const navigation = [
-  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { name: 'Deliveries', href: '/deliveries', icon: Package },
-  { name: 'Customers', href: '/customers', icon: Users },
-  { name: 'Transactions', href: '/transactions', icon: Receipt },
-  { name: 'Expenses', href: '/expenses', icon: DollarSign },
-  { name: 'Reports', href: '/reports', icon: FileText },
+  { name: 'Delivery Update', href: '/delivery-update', icon: Truck },
+  { name: 'Admin Analytics', href: '/admin-analytics', icon: BarChart3, adminOnly: true },
 ];
 
 interface SidebarLinkProps {
@@ -31,13 +23,20 @@ interface SidebarLinkProps {
     name: string;
     href: string;
     icon: React.ElementType;
+    adminOnly?: boolean;
   };
   isSidebarOpen: boolean;
+  userRole: string;
 }
 
-const SidebarLink: React.FC<SidebarLinkProps> = ({ item, isSidebarOpen }) => {
+const SidebarLink: React.FC<SidebarLinkProps> = ({ item, isSidebarOpen, userRole }) => {
   const location = useLocation();
   const isActive = location.pathname === item.href;
+
+  // Hide admin-only items for non-admin users
+  if (item.adminOnly && userRole !== 'admin') {
+    return null;
+  }
 
   return (
     <Link
@@ -91,7 +90,7 @@ const AppLayout: React.FC = () => {
         {/* Logo */}
         <div className="p-4 border-b border-sidebar-border flex items-center justify-between">
           {isSidebarOpen && (
-            <Link to="/dashboard" className="flex items-center">
+            <Link to="/delivery-update" className="flex items-center">
               <span className="text-xl font-bold text-brand-700">DeliTrack</span>
             </Link>
           )}
@@ -109,7 +108,7 @@ const AppLayout: React.FC = () => {
         <nav className="flex-1 overflow-y-auto py-4 px-2">
           <div className="space-y-1">
             {navigation.map((item) => (
-              <SidebarLink key={item.name} item={item} isSidebarOpen={isSidebarOpen} />
+              <SidebarLink key={item.name} item={item} isSidebarOpen={isSidebarOpen} userRole={user.role} />
             ))}
           </div>
         </nav>
