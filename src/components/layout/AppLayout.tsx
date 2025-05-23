@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, Outlet, useLocation, Navigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { 
@@ -14,8 +14,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const navigation = [
-  { name: 'Delivery Update', href: '/delivery-update', icon: Truck },
-  { name: 'Admin Analytics', href: '/admin-analytics', icon: BarChart3, adminOnly: true },
+  { name: 'Delivery Update', href: '/delivery-update', icon: Truck, roles: ['admin', 'team_member', 'manager'] },
+  { name: 'Admin Analytics', href: '/admin-analytics', icon: BarChart3, roles: ['admin'] },
 ];
 
 interface SidebarLinkProps {
@@ -23,7 +23,7 @@ interface SidebarLinkProps {
     name: string;
     href: string;
     icon: React.ElementType;
-    adminOnly?: boolean;
+    roles: string[];
   };
   isSidebarOpen: boolean;
   userRole: string;
@@ -33,8 +33,8 @@ const SidebarLink: React.FC<SidebarLinkProps> = ({ item, isSidebarOpen, userRole
   const location = useLocation();
   const isActive = location.pathname === item.href;
 
-  // Hide admin-only items for non-admin users
-  if (item.adminOnly && userRole !== 'admin') {
+  // Hide items that the user doesn't have access to
+  if (!item.roles.includes(userRole)) {
     return null;
   }
 
@@ -57,6 +57,7 @@ const SidebarLink: React.FC<SidebarLinkProps> = ({ item, isSidebarOpen, userRole
 const AppLayout: React.FC = () => {
   const { user, logout, isLoading } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const location = useLocation();
 
   if (isLoading) {
     return (
@@ -74,6 +75,20 @@ const AppLayout: React.FC = () => {
 
   if (!user) {
     return <Navigate to="/login" replace />;
+  }
+
+  // Check if user has access to the current page
+  const currentPath = location.pathname;
+  let hasAccess = false;
+  
+  if (currentPath === '/admin-analytics' && user.role === 'admin') {
+    hasAccess = true;
+  } else if (currentPath === '/delivery-update') {
+    hasAccess = true;
+  }
+
+  if (!hasAccess && currentPath !== '/delivery-update') {
+    return <Navigate to="/delivery-update" replace />;
   }
 
   const toggleSidebar = () => {

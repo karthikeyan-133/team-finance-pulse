@@ -1,7 +1,7 @@
-
 import React, { useState } from 'react';
 import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
+import { Navigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -42,14 +42,9 @@ const AdminAnalytics = () => {
   const { transactions, customers, getCustomerById } = useData();
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Redirect if not admin
+  // Redirect non-admin users to delivery update page
   if (user?.role !== 'admin') {
-    return (
-      <div className="p-8 text-center">
-        <h1 className="text-2xl font-bold text-red-600">Access Denied</h1>
-        <p className="text-gray-600">Only admins can access this page.</p>
-      </div>
-    );
+    return <Navigate to="/delivery-update" replace />;
   }
 
   // Calculate analytics

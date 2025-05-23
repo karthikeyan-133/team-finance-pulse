@@ -9,10 +9,16 @@ import { useData } from '@/context/DataContext';
 import { MapPin, Truck } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from '@/components/ui/sonner';
+import { Navigate } from 'react-router-dom';
 
 const DeliveryUpdate = () => {
   const { addTransaction } = useData();
   const { user } = useAuth();
+  
+  // Redirect admins to admin analytics page as they should use that page
+  if (user?.role === 'admin') {
+    return <Navigate to="/admin-analytics" replace />;
+  }
   
   const [formData, setFormData] = useState({
     shopName: '',
