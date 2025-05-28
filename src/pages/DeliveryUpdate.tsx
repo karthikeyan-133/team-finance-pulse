@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -62,7 +61,7 @@ const DeliveryUpdate = () => {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!formData.shopName || !formData.customerName || !formData.customerPhone || !formData.amount) {
@@ -70,57 +69,63 @@ const DeliveryUpdate = () => {
       return;
     }
 
-    let customerId = selectedCustomerId;
+    try {
+      let customerId = selectedCustomerId;
 
-    // If this is a new customer entry, create a new customer record
-    if (isNewCustomerEntry) {
-      customerId = addCustomer({
-        name: formData.customerName,
-        phone: formData.customerPhone,
-        address: formData.customerLocation,
-        isNew: formData.customerStatus === 'new',
-        customerLocation: formData.customerLocation
+      // If this is a new customer entry, create a new customer record
+      if (isNewCustomerEntry) {
+        customerId = await addCustomer({
+          name: formData.customerName,
+          phone: formData.customerPhone,
+          address: formData.customerLocation,
+          isNew: formData.customerStatus === 'new',
+          customerLocation: formData.customerLocation,
+          email: ''
+        });
+        toast.success('New customer added');
+      }
+
+      const newTransaction = {
+        shopName: formData.shopName,
+        customerId: customerId,
+        customerName: formData.customerName,
+        customerPhone: formData.customerPhone,
+        customerLocation: formData.customerLocation,
+        isNewCustomer: formData.customerStatus === 'new' ? 'true' : 'false',
+        date: new Date().toISOString(),
+        amount: parseFloat(formData.amount) || 0,
+        paymentStatus: formData.amountStatus as 'paid' | 'pending',
+        paymentMethod: formData.paymentMethod as 'cash' | 'upi' | 'other',
+        deliveryCharge: formData.deliveryCharge ? parseFloat(formData.deliveryCharge) : null,
+        commission: formData.commission ? parseFloat(formData.commission) : null,
+        commissionStatus: 'pending' as 'paid' | 'pending',
+        description: '',
+        handledBy: user?.name || 'Unknown',
+      };
+
+      await addTransaction(newTransaction);
+      
+      // Reset form
+      setFormData({
+        shopName: '',
+        customerName: '',
+        customerPhone: '',
+        customerStatus: 'old',
+        customerLocation: '',
+        amount: '',
+        amountStatus: 'pending',
+        deliveryCharge: '',
+        commission: '',
+        paymentMethod: 'upi'
       });
-      toast.success('New customer added');
+      setSelectedCustomerId('');
+      setIsNewCustomerEntry(true);
+
+      toast.success('Delivery details updated successfully!');
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      toast.error('Failed to update delivery details');
     }
-
-    const newTransaction = {
-      shopName: formData.shopName,
-      customerId: customerId,
-      customerName: formData.customerName,
-      customerPhone: formData.customerPhone,
-      customerLocation: formData.customerLocation,
-      isNewCustomer: formData.customerStatus === 'new' ? 'true' : 'false',
-      date: new Date().toISOString(),
-      amount: parseFloat(formData.amount) || 0,
-      paymentStatus: formData.amountStatus as 'paid' | 'pending',
-      paymentMethod: formData.paymentMethod as 'cash' | 'upi' | 'other',
-      deliveryCharge: formData.deliveryCharge ? parseFloat(formData.deliveryCharge) : null,
-      commission: formData.commission ? parseFloat(formData.commission) : null,
-      commissionStatus: 'pending' as 'paid' | 'pending',
-      description: '',
-      handledBy: user?.name || 'Unknown',
-    };
-
-    addTransaction(newTransaction);
-    
-    // Reset form
-    setFormData({
-      shopName: '',
-      customerName: '',
-      customerPhone: '',
-      customerStatus: 'old',
-      customerLocation: '',
-      amount: '',
-      amountStatus: 'pending',
-      deliveryCharge: '',
-      commission: '',
-      paymentMethod: 'upi'
-    });
-    setSelectedCustomerId('');
-    setIsNewCustomerEntry(true);
-
-    toast.success('Delivery details updated successfully!');
   };
 
   return (

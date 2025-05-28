@@ -9,7 +9,143 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      customers: {
+        Row: {
+          address: string | null
+          created_at: string | null
+          customer_location: string | null
+          email: string | null
+          id: string
+          is_new: boolean | null
+          name: string
+          phone: string
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string | null
+          customer_location?: string | null
+          email?: string | null
+          id?: string
+          is_new?: boolean | null
+          name: string
+          phone: string
+        }
+        Update: {
+          address?: string | null
+          created_at?: string | null
+          customer_location?: string | null
+          email?: string | null
+          id?: string
+          is_new?: boolean | null
+          name?: string
+          phone?: string
+        }
+        Relationships: []
+      }
+      expenses: {
+        Row: {
+          added_by: string | null
+          amount: number
+          category: string | null
+          created_at: string | null
+          date: string | null
+          description: string | null
+          id: string
+          title: string
+        }
+        Insert: {
+          added_by?: string | null
+          amount: number
+          category?: string | null
+          created_at?: string | null
+          date?: string | null
+          description?: string | null
+          id?: string
+          title: string
+        }
+        Update: {
+          added_by?: string | null
+          amount?: number
+          category?: string | null
+          created_at?: string | null
+          date?: string | null
+          description?: string | null
+          id?: string
+          title?: string
+        }
+        Relationships: []
+      }
+      transactions: {
+        Row: {
+          amount: number
+          commission: number | null
+          commission_status: string | null
+          created_at: string | null
+          customer_id: string | null
+          customer_location: string | null
+          customer_name: string | null
+          customer_phone: string | null
+          date: string | null
+          delivery_charge: number | null
+          description: string | null
+          handled_by: string | null
+          id: string
+          is_new_customer: string | null
+          payment_method: string | null
+          payment_status: string | null
+          shop_name: string
+          updated_at: string | null
+        }
+        Insert: {
+          amount: number
+          commission?: number | null
+          commission_status?: string | null
+          created_at?: string | null
+          customer_id?: string | null
+          customer_location?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
+          date?: string | null
+          delivery_charge?: number | null
+          description?: string | null
+          handled_by?: string | null
+          id?: string
+          is_new_customer?: string | null
+          payment_method?: string | null
+          payment_status?: string | null
+          shop_name: string
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number
+          commission?: number | null
+          commission_status?: string | null
+          created_at?: string | null
+          customer_id?: string | null
+          customer_location?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
+          date?: string | null
+          delivery_charge?: number | null
+          description?: string | null
+          handled_by?: string | null
+          id?: string
+          is_new_customer?: string | null
+          payment_method?: string | null
+          payment_status?: string | null
+          shop_name?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transactions_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

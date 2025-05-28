@@ -1,10 +1,9 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+
+import React, { createContext, useContext } from 'react';
 import { Customer, Transaction, Expense, DashboardStats } from '../types';
-import { useAuth } from './AuthContext';
-import { loadDataFromStorage, saveDataToStorage } from '../utils/localStorage';
-import { useCustomers } from '../hooks/useCustomers';
-import { useTransactions } from '../hooks/useTransactions';
-import { useExpenses } from '../hooks/useExpenses';
+import { useSupabaseCustomers } from '../hooks/useSupabaseCustomers';
+import { useSupabaseTransactions } from '../hooks/useSupabaseTransactions';
+import { useSupabaseExpenses } from '../hooks/useSupabaseExpenses';
 import { useDashboardStats } from '../hooks/useDashboardStats';
 
 interface DataContextType {
@@ -12,11 +11,11 @@ interface DataContextType {
   transactions: Transaction[];
   expenses: Expense[];
   dashboardStats: DashboardStats;
-  addCustomer: (customer: Omit<Customer, 'id' | 'createdAt'>) => string;
-  addTransaction: (transaction: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt'>) => string;
-  addExpense: (expense: Omit<Expense, 'id' | 'createdAt'>) => void;
-  updateTransaction: (id: string, updates: Partial<Transaction>) => void;
-  updateExpense: (id: string, updates: Partial<Expense>) => void;
+  addCustomer: (customer: Omit<Customer, 'id' | 'createdAt'>) => Promise<string>;
+  addTransaction: (transaction: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt'>) => Promise<string>;
+  addExpense: (expense: Omit<Expense, 'id' | 'createdAt'>) => Promise<void>;
+  updateTransaction: (id: string, updates: Partial<Transaction>) => Promise<void>;
+  updateExpense: (id: string, updates: Partial<Expense>) => Promise<void>;
   getCustomerById: (id: string) => Customer | undefined;
   isLoading: boolean;
   pendingAmount: number;
@@ -26,59 +25,35 @@ interface DataContextType {
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
 export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user } = useAuth();
-  const [isLoading, setIsLoading] = useState(true);
-  
-  // Initialize data hooks with empty arrays
   const {
     customers, 
-    setCustomers, 
     addCustomer, 
-    getCustomerById
-  } = useCustomers([]);
+    getCustomerById,
+    isLoading: customersLoading
+  } = useSupabaseCustomers();
   
   const {
     transactions, 
-    setTransactions, 
     addTransaction, 
     updateTransaction,
-    calculateTransactionStats
-  } = useTransactions([]);
+    calculateTransactionStats,
+    isLoading: transactionsLoading
+  } = useSupabaseTransactions();
   
   const {
     expenses, 
-    setExpenses, 
     addExpense, 
-    updateExpense
-  } = useExpenses([]);
-
-  // Load data from localStorage or use mock data
-  useEffect(() => {
-    const loadData = () => {
-      const data = loadDataFromStorage(!!user);
-      setCustomers(data.customers);
-      setTransactions(data.transactions);
-      setExpenses(data.expenses);
-      setIsLoading(false);
-    };
-
-    if (user) {
-      loadData();
-    } else {
-      setIsLoading(false);
-    }
-  }, [user, setCustomers, setTransactions, setExpenses]);
-
-  // Save data to localStorage whenever it changes
-  useEffect(() => {
-    saveDataToStorage(customers, transactions, expenses, !!user);
-  }, [customers, transactions, expenses, user]);
+    updateExpense,
+    isLoading: expensesLoading
+  } = useSupabaseExpenses();
 
   // Calculate transaction statistics
   const { pendingAmount, totalAmount } = calculateTransactionStats();
 
   // Calculate dashboard stats
   const { dashboardStats } = useDashboardStats(transactions, expenses);
+
+  const isLoading = customersLoading || transactionsLoading || expensesLoading;
 
   return (
     <DataContext.Provider
