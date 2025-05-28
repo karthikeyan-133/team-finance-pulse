@@ -6,7 +6,7 @@ import { toast } from '@/components/ui/sonner';
 export const useCustomers = (initialCustomers: Customer[] = []) => {
   const [customers, setCustomers] = useState<Customer[]>(initialCustomers);
 
-  const addCustomer = (customer: Omit<Customer, 'id' | 'createdAt'>) => {
+  const addCustomer = (customer: Omit<Customer, 'id' | 'createdAt'>): string => {
     // Check if customer with same phone already exists
     const existingCustomer = customers.find(c => c.phone === customer.phone);
     

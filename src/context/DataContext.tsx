@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { Customer, Transaction, Expense, DashboardStats } from '../types';
 import { useAuth } from './AuthContext';
@@ -13,8 +12,8 @@ interface DataContextType {
   transactions: Transaction[];
   expenses: Expense[];
   dashboardStats: DashboardStats;
-  addCustomer: (customer: Omit<Customer, 'id' | 'createdAt'>) => void;
-  addTransaction: (transaction: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt'>) => void;
+  addCustomer: (customer: Omit<Customer, 'id' | 'createdAt'>) => string;
+  addTransaction: (transaction: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt'>) => string;
   addExpense: (expense: Omit<Expense, 'id' | 'createdAt'>) => void;
   updateTransaction: (id: string, updates: Partial<Transaction>) => void;
   updateExpense: (id: string, updates: Partial<Expense>) => void;
