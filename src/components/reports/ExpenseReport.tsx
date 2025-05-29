@@ -3,19 +3,41 @@ import React from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Table, TableHeader, TableHead, TableRow, TableBody, TableCell } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Download } from 'lucide-react';
+import { Download, Trash2 } from 'lucide-react';
 import { Expense } from '../../types';
 import { generateCsvData, formatDateForFilename, exportToCsv } from '../../utils/reportUtils';
+import { useData } from '../../context/DataContext';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 interface ExpenseReportProps {
   expenses: Expense[];
 }
 
 const ExpenseReport: React.FC<ExpenseReportProps> = ({ expenses }) => {
+  const { deleteExpense } = useData();
+
   const handleExport = () => {
     const data = generateCsvData(expenses, 'expenses');
     const filename = `expenses_${formatDateForFilename()}.csv`;
     exportToCsv(data, filename);
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteExpense(id);
+    } catch (error) {
+      console.error('Failed to delete expense:', error);
+    }
   };
   
   return (
@@ -39,6 +61,7 @@ const ExpenseReport: React.FC<ExpenseReportProps> = ({ expenses }) => {
               <TableHead>Category</TableHead>
               <TableHead>Amount</TableHead>
               <TableHead>Description</TableHead>
+              <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -49,6 +72,32 @@ const ExpenseReport: React.FC<ExpenseReportProps> = ({ expenses }) => {
                 <TableCell>{expense.category}</TableCell>
                 <TableCell>₹{expense.amount.toLocaleString('en-IN')}</TableCell>
                 <TableCell className="max-w-xs truncate">{expense.description || 'N/A'}</TableCell>
+                <TableCell>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Expense</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Are you sure you want to delete this expense? This action cannot be undone.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction 
+                          onClick={() => handleDelete(expense.id)}
+                          className="bg-red-600 hover:bg-red-700"
+                        >
+                          Delete
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>

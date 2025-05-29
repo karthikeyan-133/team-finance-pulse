@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Customer } from '../types';
@@ -110,6 +109,23 @@ export const useSupabaseCustomers = () => {
     }
   };
 
+  const deleteCustomer = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('customers')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      
+      toast.success('Customer deleted successfully');
+    } catch (error) {
+      console.error('Error deleting customer:', error);
+      toast.error('Failed to delete customer');
+      throw error;
+    }
+  };
+
   const getCustomerById = (id: string) => {
     return customers.find(customer => customer.id === id);
   };
@@ -117,6 +133,7 @@ export const useSupabaseCustomers = () => {
   return {
     customers,
     addCustomer,
+    deleteCustomer,
     getCustomerById,
     isLoading
   };

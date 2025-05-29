@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Transaction } from '../types';
@@ -135,6 +134,23 @@ export const useSupabaseTransactions = () => {
     }
   };
 
+  const deleteTransaction = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('transactions')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      
+      toast.success('Transaction deleted successfully');
+    } catch (error) {
+      console.error('Error deleting transaction:', error);
+      toast.error('Failed to delete transaction');
+      throw error;
+    }
+  };
+
   // Calculate transaction statistics
   const calculateTransactionStats = () => {
     const pendingAmount = transactions
@@ -153,6 +169,7 @@ export const useSupabaseTransactions = () => {
     transactions,
     addTransaction,
     updateTransaction,
+    deleteTransaction,
     calculateTransactionStats,
     isLoading
   };

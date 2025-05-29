@@ -16,6 +16,9 @@ interface DataContextType {
   addExpense: (expense: Omit<Expense, 'id' | 'createdAt'>) => Promise<void>;
   updateTransaction: (id: string, updates: Partial<Transaction>) => Promise<void>;
   updateExpense: (id: string, updates: Partial<Expense>) => Promise<void>;
+  deleteTransaction: (id: string) => Promise<void>;
+  deleteCustomer: (id: string) => Promise<void>;
+  deleteExpense: (id: string) => Promise<void>;
   getCustomerById: (id: string) => Customer | undefined;
   isLoading: boolean;
   pendingAmount: number;
@@ -28,6 +31,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const {
     customers, 
     addCustomer, 
+    deleteCustomer,
     getCustomerById,
     isLoading: customersLoading
   } = useSupabaseCustomers();
@@ -36,6 +40,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     transactions, 
     addTransaction, 
     updateTransaction,
+    deleteTransaction,
     calculateTransactionStats,
     isLoading: transactionsLoading
   } = useSupabaseTransactions();
@@ -44,6 +49,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     expenses, 
     addExpense, 
     updateExpense,
+    deleteExpense,
     isLoading: expensesLoading
   } = useSupabaseExpenses();
 
@@ -67,6 +73,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         addExpense,
         updateTransaction,
         updateExpense,
+        deleteTransaction,
+        deleteCustomer,
+        deleteExpense,
         getCustomerById,
         isLoading,
         pendingAmount,

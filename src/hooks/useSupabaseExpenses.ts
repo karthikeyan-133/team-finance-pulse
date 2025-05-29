@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Expense } from '../types';
@@ -104,10 +103,28 @@ export const useSupabaseExpenses = () => {
     }
   };
 
+  const deleteExpense = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('expenses')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      
+      toast.success('Expense deleted successfully');
+    } catch (error) {
+      console.error('Error deleting expense:', error);
+      toast.error('Failed to delete expense');
+      throw error;
+    }
+  };
+
   return {
     expenses,
     addExpense,
     updateExpense,
+    deleteExpense,
     isLoading
   };
 };

@@ -3,19 +3,41 @@ import React from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Table, TableHeader, TableHead, TableRow, TableBody, TableCell } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Download } from 'lucide-react';
+import { Download, Trash2 } from 'lucide-react';
 import { Transaction } from '../../types';
 import { generateCsvData, formatDateForFilename, exportToCsv } from '../../utils/reportUtils';
+import { useData } from '../../context/DataContext';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 interface TransactionReportProps {
   transactions: Transaction[];
 }
 
 const TransactionReport: React.FC<TransactionReportProps> = ({ transactions }) => {
+  const { deleteTransaction } = useData();
+
   const handleExport = () => {
     const data = generateCsvData(transactions, 'transactions');
     const filename = `transactions_${formatDateForFilename()}.csv`;
     exportToCsv(data, filename);
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteTransaction(id);
+    } catch (error) {
+      console.error('Failed to delete transaction:', error);
+    }
   };
   
   return (
@@ -40,6 +62,7 @@ const TransactionReport: React.FC<TransactionReportProps> = ({ transactions }) =
               <TableHead>Status</TableHead>
               <TableHead>Payment Method</TableHead>
               <TableHead>Commission</TableHead>
+              <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -59,6 +82,32 @@ const TransactionReport: React.FC<TransactionReportProps> = ({ transactions }) =
                 </TableCell>
                 <TableCell>{transaction.paymentMethod}</TableCell>
                 <TableCell>₹{(transaction.commission || 0).toLocaleString('en-IN')}</TableCell>
+                <TableCell>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Transaction</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Are you sure you want to delete this transaction? This action cannot be undone.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction 
+                          onClick={() => handleDelete(transaction.id)}
+                          className="bg-red-600 hover:bg-red-700"
+                        >
+                          Delete
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
