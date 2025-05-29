@@ -18,7 +18,7 @@ const Index = () => {
           </div>
           
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent mb-4">
-            DeliTrack
+            SlickerConnect
           </h1>
           
           <p className="text-lg sm:text-xl text-gray-600 mb-8 max-w-2xl mx-auto leading-relaxed">
@@ -172,7 +172,7 @@ const Index = () => {
             <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
               <Truck className="h-5 w-5 text-white" />
             </div>
-            <span className="ml-2 text-xl font-bold text-white">DeliTrack</span>
+            <span className="ml-2 text-xl font-bold text-white">SlickerConnect</span>
           </div>
           <p className="text-gray-400 text-sm">
             Modern delivery management for modern businesses
