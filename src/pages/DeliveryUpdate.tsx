@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -5,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useData } from '@/context/DataContext';
-import { MapPin, Truck } from 'lucide-react';
+import { MapPin, Truck, User, Phone, IndianRupee } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from '@/components/ui/sonner';
 import { Navigate } from 'react-router-dom';
@@ -129,22 +130,27 @@ const DeliveryUpdate = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
-      <div className="max-w-md mx-auto">
-        <Card>
-          <CardHeader className="text-center">
-            <CardTitle className="flex items-center justify-center gap-2">
-              <Truck className="h-5 w-5" />
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-2 sm:p-4">
+      <div className="max-w-lg mx-auto">
+        <Card className="shadow-xl border-0 bg-white/95 backdrop-blur">
+          <CardHeader className="text-center pb-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-t-lg">
+            <CardTitle className="flex items-center justify-center gap-2 text-lg sm:text-xl">
+              <Truck className="h-5 w-5 sm:h-6 sm:w-6" />
               Update Delivery
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-blue-100 text-sm">
               Fill in the delivery details
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          
+          <CardContent className="p-4 sm:p-6">
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <Label htmlFor="shopName">Shop Name</Label>
+              {/* Shop Name */}
+              <div className="space-y-2">
+                <Label htmlFor="shopName" className="text-sm font-medium flex items-center gap-2">
+                  <Truck className="h-4 w-4 text-blue-600" />
+                  Shop Name *
+                </Label>
                 <Input
                   id="shopName"
                   name="shopName"
@@ -152,87 +158,101 @@ const DeliveryUpdate = () => {
                   onChange={handleInputChange}
                   placeholder="e.g., Zyra"
                   required
+                  className="h-11"
                 />
               </div>
 
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <Label>Customer Entry</Label>
-                  <div className="flex items-center space-x-2">
-                    <Button 
-                      type="button" 
-                      variant={isNewCustomerEntry ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setIsNewCustomerEntry(true)}
-                    >
-                      New Entry
-                    </Button>
-                    <Button 
-                      type="button" 
-                      variant={!isNewCustomerEntry ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setIsNewCustomerEntry(false)}
-                    >
-                      Existing
-                    </Button>
-                  </div>
+              {/* Customer Entry Toggle */}
+              <div className="space-y-3">
+                <Label className="text-sm font-medium">Customer Entry</Label>
+                <div className="flex gap-2">
+                  <Button 
+                    type="button" 
+                    variant={isNewCustomerEntry ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setIsNewCustomerEntry(true)}
+                    className="flex-1 h-10"
+                  >
+                    New Entry
+                  </Button>
+                  <Button 
+                    type="button" 
+                    variant={!isNewCustomerEntry ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setIsNewCustomerEntry(false)}
+                    className="flex-1 h-10"
+                  >
+                    Existing
+                  </Button>
                 </div>
 
-                {!isNewCustomerEntry ? (
-                  <div>
-                    <Label htmlFor="customerId">Select Customer</Label>
+                {!isNewCustomerEntry && (
+                  <div className="space-y-2">
+                    <Label htmlFor="customerId" className="text-sm">Select Customer</Label>
                     <Select 
                       value={selectedCustomerId} 
                       onValueChange={handleCustomerSelect}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="h-11">
                         <SelectValue placeholder="Select customer" />
                       </SelectTrigger>
                       <SelectContent>
                         {customers.map((customer) => (
                           <SelectItem key={customer.id} value={customer.id}>
-                            {customer.name} - {customer.phone}
+                            <div className="flex flex-col">
+                              <span className="font-medium">{customer.name}</span>
+                              <span className="text-xs text-gray-500">{customer.phone}</span>
+                            </div>
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
-                ) : null}
+                )}
               </div>
 
-              <div>
-                <Label htmlFor="customerName">Customer Name</Label>
-                <Input
-                  id="customerName"
-                  name="customerName"
-                  value={formData.customerName}
-                  onChange={handleInputChange}
-                  placeholder="e.g., Hevana"
-                  required
-                  readOnly={!isNewCustomerEntry && selectedCustomerId !== ''}
-                  className={!isNewCustomerEntry && selectedCustomerId !== '' ? "bg-gray-100" : ""}
-                />
+              {/* Customer Details */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="customerName" className="text-sm font-medium flex items-center gap-2">
+                    <User className="h-4 w-4 text-blue-600" />
+                    Customer Name *
+                  </Label>
+                  <Input
+                    id="customerName"
+                    name="customerName"
+                    value={formData.customerName}
+                    onChange={handleInputChange}
+                    placeholder="e.g., Hevana"
+                    required
+                    readOnly={!isNewCustomerEntry && selectedCustomerId !== ''}
+                    className={`h-11 ${!isNewCustomerEntry && selectedCustomerId !== '' ? "bg-gray-50" : ""}`}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="customerStatus" className="text-sm font-medium">Customer Status</Label>
+                  <Select 
+                    value={formData.customerStatus} 
+                    onValueChange={(value) => handleSelectChange('customerStatus', value)}
+                    disabled={!isNewCustomerEntry && selectedCustomerId !== ''}
+                  >
+                    <SelectTrigger className="h-11">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="new">New</SelectItem>
+                      <SelectItem value="old">Old</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
-              <div>
-                <Label htmlFor="customerStatus">Customer Status</Label>
-                <Select 
-                  value={formData.customerStatus} 
-                  onValueChange={(value) => handleSelectChange('customerStatus', value)}
-                  disabled={!isNewCustomerEntry && selectedCustomerId !== ''}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="new">New</SelectItem>
-                    <SelectItem value="old">Old</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label htmlFor="customerPhone">Customer Number</Label>
+              <div className="space-y-2">
+                <Label htmlFor="customerPhone" className="text-sm font-medium flex items-center gap-2">
+                  <Phone className="h-4 w-4 text-blue-600" />
+                  Customer Number *
+                </Label>
                 <Input
                   id="customerPhone"
                   name="customerPhone"
@@ -241,13 +261,14 @@ const DeliveryUpdate = () => {
                   placeholder="e.g., 9633981130"
                   required
                   readOnly={!isNewCustomerEntry && selectedCustomerId !== ''}
-                  className={!isNewCustomerEntry && selectedCustomerId !== '' ? "bg-gray-100" : ""}
+                  className={`h-11 ${!isNewCustomerEntry && selectedCustomerId !== '' ? "bg-gray-50" : ""}`}
                 />
               </div>
 
-              <div>
-                <Label htmlFor="customerLocation" className="flex items-center gap-1">
-                  <MapPin className="h-3 w-3" /> Customer Location
+              <div className="space-y-2">
+                <Label htmlFor="customerLocation" className="text-sm font-medium flex items-center gap-2">
+                  <MapPin className="h-4 w-4 text-blue-600" />
+                  Customer Location
                 </Label>
                 <Input
                   id="customerLocation"
@@ -255,80 +276,100 @@ const DeliveryUpdate = () => {
                   value={formData.customerLocation}
                   onChange={handleInputChange}
                   placeholder="e.g., 10.7373653,76.8244398"
+                  className="h-11"
                 />
               </div>
 
-              <div>
-                <Label htmlFor="amountStatus">Amount Status</Label>
-                <Select 
-                  value={formData.amountStatus} 
-                  onValueChange={(value) => handleSelectChange('amountStatus', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="paid">Paid</SelectItem>
-                  </SelectContent>
-                </Select>
+              {/* Payment Details */}
+              <div className="bg-gray-50 p-4 rounded-lg space-y-4">
+                <h3 className="font-medium text-sm flex items-center gap-2">
+                  <IndianRupee className="h-4 w-4 text-green-600" />
+                  Payment Details
+                </h3>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="amountStatus" className="text-sm">Amount Status</Label>
+                    <Select 
+                      value={formData.amountStatus} 
+                      onValueChange={(value) => handleSelectChange('amountStatus', value)}
+                    >
+                      <SelectTrigger className="h-11">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="pending">Pending</SelectItem>
+                        <SelectItem value="paid">Paid</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="amount" className="text-sm">Amount (₹) *</Label>
+                    <Input
+                      id="amount"
+                      name="amount"
+                      type="number"
+                      value={formData.amount}
+                      onChange={handleInputChange}
+                      placeholder="e.g., 380"
+                      required
+                      className="h-11"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="deliveryCharge" className="text-sm">Delivery Charge (₹)</Label>
+                    <Input
+                      id="deliveryCharge"
+                      name="deliveryCharge"
+                      type="number"
+                      value={formData.deliveryCharge}
+                      onChange={handleInputChange}
+                      placeholder="Optional"
+                      className="h-11"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="commission" className="text-sm">Commission (₹)</Label>
+                    <Input
+                      id="commission"
+                      name="commission"
+                      type="number"
+                      value={formData.commission}
+                      onChange={handleInputChange}
+                      placeholder="Optional"
+                      className="h-11"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="paymentMethod" className="text-sm">Payment Method</Label>
+                  <Select 
+                    value={formData.paymentMethod} 
+                    onValueChange={(value) => handleSelectChange('paymentMethod', value)}
+                  >
+                    <SelectTrigger className="h-11">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="upi">UPI</SelectItem>
+                      <SelectItem value="cash">Cash</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
-              <div>
-                <Label htmlFor="amount">Amount (₹)</Label>
-                <Input
-                  id="amount"
-                  name="amount"
-                  type="number"
-                  value={formData.amount}
-                  onChange={handleInputChange}
-                  placeholder="e.g., 380"
-                  required
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="deliveryCharge">Delivery Charge (₹)</Label>
-                <Input
-                  id="deliveryCharge"
-                  name="deliveryCharge"
-                  type="number"
-                  value={formData.deliveryCharge}
-                  onChange={handleInputChange}
-                  placeholder="Leave empty if nil"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="commission">Commission (₹)</Label>
-                <Input
-                  id="commission"
-                  name="commission"
-                  type="number"
-                  value={formData.commission}
-                  onChange={handleInputChange}
-                  placeholder="Leave empty if nil"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="paymentMethod">Payment Method</Label>
-                <Select 
-                  value={formData.paymentMethod} 
-                  onValueChange={(value) => handleSelectChange('paymentMethod', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="upi">UPI</SelectItem>
-                    <SelectItem value="cash">Cash</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <Button type="submit" className="w-full">
+              <Button 
+                type="submit" 
+                className="w-full h-12 text-base font-medium bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg"
+              >
+                <Truck className="h-5 w-5 mr-2" />
                 Update Delivery
               </Button>
             </form>
