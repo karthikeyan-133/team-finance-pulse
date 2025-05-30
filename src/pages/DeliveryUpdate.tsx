@@ -12,9 +12,11 @@ import { Navigate } from 'react-router-dom';
 import { getActiveShops, getShopById } from '@/config/shops';
 import MultiShopDeliveryForm from '@/components/forms/MultiShopDeliveryForm';
 
+type DeliveryMode = 'single' | 'multi';
+
 const DeliveryUpdate = () => {
   const { user } = useAuth();
-  const [deliveryMode, setDeliveryMode] = useState<'single' | 'multi'>('single');
+  const [deliveryMode, setDeliveryMode] = useState<DeliveryMode>('single');
   
   // Redirect admins to admin analytics page as they should use that page
   if (user?.role === 'admin') {
