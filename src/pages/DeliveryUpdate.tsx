@@ -5,22 +5,23 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useData } from '@/context/DataContext';
-import { MapPin, Truck, User, Phone, IndianRupee, Store } from 'lucide-react';
+import { MapPin, Truck, User, Phone, IndianRupee, Store, X } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from '@/components/ui/sonner';
 import { Navigate } from 'react-router-dom';
+import { getActiveShops } from '@/config/shops';
+import { Badge } from "@/components/ui/badge";
 
 const DeliveryUpdate = () => {
   const { addTransaction, addCustomer, customers, getCustomerById } = useData();
   const { user } = useAuth();
   
-  // Redirect admins to admin analytics page as they should use that page
   if (user?.role === 'admin') {
     return <Navigate to="/admin-analytics" replace />;
   }
   
   const [formData, setFormData] = useState({
-    shopName: '',
+    shopNames: [] as string[],
     customerName: '',
     customerPhone: '',
     customerStatus: 'old',
@@ -32,9 +33,9 @@ const DeliveryUpdate = () => {
     paymentMethod: 'upi'
   });
 
-  // Add state for customer selection
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>('');
   const [isNewCustomerEntry, setIsNewCustomerEntry] = useState(true);
+  const activeShops = getActiveShops();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -45,10 +46,24 @@ const DeliveryUpdate = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  const handleShopSelect = (shopName: string) => {
+    if (!formData.shopNames.includes(shopName)) {
+      setFormData(prev => ({
+        ...prev,
+        shopNames: [...prev.shopNames, shopName]
+      }));
+    }
+  };
+
+  const removeShop = (shopName: string) => {
+    setFormData(prev => ({
+      ...prev,
+      shopNames: prev.shopNames.filter(name => name !== shopName)
+    }));
+  };
+
   const handleCustomerSelect = (customerId: string) => {
     setSelectedCustomerId(customerId);
-    
-    // Populate form with existing customer data
     const selectedCustomer = getCustomerById(customerId);
     if (selectedCustomer) {
       setFormData(prev => ({
@@ -64,7 +79,7 @@ const DeliveryUpdate = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.shopName || !formData.customerName || !formData.customerPhone || !formData.amount) {
+    if (formData.shopNames.length === 0 || !formData.customerName || !formData.customerPhone || !formData.amount) {
       toast.error('Please fill in all required fields');
       return;
     }
@@ -72,7 +87,6 @@ const DeliveryUpdate = () => {
     try {
       let customerId = selectedCustomerId;
 
-      // If this is a new customer entry, create a new customer record
       if (isNewCustomerEntry) {
         customerId = await addCustomer({
           name: formData.customerName,
@@ -85,29 +99,32 @@ const DeliveryUpdate = () => {
         toast.success('New customer added');
       }
 
-      const newTransaction = {
-        shopName: formData.shopName,
-        customerId: customerId,
-        customerName: formData.customerName,
-        customerPhone: formData.customerPhone,
-        customerLocation: formData.customerLocation,
-        isNewCustomer: formData.customerStatus === 'new' ? 'true' : 'false',
-        date: new Date().toISOString(),
-        amount: parseFloat(formData.amount) || 0,
-        paymentStatus: formData.amountStatus as 'paid' | 'pending',
-        paymentMethod: formData.paymentMethod as 'cash' | 'upi' | 'other',
-        deliveryCharge: formData.deliveryCharge ? parseFloat(formData.deliveryCharge) : null,
-        commission: formData.commission ? parseFloat(formData.commission) : null,
-        commissionStatus: 'pending' as 'paid' | 'pending',
-        description: '',
-        handledBy: user?.name || 'Unknown',
-      };
+      // Create transactions for all selected shops
+      const transactionPromises = formData.shopNames.map(shopName => 
+        addTransaction({
+          shopName,
+          customerId,
+          customerName: formData.customerName,
+          customerPhone: formData.customerPhone,
+          customerLocation: formData.customerLocation,
+          isNewCustomer: formData.customerStatus === 'new' ? 'true' : 'false',
+          date: new Date().toISOString(),
+          amount: parseFloat(formData.amount) || 0,
+          paymentStatus: formData.amountStatus as 'paid' | 'pending',
+          paymentMethod: formData.paymentMethod as 'cash' | 'upi' | 'other',
+          deliveryCharge: formData.deliveryCharge ? parseFloat(formData.deliveryCharge) : null,
+          commission: formData.commission ? parseFloat(formData.commission) : null,
+          commissionStatus: 'pending' as 'paid' | 'pending',
+          description: '',
+          handledBy: user?.name || 'Unknown',
+        })
+      );
 
-      await addTransaction(newTransaction);
+      await Promise.all(transactionPromises);
       
       // Reset form
       setFormData({
-        shopName: '',
+        shopNames: [],
         customerName: '',
         customerPhone: '',
         customerStatus: 'old',
@@ -121,7 +138,7 @@ const DeliveryUpdate = () => {
       setSelectedCustomerId('');
       setIsNewCustomerEntry(true);
 
-      toast.success('Delivery details updated successfully!');
+      toast.success(`Delivery updated for ${formData.shopNames.length} shops!`);
     } catch (error) {
       console.error('Error submitting form:', error);
       toast.error('Failed to update delivery details');
@@ -144,21 +161,51 @@ const DeliveryUpdate = () => {
           
           <CardContent className="p-4 sm:p-6">
             <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Shop Selection - Changed to Input Field */}
+              {/* Shop Selection */}
               <div className="space-y-2">
-                <Label htmlFor="shopName" className="text-sm font-medium flex items-center gap-2">
+                <Label className="text-sm font-medium flex items-center gap-2">
                   <Store className="h-4 w-4 text-blue-600" />
-                  Shop Name *
+                  Select Shops *
                 </Label>
-                <Input
-                  id="shopName"
-                  name="shopName"
-                  value={formData.shopName}
-                  onChange={handleInputChange}
-                  placeholder="e.g., Hevana Store"
-                  required
-                  className="h-11"
-                />
+                
+                {/* Selected shops display */}
+                {formData.shopNames.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {formData.shopNames.map(shopName => (
+                      <Badge key={shopName} className="flex items-center gap-1">
+                        {shopName}
+                        <button
+                          type="button"
+                          onClick={() => removeShop(shopName)}
+                          className="ml-1 rounded-full hover:bg-gray-200"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+                
+                {/* Shop dropdown */}
+                <Select onValueChange={handleShopSelect}>
+                  <SelectTrigger className="h-11">
+                    <SelectValue placeholder="Choose shops" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {activeShops
+                      .filter(shop => !formData.shopNames.includes(shop.name))
+                      .map((shop) => (
+                        <SelectItem key={shop.id} value={shop.name}>
+                          <div className="flex flex-col">
+                            <span className="font-medium">{shop.name}</span>
+                            {shop.location && (
+                              <span className="text-xs text-gray-500">{shop.location}</span>
+                            )}
+                          </div>
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               {/* Customer Entry Toggle */}
@@ -367,9 +414,12 @@ const DeliveryUpdate = () => {
               <Button 
                 type="submit" 
                 className="w-full h-12 text-base font-medium bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg"
+                disabled={formData.shopNames.length === 0}
               >
                 <Truck className="h-5 w-5 mr-2" />
-                Update Delivery
+                {formData.shopNames.length > 0 
+                  ? `Update Delivery for ${formData.shopNames.length} Shop${formData.shopNames.length > 1 ? 's' : ''}`
+                  : 'Select Shops to Update'}
               </Button>
             </form>
           </CardContent>
