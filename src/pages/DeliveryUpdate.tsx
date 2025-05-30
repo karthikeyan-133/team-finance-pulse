@@ -1,4 +1,5 @@
 
+
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -170,7 +171,7 @@ const DeliveryUpdate = () => {
               <div className="flex gap-2">
                 <Button 
                   type="button" 
-                  variant={deliveryMode === 'single' ? "default" : "outline"}
+                  variant="default"
                   size="sm"
                   onClick={() => handleDeliveryModeChange('single')}
                   className="flex-1 h-10"
@@ -179,7 +180,7 @@ const DeliveryUpdate = () => {
                 </Button>
                 <Button 
                   type="button" 
-                  variant={deliveryMode === 'multi' ? "default" : "outline"}
+                  variant="outline"
                   size="sm"
                   onClick={() => handleDeliveryModeChange('multi')}
                   className="flex-1 h-10"
