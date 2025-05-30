@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,15 +10,23 @@ import { useAuth } from '@/context/AuthContext';
 import { toast } from '@/components/ui/sonner';
 import { Navigate } from 'react-router-dom';
 import { getActiveShops, getShopById } from '@/config/shops';
+import MultiShopDeliveryForm from '@/components/forms/MultiShopDeliveryForm';
 
 const DeliveryUpdate = () => {
-  const { addTransaction, addCustomer, customers, getCustomerById } = useData();
   const { user } = useAuth();
+  const [deliveryMode, setDeliveryMode] = useState<'single' | 'multi'>('single');
   
   // Redirect admins to admin analytics page as they should use that page
   if (user?.role === 'admin') {
     return <Navigate to="/admin-analytics" replace />;
   }
+
+  // If multi-shop mode is selected, show the multi-shop form
+  if (deliveryMode === 'multi') {
+    return <MultiShopDeliveryForm />;
+  }
+
+  const { addTransaction, addCustomer, customers, getCustomerById } = useData();
   
   const [formData, setFormData] = useState({
     shopId: '',
@@ -147,7 +154,36 @@ const DeliveryUpdate = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-2 sm:p-4">
-      <div className="max-w-lg mx-auto">
+      <div className="max-w-lg mx-auto space-y-4">
+        {/* Delivery Mode Toggle */}
+        <Card className="shadow-xl border-0 bg-white/95 backdrop-blur">
+          <CardContent className="p-4">
+            <div className="space-y-3">
+              <Label className="text-sm font-medium">Delivery Mode</Label>
+              <div className="flex gap-2">
+                <Button 
+                  type="button" 
+                  variant={deliveryMode === 'single' ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setDeliveryMode('single')}
+                  className="flex-1 h-10"
+                >
+                  Single Shop
+                </Button>
+                <Button 
+                  type="button" 
+                  variant={deliveryMode === 'multi' ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setDeliveryMode('multi')}
+                  className="flex-1 h-10"
+                >
+                  Multi Shop
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         <Card className="shadow-xl border-0 bg-white/95 backdrop-blur">
           <CardHeader className="text-center pb-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-t-lg">
             <CardTitle className="flex items-center justify-center gap-2 text-lg sm:text-xl">
@@ -155,7 +191,7 @@ const DeliveryUpdate = () => {
               Update Delivery
             </CardTitle>
             <CardDescription className="text-blue-100 text-sm">
-              Fill in the delivery details
+              Fill in the delivery details for single shop
             </CardDescription>
           </CardHeader>
           
