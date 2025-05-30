@@ -1,5 +1,3 @@
-
-
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,11 +12,9 @@ import { Navigate } from 'react-router-dom';
 import { getActiveShops, getShopById } from '@/config/shops';
 import MultiShopDeliveryForm from '@/components/forms/MultiShopDeliveryForm';
 
-type DeliveryMode = 'single' | 'multi';
-
 const DeliveryUpdate = () => {
   const { user } = useAuth();
-  const [deliveryMode, setDeliveryMode] = useState<DeliveryMode>('single');
+  const [deliveryMode, setDeliveryMode] = useState<'single' | 'multi'>('single');
   
   // Redirect admins to admin analytics page as they should use that page
   if (user?.role === 'admin') {
@@ -156,7 +152,7 @@ const DeliveryUpdate = () => {
     }
   };
 
-  const handleDeliveryModeChange = (mode: DeliveryMode) => {
+  const handleDeliveryModeChange = (mode: 'single' | 'multi') => {
     setDeliveryMode(mode);
   };
 
@@ -171,7 +167,7 @@ const DeliveryUpdate = () => {
               <div className="flex gap-2">
                 <Button 
                   type="button" 
-                  variant="default"
+                  variant={deliveryMode === 'single' ? "default" : "outline"}
                   size="sm"
                   onClick={() => handleDeliveryModeChange('single')}
                   className="flex-1 h-10"
@@ -180,7 +176,7 @@ const DeliveryUpdate = () => {
                 </Button>
                 <Button 
                   type="button" 
-                  variant="outline"
+                  variant={deliveryMode === 'multi' ? "default" : "outline"}
                   size="sm"
                   onClick={() => handleDeliveryModeChange('multi')}
                   className="flex-1 h-10"
@@ -214,6 +210,7 @@ const DeliveryUpdate = () => {
                 <Select 
                   value={formData.shopId} 
                   onValueChange={handleShopSelect}
+                  key={activeShops.length} // Force re-render when shops change
                 >
                   <SelectTrigger className="h-11">
                     <SelectValue placeholder="Choose a shop" />
