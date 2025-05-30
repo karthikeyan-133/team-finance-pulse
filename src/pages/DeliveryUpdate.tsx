@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -154,6 +155,10 @@ const DeliveryUpdate = () => {
     }
   };
 
+  const handleDeliveryModeChange = (mode: DeliveryMode) => {
+    setDeliveryMode(mode);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-2 sm:p-4">
       <div className="max-w-lg mx-auto space-y-4">
@@ -167,7 +172,7 @@ const DeliveryUpdate = () => {
                   type="button" 
                   variant={deliveryMode === 'single' ? "default" : "outline"}
                   size="sm"
-                  onClick={() => setDeliveryMode('single')}
+                  onClick={() => handleDeliveryModeChange('single')}
                   className="flex-1 h-10"
                 >
                   Single Shop
@@ -176,7 +181,7 @@ const DeliveryUpdate = () => {
                   type="button" 
                   variant={deliveryMode === 'multi' ? "default" : "outline"}
                   size="sm"
-                  onClick={() => setDeliveryMode('multi')}
+                  onClick={() => handleDeliveryModeChange('multi')}
                   className="flex-1 h-10"
                 >
                   Multi Shop
