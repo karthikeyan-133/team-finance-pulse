@@ -5,28 +5,26 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useData } from '@/context/DataContext';
-import { MapPin, Truck, User, Phone, IndianRupee, Store, X } from 'lucide-react';
+import { MapPin, Truck, User, Phone, IndianRupee, Store } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from '@/components/ui/sonner';
 import { Navigate } from 'react-router-dom';
-import { getActiveShops } from '@/config/shops';
-import { Badge } from "@/components/ui/badge";
 
 const DeliveryUpdate = () => {
   const { addTransaction, addCustomer, customers, getCustomerById } = useData();
   const { user } = useAuth();
-  
+
   if (user?.role === 'admin') {
     return <Navigate to="/admin-analytics" replace />;
   }
-  
+
   const [formData, setFormData] = useState({
-    shopNames: [] as string[],
+    shopNames: [''],
+    amounts: [''],
     customerName: '',
     customerPhone: '',
     customerStatus: 'old',
     customerLocation: '',
-    amount: '',
     amountStatus: 'pending',
     deliveryCharge: '',
     commission: '',
@@ -35,7 +33,6 @@ const DeliveryUpdate = () => {
 
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>('');
   const [isNewCustomerEntry, setIsNewCustomerEntry] = useState(true);
-  const activeShops = getActiveShops();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -44,22 +41,6 @@ const DeliveryUpdate = () => {
 
   const handleSelectChange = (name: string, value: string) => {
     setFormData(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleShopSelect = (shopName: string) => {
-    if (!formData.shopNames.includes(shopName)) {
-      setFormData(prev => ({
-        ...prev,
-        shopNames: [...prev.shopNames, shopName]
-      }));
-    }
-  };
-
-  const removeShop = (shopName: string) => {
-    setFormData(prev => ({
-      ...prev,
-      shopNames: prev.shopNames.filter(name => name !== shopName)
-    }));
   };
 
   const handleCustomerSelect = (customerId: string) => {
@@ -76,10 +57,38 @@ const DeliveryUpdate = () => {
     }
   };
 
+  const handleArrayChange = (name: 'shopNames' | 'amounts', index: number, value: string) => {
+    setFormData(prev => {
+      const updated = [...prev[name]];
+      updated[index] = value;
+      return { ...prev, [name]: updated };
+    });
+  };
+
+  const addField = (name: 'shopNames' | 'amounts') => {
+    setFormData(prev => ({
+      ...prev,
+      [name]: [...prev[name], '']
+    }));
+  };
+
+  const removeField = (name: 'shopNames' | 'amounts', index: number) => {
+    setFormData(prev => {
+      const updated = [...prev[name]];
+      updated.splice(index, 1);
+      return { ...prev, [name]: updated };
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (formData.shopNames.length === 0 || !formData.customerName || !formData.customerPhone || !formData.amount) {
+
+    if (
+      formData.shopNames.some(name => !name.trim()) ||
+      formData.amounts.some(amount => !amount.trim()) ||
+      !formData.customerName ||
+      !formData.customerPhone
+    ) {
       toast.error('Please fill in all required fields');
       return;
     }
@@ -99,37 +108,36 @@ const DeliveryUpdate = () => {
         toast.success('New customer added');
       }
 
-      // Create transactions for all selected shops
-      const transactionPromises = formData.shopNames.map(shopName => 
-        addTransaction({
-          shopName,
-          customerId,
-          customerName: formData.customerName,
-          customerPhone: formData.customerPhone,
-          customerLocation: formData.customerLocation,
-          isNewCustomer: formData.customerStatus === 'new' ? 'true' : 'false',
-          date: new Date().toISOString(),
-          amount: parseFloat(formData.amount) || 0,
-          paymentStatus: formData.amountStatus as 'paid' | 'pending',
-          paymentMethod: formData.paymentMethod as 'cash' | 'upi' | 'other',
-          deliveryCharge: formData.deliveryCharge ? parseFloat(formData.deliveryCharge) : null,
-          commission: formData.commission ? parseFloat(formData.commission) : null,
-          commissionStatus: 'pending' as 'paid' | 'pending',
-          description: '',
-          handledBy: user?.name || 'Unknown',
-        })
-      );
+      const totalAmount = formData.amounts.reduce((sum, val) => sum + parseFloat(val || '0'), 0);
 
-      await Promise.all(transactionPromises);
-      
+      const newTransaction = {
+        shopName: formData.shopNames.join(', '),
+        customerId: customerId,
+        customerName: formData.customerName,
+        customerPhone: formData.customerPhone,
+        customerLocation: formData.customerLocation,
+        isNewCustomer: formData.customerStatus === 'new' ? 'true' : 'false',
+        date: new Date().toISOString(),
+        amount: totalAmount,
+        paymentStatus: formData.amountStatus as 'paid' | 'pending',
+        paymentMethod: formData.paymentMethod as 'cash' | 'upi' | 'other',
+        deliveryCharge: formData.deliveryCharge ? parseFloat(formData.deliveryCharge) : null,
+        commission: formData.commission ? parseFloat(formData.commission) : null,
+        commissionStatus: 'pending' as 'paid' | 'pending',
+        description: '',
+        handledBy: user?.name || 'Unknown',
+      };
+
+      await addTransaction(newTransaction);
+
       // Reset form
       setFormData({
-        shopNames: [],
+        shopNames: [''],
+        amounts: [''],
         customerName: '',
         customerPhone: '',
         customerStatus: 'old',
         customerLocation: '',
-        amount: '',
         amountStatus: 'pending',
         deliveryCharge: '',
         commission: '',
@@ -138,7 +146,7 @@ const DeliveryUpdate = () => {
       setSelectedCustomerId('');
       setIsNewCustomerEntry(true);
 
-      toast.success(`Delivery updated for ${formData.shopNames.length} shops!`);
+      toast.success('Delivery details updated successfully!');
     } catch (error) {
       console.error('Error submitting form:', error);
       toast.error('Failed to update delivery details');
@@ -158,54 +166,31 @@ const DeliveryUpdate = () => {
               Fill in the delivery details
             </CardDescription>
           </CardHeader>
-          
+
           <CardContent className="p-4 sm:p-6">
             <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Shop Selection */}
+
+              {/* Shop Name Fields */}
               <div className="space-y-2">
                 <Label className="text-sm font-medium flex items-center gap-2">
                   <Store className="h-4 w-4 text-blue-600" />
-                  Select Shops *
+                  Shop Names *
                 </Label>
-                
-                {/* Selected shops display */}
-                {formData.shopNames.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mb-2">
-                    {formData.shopNames.map(shopName => (
-                      <Badge key={shopName} className="flex items-center gap-1">
-                        {shopName}
-                        <button
-                          type="button"
-                          onClick={() => removeShop(shopName)}
-                          className="ml-1 rounded-full hover:bg-gray-200"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </Badge>
-                    ))}
+                {formData.shopNames.map((shop, index) => (
+                  <div key={index} className="flex gap-2 items-center">
+                    <Input
+                      value={shop}
+                      onChange={(e) => handleArrayChange('shopNames', index, e.target.value)}
+                      placeholder={`Shop ${index + 1}`}
+                      required
+                      className="h-11 flex-1"
+                    />
+                    {index > 0 && (
+                      <Button type="button" variant="destructive" onClick={() => removeField('shopNames', index)}>Remove</Button>
+                    )}
                   </div>
-                )}
-                
-                {/* Shop dropdown */}
-                <Select onValueChange={handleShopSelect}>
-                  <SelectTrigger className="h-11">
-                    <SelectValue placeholder="Choose shops" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {activeShops
-                      .filter(shop => !formData.shopNames.includes(shop.name))
-                      .map((shop) => (
-                        <SelectItem key={shop.id} value={shop.name}>
-                          <div className="flex flex-col">
-                            <span className="font-medium">{shop.name}</span>
-                            {shop.location && (
-                              <span className="text-xs text-gray-500">{shop.location}</span>
-                            )}
-                          </div>
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
+                ))}
+                <Button type="button" variant="outline" onClick={() => addField('shopNames')}>+ Add Shop</Button>
               </div>
 
               {/* Customer Entry Toggle */}
@@ -234,7 +219,7 @@ const DeliveryUpdate = () => {
 
                 {!isNewCustomerEntry && (
                   <div className="space-y-2">
-                    <Label htmlFor="customerId" className="text-sm">Select Customer</Label>
+                    <Label className="text-sm">Select Customer</Label>
                     <Select 
                       value={selectedCustomerId} 
                       onValueChange={handleCustomerSelect}
@@ -260,12 +245,11 @@ const DeliveryUpdate = () => {
               {/* Customer Details */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="customerName" className="text-sm font-medium flex items-center gap-2">
+                  <Label className="text-sm font-medium flex items-center gap-2">
                     <User className="h-4 w-4 text-blue-600" />
                     Customer Name *
                   </Label>
                   <Input
-                    id="customerName"
                     name="customerName"
                     value={formData.customerName}
                     onChange={handleInputChange}
@@ -277,7 +261,7 @@ const DeliveryUpdate = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="customerStatus" className="text-sm font-medium">Customer Status</Label>
+                  <Label className="text-sm font-medium">Customer Status</Label>
                   <Select 
                     value={formData.customerStatus} 
                     onValueChange={(value) => handleSelectChange('customerStatus', value)}
@@ -295,12 +279,11 @@ const DeliveryUpdate = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="customerPhone" className="text-sm font-medium flex items-center gap-2">
+                <Label className="text-sm font-medium flex items-center gap-2">
                   <Phone className="h-4 w-4 text-blue-600" />
                   Customer Number *
                 </Label>
                 <Input
-                  id="customerPhone"
                   name="customerPhone"
                   value={formData.customerPhone}
                   onChange={handleInputChange}
@@ -312,12 +295,11 @@ const DeliveryUpdate = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="customerLocation" className="text-sm font-medium flex items-center gap-2">
+                <Label className="text-sm font-medium flex items-center gap-2">
                   <MapPin className="h-4 w-4 text-blue-600" />
                   Customer Location
                 </Label>
                 <Input
-                  id="customerLocation"
                   name="customerLocation"
                   value={formData.customerLocation}
                   onChange={handleInputChange}
@@ -332,10 +314,31 @@ const DeliveryUpdate = () => {
                   <IndianRupee className="h-4 w-4 text-green-600" />
                   Payment Details
                 </h3>
-                
+
+                {/* Amounts Field */}
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Amounts (₹) *</Label>
+                  {formData.amounts.map((amt, index) => (
+                    <div key={index} className="flex gap-2 items-center">
+                      <Input
+                        type="number"
+                        value={amt}
+                        onChange={(e) => handleArrayChange('amounts', index, e.target.value)}
+                        placeholder={`Amount ${index + 1}`}
+                        required
+                        className="h-11 flex-1"
+                      />
+                      {index > 0 && (
+                        <Button type="button" variant="destructive" onClick={() => removeField('amounts', index)}>Remove</Button>
+                      )}
+                    </div>
+                  ))}
+                  <Button type="button" variant="outline" onClick={() => addField('amounts')}>+ Add Amount</Button>
+                </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="amountStatus" className="text-sm">Amount Status</Label>
+                    <Label className="text-sm">Amount Status</Label>
                     <Select 
                       value={formData.amountStatus} 
                       onValueChange={(value) => handleSelectChange('amountStatus', value)}
@@ -351,27 +354,29 @@ const DeliveryUpdate = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="amount" className="text-sm">Amount (₹) *</Label>
-                    <Input
-                      id="amount"
-                      name="amount"
-                      type="number"
-                      value={formData.amount}
-                      onChange={handleInputChange}
-                      placeholder="e.g., 380"
-                      required
-                      className="h-11"
-                    />
+                    <Label className="text-sm">Payment Method</Label>
+                    <Select 
+                      value={formData.paymentMethod} 
+                      onValueChange={(value) => handleSelectChange('paymentMethod', value)}
+                    >
+                      <SelectTrigger className="h-11">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="upi">UPI</SelectItem>
+                        <SelectItem value="cash">Cash</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="deliveryCharge" className="text-sm">Delivery Charge (₹)</Label>
+                    <Label className="text-sm">Delivery Charge (₹)</Label>
                     <Input
-                      id="deliveryCharge"
-                      name="deliveryCharge"
                       type="number"
+                      name="deliveryCharge"
                       value={formData.deliveryCharge}
                       onChange={handleInputChange}
                       placeholder="Optional"
@@ -380,11 +385,10 @@ const DeliveryUpdate = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="commission" className="text-sm">Commission (₹)</Label>
+                    <Label className="text-sm">Commission (₹)</Label>
                     <Input
-                      id="commission"
-                      name="commission"
                       type="number"
+                      name="commission"
                       value={formData.commission}
                       onChange={handleInputChange}
                       placeholder="Optional"
@@ -392,34 +396,14 @@ const DeliveryUpdate = () => {
                     />
                   </div>
                 </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="paymentMethod" className="text-sm">Payment Method</Label>
-                  <Select 
-                    value={formData.paymentMethod} 
-                    onValueChange={(value) => handleSelectChange('paymentMethod', value)}
-                  >
-                    <SelectTrigger className="h-11">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="upi">UPI</SelectItem>
-                      <SelectItem value="cash">Cash</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
               </div>
 
               <Button 
                 type="submit" 
                 className="w-full h-12 text-base font-medium bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg"
-                disabled={formData.shopNames.length === 0}
               >
                 <Truck className="h-5 w-5 mr-2" />
-                {formData.shopNames.length > 0 
-                  ? `Update Delivery for ${formData.shopNames.length} Shop${formData.shopNames.length > 1 ? 's' : ''}`
-                  : 'Select Shops to Update'}
+                Update Delivery
               </Button>
             </form>
           </CardContent>
