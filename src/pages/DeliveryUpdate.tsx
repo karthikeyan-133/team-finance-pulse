@@ -6,10 +6,11 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useData } from '@/context/DataContext';
-import { MapPin, Truck, User, Phone, IndianRupee } from 'lucide-react';
+import { MapPin, Truck, User, Phone, IndianRupee, Store } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from '@/components/ui/sonner';
 import { Navigate } from 'react-router-dom';
+import { getActiveShops, getShopById } from '@/config/shops';
 
 const DeliveryUpdate = () => {
   const { addTransaction, addCustomer, customers, getCustomerById } = useData();
@@ -21,6 +22,7 @@ const DeliveryUpdate = () => {
   }
   
   const [formData, setFormData] = useState({
+    shopId: '',
     shopName: '',
     customerName: '',
     customerPhone: '',
@@ -37,6 +39,8 @@ const DeliveryUpdate = () => {
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>('');
   const [isNewCustomerEntry, setIsNewCustomerEntry] = useState(true);
 
+  const activeShops = getActiveShops();
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -44,6 +48,17 @@ const DeliveryUpdate = () => {
 
   const handleSelectChange = (name: string, value: string) => {
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleShopSelect = (shopId: string) => {
+    const selectedShop = getShopById(shopId);
+    if (selectedShop) {
+      setFormData(prev => ({
+        ...prev,
+        shopId,
+        shopName: selectedShop.name
+      }));
+    }
   };
 
   const handleCustomerSelect = (customerId: string) => {
@@ -65,7 +80,7 @@ const DeliveryUpdate = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.shopName || !formData.customerName || !formData.customerPhone || !formData.amount) {
+    if (!formData.shopId || !formData.customerName || !formData.customerPhone || !formData.amount) {
       toast.error('Please fill in all required fields');
       return;
     }
@@ -108,6 +123,7 @@ const DeliveryUpdate = () => {
       
       // Reset form
       setFormData({
+        shopId: '',
         shopName: '',
         customerName: '',
         customerPhone: '',
@@ -145,21 +161,32 @@ const DeliveryUpdate = () => {
           
           <CardContent className="p-4 sm:p-6">
             <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Shop Name */}
+              {/* Shop Selection */}
               <div className="space-y-2">
-                <Label htmlFor="shopName" className="text-sm font-medium flex items-center gap-2">
-                  <Truck className="h-4 w-4 text-blue-600" />
-                  Shop Name *
+                <Label htmlFor="shopId" className="text-sm font-medium flex items-center gap-2">
+                  <Store className="h-4 w-4 text-blue-600" />
+                  Select Shop *
                 </Label>
-                <Input
-                  id="shopName"
-                  name="shopName"
-                  value={formData.shopName}
-                  onChange={handleInputChange}
-                  placeholder="e.g., Zyra"
-                  required
-                  className="h-11"
-                />
+                <Select 
+                  value={formData.shopId} 
+                  onValueChange={handleShopSelect}
+                >
+                  <SelectTrigger className="h-11">
+                    <SelectValue placeholder="Choose a shop" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {activeShops.map((shop) => (
+                      <SelectItem key={shop.id} value={shop.id}>
+                        <div className="flex flex-col">
+                          <span className="font-medium">{shop.name}</span>
+                          {shop.location && (
+                            <span className="text-xs text-gray-500">{shop.location}</span>
+                          )}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               {/* Customer Entry Toggle */}

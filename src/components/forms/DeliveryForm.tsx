@@ -7,14 +7,16 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useData } from '@/context/DataContext';
-import { MapPin, Truck, Tag, User } from 'lucide-react';
+import { MapPin, Truck, Tag, User, Store } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { getActiveShops, getShopById } from '@/config/shops';
 
 const DeliveryForm = () => {
   const { addTransaction, customers } = useData();
   const { user } = useAuth();
   
   const [formData, setFormData] = useState({
+    shopId: '',
     shopName: '',
     customerId: '',
     customerName: '',
@@ -31,6 +33,7 @@ const DeliveryForm = () => {
   });
 
   const [isManualCustomer, setIsManualCustomer] = useState(true);
+  const activeShops = getActiveShops();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -39,6 +42,17 @@ const DeliveryForm = () => {
 
   const handleSelectChange = (name: string, value: string) => {
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleShopSelect = (shopId: string) => {
+    const selectedShop = getShopById(shopId);
+    if (selectedShop) {
+      setFormData(prev => ({
+        ...prev,
+        shopId,
+        shopName: selectedShop.name
+      }));
+    }
   };
 
   const handleCustomerSelect = (customerId: string) => {
@@ -77,6 +91,7 @@ const DeliveryForm = () => {
     
     // Reset form
     setFormData({
+      shopId: '',
       shopName: '',
       customerId: '',
       customerName: '',
@@ -106,22 +121,34 @@ const DeliveryForm = () => {
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Shop Information */}
+          {/* Shop Selection */}
           <div className="space-y-2">
             <div className="flex items-center gap-2">
-              <Tag className="h-4 w-4" />
+              <Store className="h-4 w-4" />
               <h3 className="text-lg font-medium">Shop Information</h3>
             </div>
             <div>
-              <Label htmlFor="shopName">Shop Name</Label>
-              <Input
-                id="shopName"
-                name="shopName"
-                value={formData.shopName}
-                onChange={handleInputChange}
-                placeholder="Enter shop name"
-                required
-              />
+              <Label htmlFor="shopId">Select Shop</Label>
+              <Select 
+                value={formData.shopId} 
+                onValueChange={handleShopSelect}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose a shop" />
+                </SelectTrigger>
+                <SelectContent>
+                  {activeShops.map((shop) => (
+                    <SelectItem key={shop.id} value={shop.id}>
+                      <div className="flex flex-col">
+                        <span className="font-medium">{shop.name}</span>
+                        {shop.location && (
+                          <span className="text-xs text-gray-500">{shop.location}</span>
+                        )}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
           

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -11,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Transaction } from '../../types';
 import { useData } from '../../context/DataContext';
 import { toast } from '@/components/ui/sonner';
+import { getActiveShops } from '@/config/shops';
 
 const transactionSchema = z.object({
   shopName: z.string().min(1, 'Shop name is required'),
@@ -36,6 +36,7 @@ const EditTransactionForm: React.FC<EditTransactionFormProps> = ({
   onCancel 
 }) => {
   const { updateTransaction } = useData();
+  const activeShops = getActiveShops();
   
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm({
     resolver: zodResolver(transactionSchema),
@@ -67,11 +68,24 @@ const EditTransactionForm: React.FC<EditTransactionFormProps> = ({
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <div>
         <Label htmlFor="shopName">Shop Name</Label>
-        <Input
-          id="shopName"
-          {...register('shopName')}
-          className="mt-1"
-        />
+        <Select
+          value={watch('shopName')}
+          onValueChange={(value) => setValue('shopName', value)}
+        >
+          <SelectTrigger className="mt-1">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {activeShops.map((shop) => (
+              <SelectItem key={shop.id} value={shop.name}>
+                {shop.name}
+                {shop.location && (
+                  <span className="text-xs text-gray-500 ml-2">({shop.location})</span>
+                )}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         {errors.shopName && (
           <p className="text-red-500 text-sm mt-1">{errors.shopName.message}</p>
         )}
