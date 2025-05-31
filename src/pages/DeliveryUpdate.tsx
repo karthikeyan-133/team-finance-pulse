@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,43 +23,43 @@ const DeliveryUpdate = () => {
     shopNames: [''],
     customerName: '',
     customerPhone: '',
-    customerStatus: 'old',
+    customerStatus: 'old' as 'old' | 'new',
     customerLocation: '',
     amounts: [''],
-    amountStatuses: ['pending'],
+    amountStatuses: ['pending'] as ('pending' | 'paid')[],
     deliveryCharge: '',
     commission: '',
-    paymentMethod: 'upi'
+    paymentMethod: 'upi' as 'upi' | 'cash' | 'other'
   });
 
   const [selectedCustomerId, setSelectedCustomerId] = useState('');
   const [isNewCustomerEntry, setIsNewCustomerEntry] = useState(true);
 
-  const handleInputChange = (e) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleArrayChange = (field, index, value) => {
+  const handleArrayChange = (field: 'shopNames' | 'amounts', index: number, value: string) => {
     const updated = [...formData[field]];
     updated[index] = value;
     setFormData(prev => ({ ...prev, [field]: updated }));
   };
 
-  const addField = (field) => {
+  const addField = (field: 'shopNames' | 'amounts') => {
     setFormData(prev => {
       const updated = {
         ...prev,
         [field]: [...prev[field], '']
       };
       if (field === 'amounts') {
-        updated.amountStatuses = [...prev.amountStatuses, 'pending'];
+        updated.amountStatuses = [...prev.amountStatuses, 'pending' as const];
       }
       return updated;
     });
   };
 
-  const removeField = (field, index) => {
+  const removeField = (field: 'shopNames' | 'amounts', index: number) => {
     setFormData(prev => {
       const updatedField = [...prev[field]];
       updatedField.splice(index, 1);
@@ -74,11 +73,11 @@ const DeliveryUpdate = () => {
     });
   };
 
-  const handleSelectChange = (name, value) => {
+  const handleSelectChange = (name: string, value: string) => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleCustomerSelect = (customerId) => {
+  const handleCustomerSelect = (customerId: string) => {
     setSelectedCustomerId(customerId);
     const selectedCustomer = getCustomerById(customerId);
     if (selectedCustomer) {
@@ -87,12 +86,12 @@ const DeliveryUpdate = () => {
         customerName: selectedCustomer.name,
         customerPhone: selectedCustomer.phone,
         customerLocation: selectedCustomer.address || selectedCustomer.customerLocation || '',
-        customerStatus: selectedCustomer.isNew ? 'new' : 'old'
+        customerStatus: selectedCustomer.isNew ? 'new' as const : 'old' as const
       }));
     }
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!formData.shopNames[0] || !formData.customerName || !formData.customerPhone || !formData.amounts[0]) {
@@ -130,11 +129,11 @@ const DeliveryUpdate = () => {
             isNewCustomer: formData.customerStatus === 'new' ? 'true' : 'false',
             date: new Date().toISOString(),
             amount: parseFloat(amounts[amountIndex]) || 0,
-            paymentStatus: formData.amountStatuses[amountIndex] || 'pending',
+            paymentStatus: formData.amountStatuses[amountIndex] || 'pending' as const,
             paymentMethod: formData.paymentMethod,
             deliveryCharge: formData.deliveryCharge ? parseFloat(formData.deliveryCharge) : null,
             commission: formData.commission ? parseFloat(formData.commission) : null,
-            commissionStatus: 'pending',
+            commissionStatus: 'pending' as const,
             description: '',
             handledBy: user?.name || 'Unknown'
           };
@@ -264,7 +263,7 @@ const DeliveryUpdate = () => {
 
                 <div className="space-y-2">
                   <Label>Customer Status</Label>
-                  <Select value={formData.customerStatus} onValueChange={(v) => handleSelectChange('customerStatus', v)}>
+                  <Select value={formData.customerStatus} onValueChange={(v: 'new' | 'old') => setFormData(prev => ({ ...prev, customerStatus: v }))}>
                     <SelectTrigger className="h-11">
                       <SelectValue />
                     </SelectTrigger>
@@ -310,7 +309,7 @@ const DeliveryUpdate = () => {
                     />
                     <Select
                       value={formData.amountStatuses[index]}
-                      onValueChange={(v) => {
+                      onValueChange={(v: 'pending' | 'paid') => {
                         const statuses = [...formData.amountStatuses];
                         statuses[index] = v;
                         setFormData(prev => ({ ...prev, amountStatuses: statuses }));
@@ -342,7 +341,7 @@ const DeliveryUpdate = () => {
               </div>
               <div className="space-y-2">
                 <Label>Payment Method</Label>
-                <Select value={formData.paymentMethod} onValueChange={(v) => handleSelectChange('paymentMethod', v)}>
+                <Select value={formData.paymentMethod} onValueChange={(v: 'upi' | 'cash' | 'other') => setFormData(prev => ({ ...prev, paymentMethod: v }))}>
                   <SelectTrigger className="h-11">
                     <SelectValue />
                   </SelectTrigger>
