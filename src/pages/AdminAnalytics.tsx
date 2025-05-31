@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
@@ -34,8 +35,10 @@ import {
   MapPin,
   Phone,
   User,
-  Search
+  Search,
+  Calendar
 } from 'lucide-react';
+import DailyAnalytics from '../components/analytics/DailyAnalytics';
 
 const AdminAnalytics = () => {
   const { user } = useAuth();
@@ -201,12 +204,20 @@ const AdminAnalytics = () => {
         </Card>
       </div>
 
-      <Tabs defaultValue="overview" className="w-full">
+      <Tabs defaultValue="daily" className="w-full">
         <TabsList>
+          <TabsTrigger value="daily">
+            <Calendar className="h-4 w-4 mr-2" />
+            Daily Analytics
+          </TabsTrigger>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="transactions">All Transactions</TabsTrigger>
           <TabsTrigger value="customers">Customer Details</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="daily" className="space-y-4">
+          <DailyAnalytics transactions={transactions} customers={customers} />
+        </TabsContent>
 
         <TabsContent value="overview" className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
