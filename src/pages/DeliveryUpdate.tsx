@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,6 +19,7 @@ const DeliveryUpdate = () => {
     return <Navigate to="/admin-analytics" replace />;
   }
 
+  const [deliveryMode, setDeliveryMode] = useState<'single' | 'multi'>('single');
   const [formData, setFormData] = useState({
     shopNames: [''],
     customerName: '',
@@ -113,25 +115,31 @@ const DeliveryUpdate = () => {
         toast.success('New customer added');
       }
 
-      for (let i = 0; i < formData.amounts.length; i++) {
-        const newTransaction = {
-          shopName: formData.shopNames[0],
-          customerId,
-          customerName: formData.customerName,
-          customerPhone: formData.customerPhone,
-          customerLocation: formData.customerLocation,
-          isNewCustomer: formData.customerStatus === 'new' ? 'true' : 'false',
-          date: new Date().toISOString(),
-          amount: parseFloat(formData.amounts[i]) || 0,
-          paymentStatus: formData.amountStatuses[i],
-          paymentMethod: formData.paymentMethod,
-          deliveryCharge: formData.deliveryCharge ? parseFloat(formData.deliveryCharge) : null,
-          commission: formData.commission ? parseFloat(formData.commission) : null,
-          commissionStatus: 'pending',
-          description: '',
-          handledBy: user?.name || 'Unknown'
-        };
-        await addTransaction(newTransaction);
+      // Create transactions for each shop and amount combination
+      const shops = formData.shopNames.filter(shop => shop.trim() !== '');
+      const amounts = formData.amounts.filter(amount => amount.trim() !== '');
+
+      for (let shopIndex = 0; shopIndex < shops.length; shopIndex++) {
+        for (let amountIndex = 0; amountIndex < amounts.length; amountIndex++) {
+          const newTransaction = {
+            shopName: shops[shopIndex],
+            customerId,
+            customerName: formData.customerName,
+            customerPhone: formData.customerPhone,
+            customerLocation: formData.customerLocation,
+            isNewCustomer: formData.customerStatus === 'new' ? 'true' : 'false',
+            date: new Date().toISOString(),
+            amount: parseFloat(amounts[amountIndex]) || 0,
+            paymentStatus: formData.amountStatuses[amountIndex] || 'pending',
+            paymentMethod: formData.paymentMethod,
+            deliveryCharge: formData.deliveryCharge ? parseFloat(formData.deliveryCharge) : null,
+            commission: formData.commission ? parseFloat(formData.commission) : null,
+            commissionStatus: 'pending',
+            description: '',
+            handledBy: user?.name || 'Unknown'
+          };
+          await addTransaction(newTransaction);
+        }
       }
 
       toast.success('Delivery details updated successfully!');
@@ -172,6 +180,28 @@ const DeliveryUpdate = () => {
           <CardContent className="p-4 sm:p-6">
             <form onSubmit={handleSubmit} className="space-y-4">
 
+              <div className="space-y-3">
+                <Label className="text-sm font-medium">Delivery Mode</Label>
+                <div className="flex gap-2">
+                  <Button 
+                    type="button" 
+                    variant={deliveryMode === 'single' ? "default" : "outline"} 
+                    onClick={() => setDeliveryMode('single')} 
+                    className="flex-1 h-10"
+                  >
+                    Single Shop
+                  </Button>
+                  <Button 
+                    type="button" 
+                    variant={deliveryMode === 'multi' ? "default" : "outline"} 
+                    onClick={() => setDeliveryMode('multi')} 
+                    className="flex-1 h-10"
+                  >
+                    Multiple Shops
+                  </Button>
+                </div>
+              </div>
+
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Shop Name *</Label>
                 {formData.shopNames.map((shop, index) => (
@@ -188,7 +218,9 @@ const DeliveryUpdate = () => {
                     )}
                   </div>
                 ))}
-                <Button type="button" variant="outline" onClick={() => addField('shopNames')}>+ Add Shop</Button>
+                {deliveryMode === 'multi' && (
+                  <Button type="button" variant="outline" onClick={() => addField('shopNames')}>+ Add Shop</Button>
+                )}
               </div>
 
               <div className="space-y-3">
