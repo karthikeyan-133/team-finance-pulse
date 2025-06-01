@@ -19,6 +19,7 @@ const DeliveryUpdate = () => {
   }
 
   const [deliveryMode, setDeliveryMode] = useState<'single' | 'multi'>('single');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     shopNames: [''],
     customerName: '',
@@ -91,44 +92,71 @@ const DeliveryUpdate = () => {
     }
   };
 
+  const resetForm = () => {
+    setFormData({
+      shopNames: [''],
+      customerName: '',
+      customerPhone: '',
+      customerStatus: 'old',
+      customerLocation: '',
+      amounts: [''],
+      amountStatuses: ['pending'],
+      deliveryCharge: '',
+      commission: '',
+      paymentMethod: 'upi'
+    });
+    setSelectedCustomerId('');
+    setIsNewCustomerEntry(true);
+    setDeliveryMode('single');
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Prevent multiple submissions
+    if (isSubmitting) {
+      return;
+    }
 
-    if (!formData.shopNames[0] || !formData.customerName || !formData.customerPhone || !formData.amounts[0]) {
+    // Validate required fields
+    const validShops = formData.shopNames.filter(shop => shop.trim() !== '');
+    const validAmounts = formData.amounts.filter(amount => amount.trim() !== '');
+
+    if (validShops.length === 0 || !formData.customerName.trim() || !formData.customerPhone.trim() || validAmounts.length === 0) {
       toast.error('Please fill in all required fields');
       return;
     }
 
+    setIsSubmitting(true);
+
     try {
       let customerId = selectedCustomerId;
 
+      // Add customer if new entry
       if (isNewCustomerEntry) {
         customerId = await addCustomer({
-          name: formData.customerName,
-          phone: formData.customerPhone,
-          address: formData.customerLocation,
+          name: formData.customerName.trim(),
+          phone: formData.customerPhone.trim(),
+          address: formData.customerLocation.trim(),
           isNew: formData.customerStatus === 'new',
-          customerLocation: formData.customerLocation,
+          customerLocation: formData.customerLocation.trim(),
           email: ''
         });
         toast.success('New customer added');
       }
 
-      // Create transactions for each shop and amount combination
-      const shops = formData.shopNames.filter(shop => shop.trim() !== '');
-      const amounts = formData.amounts.filter(amount => amount.trim() !== '');
-
-      for (let shopIndex = 0; shopIndex < shops.length; shopIndex++) {
-        for (let amountIndex = 0; amountIndex < amounts.length; amountIndex++) {
+      // Create transactions for each shop-amount combination
+      for (let shopIndex = 0; shopIndex < validShops.length; shopIndex++) {
+        for (let amountIndex = 0; amountIndex < validAmounts.length; amountIndex++) {
           const newTransaction = {
-            shopName: shops[shopIndex],
+            shopName: validShops[shopIndex].trim(),
             customerId,
-            customerName: formData.customerName,
-            customerPhone: formData.customerPhone,
-            customerLocation: formData.customerLocation,
+            customerName: formData.customerName.trim(),
+            customerPhone: formData.customerPhone.trim(),
+            customerLocation: formData.customerLocation.trim(),
             isNewCustomer: formData.customerStatus === 'new' ? 'true' : 'false',
             date: new Date().toISOString(),
-            amount: parseFloat(amounts[amountIndex]) || 0,
+            amount: parseFloat(validAmounts[amountIndex]) || 0,
             paymentStatus: formData.amountStatuses[amountIndex] || 'pending' as const,
             paymentMethod: formData.paymentMethod,
             deliveryCharge: formData.deliveryCharge ? parseFloat(formData.deliveryCharge) : null,
@@ -137,29 +165,19 @@ const DeliveryUpdate = () => {
             description: '',
             handledBy: user?.name || 'Unknown'
           };
+          
           await addTransaction(newTransaction);
         }
       }
 
       toast.success('Delivery details updated successfully!');
+      resetForm();
 
-      setFormData({
-        shopNames: [''],
-        customerName: '',
-        customerPhone: '',
-        customerStatus: 'old',
-        customerLocation: '',
-        amounts: [''],
-        amountStatuses: ['pending'],
-        deliveryCharge: '',
-        commission: '',
-        paymentMethod: 'upi'
-      });
-      setSelectedCustomerId('');
-      setIsNewCustomerEntry(true);
     } catch (error) {
-      console.error(error);
+      console.error('Error submitting delivery:', error);
       toast.error('Failed to update delivery details');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -187,6 +205,7 @@ const DeliveryUpdate = () => {
                     variant={deliveryMode === 'single' ? "default" : "outline"} 
                     onClick={() => setDeliveryMode('single')} 
                     className="flex-1 h-10"
+                    disabled={isSubmitting}
                   >
                     Single Shop
                   </Button>
@@ -195,6 +214,7 @@ const DeliveryUpdate = () => {
                     variant={deliveryMode === 'multi' ? "default" : "outline"} 
                     onClick={() => setDeliveryMode('multi')} 
                     className="flex-1 h-10"
+                    disabled={isSubmitting}
                   >
                     Multiple Shops
                   </Button>
@@ -211,26 +231,57 @@ const DeliveryUpdate = () => {
                       placeholder={`Shop ${index + 1}`}
                       required
                       className="h-11 flex-1"
+                      disabled={isSubmitting}
                     />
                     {index > 0 && (
-                      <Button type="button" variant="destructive" onClick={() => removeField('shopNames', index)}>Remove</Button>
+                      <Button 
+                        type="button" 
+                        variant="destructive" 
+                        onClick={() => removeField('shopNames', index)}
+                        disabled={isSubmitting}
+                      >
+                        Remove
+                      </Button>
                     )}
                   </div>
                 ))}
                 {deliveryMode === 'multi' && (
-                  <Button type="button" variant="outline" onClick={() => addField('shopNames')}>+ Add Shop</Button>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => addField('shopNames')}
+                    disabled={isSubmitting}
+                  >
+                    + Add Shop
+                  </Button>
                 )}
               </div>
 
               <div className="space-y-3">
                 <Label className="text-sm font-medium">Customer Entry</Label>
                 <div className="flex gap-2">
-                  <Button type="button" variant={isNewCustomerEntry ? "default" : "outline"} onClick={() => setIsNewCustomerEntry(true)} className="flex-1 h-10">New</Button>
-                  <Button type="button" variant={!isNewCustomerEntry ? "default" : "outline"} onClick={() => setIsNewCustomerEntry(false)} className="flex-1 h-10">Existing</Button>
+                  <Button 
+                    type="button" 
+                    variant={isNewCustomerEntry ? "default" : "outline"} 
+                    onClick={() => setIsNewCustomerEntry(true)} 
+                    className="flex-1 h-10"
+                    disabled={isSubmitting}
+                  >
+                    New
+                  </Button>
+                  <Button 
+                    type="button" 
+                    variant={!isNewCustomerEntry ? "default" : "outline"} 
+                    onClick={() => setIsNewCustomerEntry(false)} 
+                    className="flex-1 h-10"
+                    disabled={isSubmitting}
+                  >
+                    Existing
+                  </Button>
                 </div>
 
                 {!isNewCustomerEntry && (
-                  <Select value={selectedCustomerId} onValueChange={handleCustomerSelect}>
+                  <Select value={selectedCustomerId} onValueChange={handleCustomerSelect} disabled={isSubmitting}>
                     <SelectTrigger className="h-11">
                       <SelectValue placeholder="Select customer" />
                     </SelectTrigger>
@@ -258,12 +309,17 @@ const DeliveryUpdate = () => {
                     required
                     readOnly={!isNewCustomerEntry && selectedCustomerId !== ''}
                     className={!isNewCustomerEntry && selectedCustomerId !== '' ? "bg-gray-50" : ""}
+                    disabled={isSubmitting}
                   />
                 </div>
 
                 <div className="space-y-2">
                   <Label>Customer Status</Label>
-                  <Select value={formData.customerStatus} onValueChange={(v: 'new' | 'old') => setFormData(prev => ({ ...prev, customerStatus: v }))}>
+                  <Select 
+                    value={formData.customerStatus} 
+                    onValueChange={(v: 'new' | 'old') => setFormData(prev => ({ ...prev, customerStatus: v }))}
+                    disabled={isSubmitting}
+                  >
                     <SelectTrigger className="h-11">
                       <SelectValue />
                     </SelectTrigger>
@@ -284,6 +340,7 @@ const DeliveryUpdate = () => {
                   required
                   readOnly={!isNewCustomerEntry && selectedCustomerId !== ''}
                   className={!isNewCustomerEntry && selectedCustomerId !== '' ? "bg-gray-50" : ""}
+                  disabled={isSubmitting}
                 />
               </div>
 
@@ -293,6 +350,7 @@ const DeliveryUpdate = () => {
                   value={formData.customerLocation}
                   onChange={handleInputChange}
                   name="customerLocation"
+                  disabled={isSubmitting}
                 />
               </div>
 
@@ -306,6 +364,7 @@ const DeliveryUpdate = () => {
                       onChange={(e) => handleArrayChange('amounts', index, e.target.value)}
                       className="col-span-5 h-11"
                       required
+                      disabled={isSubmitting}
                     />
                     <Select
                       value={formData.amountStatuses[index]}
@@ -314,6 +373,7 @@ const DeliveryUpdate = () => {
                         statuses[index] = v;
                         setFormData(prev => ({ ...prev, amountStatuses: statuses }));
                       }}
+                      disabled={isSubmitting}
                     >
                       <SelectTrigger className="col-span-4 h-11">
                         <SelectValue />
@@ -324,24 +384,53 @@ const DeliveryUpdate = () => {
                       </SelectContent>
                     </Select>
                     {index > 0 && (
-                      <Button type="button" variant="destructive" onClick={() => removeField('amounts', index)} className="col-span-3 h-11">Remove</Button>
+                      <Button 
+                        type="button" 
+                        variant="destructive" 
+                        onClick={() => removeField('amounts', index)} 
+                        className="col-span-3 h-11"
+                        disabled={isSubmitting}
+                      >
+                        Remove
+                      </Button>
                     )}
                   </div>
                 ))}
-                <Button type="button" variant="outline" onClick={() => addField('amounts')}>+ Add Amount</Button>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => addField('amounts')}
+                  disabled={isSubmitting}
+                >
+                  + Add Amount
+                </Button>
               </div>
 
               <div className="space-y-2">
                 <Label>Delivery Charge</Label>
-                <Input name="deliveryCharge" value={formData.deliveryCharge} onChange={handleInputChange} />
+                <Input 
+                  name="deliveryCharge" 
+                  value={formData.deliveryCharge} 
+                  onChange={handleInputChange} 
+                  disabled={isSubmitting}
+                />
               </div>
               <div className="space-y-2">
                 <Label>Commission</Label>
-                <Input name="commission" value={formData.commission} onChange={handleInputChange} />
+                <Input 
+                  name="commission" 
+                  value={formData.commission} 
+                  onChange={handleInputChange} 
+                  disabled={isSubmitting}
+                />
               </div>
               <div className="space-y-2">
                 <Label>Payment Method</Label>
-                <Select value={formData.paymentMethod} onValueChange={(v: 'upi' | 'cash' | 'other') => setFormData(prev => ({ ...prev, paymentMethod: v }))}>
+                <Select 
+                  value={formData.paymentMethod} 
+                  onValueChange={(v: 'upi' | 'cash' | 'other') => setFormData(prev => ({ ...prev, paymentMethod: v }))}
+                  disabled={isSubmitting}
+                >
                   <SelectTrigger className="h-11">
                     <SelectValue />
                   </SelectTrigger>
@@ -353,8 +442,13 @@ const DeliveryUpdate = () => {
                 </Select>
               </div>
 
-              <Button type="submit" className="w-full h-12 text-base font-medium bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg">
-                <Truck className="h-5 w-5 mr-2" /> Update Delivery
+              <Button 
+                type="submit" 
+                className="w-full h-12 text-base font-medium bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg"
+                disabled={isSubmitting}
+              >
+                <Truck className="h-5 w-5 mr-2" /> 
+                {isSubmitting ? 'Updating...' : 'Update Delivery'}
               </Button>
             </form>
           </CardContent>
