@@ -127,6 +127,12 @@ const DeliveryUpdate = () => {
       return;
     }
 
+    // For multi-shop mode, ensure shops and amounts have same length
+    if (deliveryMode === 'multi' && validShops.length !== validAmounts.length) {
+      toast.error('Number of shops and amounts must match');
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -145,29 +151,35 @@ const DeliveryUpdate = () => {
         toast.success('New customer added');
       }
 
-      // Create transactions for each shop-amount combination
-      for (let shopIndex = 0; shopIndex < validShops.length; shopIndex++) {
-        for (let amountIndex = 0; amountIndex < validAmounts.length; amountIndex++) {
-          const newTransaction = {
-            shopName: validShops[shopIndex].trim(),
-            customerId,
-            customerName: formData.customerName.trim(),
-            customerPhone: formData.customerPhone.trim(),
-            customerLocation: formData.customerLocation.trim(),
-            isNewCustomer: formData.customerStatus === 'new' ? 'true' : 'false',
-            date: new Date().toISOString(),
-            amount: parseFloat(validAmounts[amountIndex]) || 0,
-            paymentStatus: formData.amountStatuses[amountIndex] || 'pending' as const,
-            paymentMethod: formData.paymentMethod,
-            deliveryCharge: formData.deliveryCharge ? parseFloat(formData.deliveryCharge) : null,
-            commission: formData.commission ? parseFloat(formData.commission) : null,
-            commissionStatus: 'pending' as const,
-            description: '',
-            handledBy: user?.name || 'Unknown'
-          };
-          
-          await addTransaction(newTransaction);
-        }
+      // Create transactions - pair each shop with its corresponding amount
+      const maxEntries = Math.max(validShops.length, validAmounts.length);
+      
+      for (let i = 0; i < maxEntries; i++) {
+        // Use the shop at index i, or the first shop if not enough shops
+        const shopName = validShops[i] || validShops[0];
+        // Use the amount at index i, or the first amount if not enough amounts
+        const amount = validAmounts[i] || validAmounts[0];
+        const amountStatus = formData.amountStatuses[i] || formData.amountStatuses[0];
+
+        const newTransaction = {
+          shopName: shopName.trim(),
+          customerId,
+          customerName: formData.customerName.trim(),
+          customerPhone: formData.customerPhone.trim(),
+          customerLocation: formData.customerLocation.trim(),
+          isNewCustomer: formData.customerStatus === 'new' ? 'true' : 'false',
+          date: new Date().toISOString(),
+          amount: parseFloat(amount) || 0,
+          paymentStatus: amountStatus,
+          paymentMethod: formData.paymentMethod,
+          deliveryCharge: formData.deliveryCharge ? parseFloat(formData.deliveryCharge) : null,
+          commission: formData.commission ? parseFloat(formData.commission) : null,
+          commissionStatus: 'pending' as const,
+          description: '',
+          handledBy: user?.name || 'Unknown'
+        };
+        
+        await addTransaction(newTransaction);
       }
 
       toast.success('Delivery details updated successfully!');
