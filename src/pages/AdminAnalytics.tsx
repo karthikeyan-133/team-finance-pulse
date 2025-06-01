@@ -15,6 +15,15 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination';
 import { 
   BarChart, 
   Bar, 
@@ -44,6 +53,8 @@ const AdminAnalytics = () => {
   const { user } = useAuth();
   const { transactions, customers, getCustomerById } = useData();
   const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 20;
 
   // Redirect non-admin users to delivery update page
   if (user?.role !== 'admin') {
@@ -73,7 +84,6 @@ const AdminAnalytics = () => {
   // Recent transactions with customer details
   const recentTransactionsWithDetails = transactions
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-    .slice(0, 20)
     .map(transaction => {
       const customer = getCustomerById(transaction.customerId);
       return {
@@ -91,6 +101,41 @@ const AdminAnalytics = () => {
     const searchContent = `${transaction.shopName} ${transaction.customerDetails.name} ${transaction.customerDetails.phone}`.toLowerCase();
     return searchContent.includes(searchTerm.toLowerCase());
   });
+
+  // Pagination for filtered transactions
+  const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentTransactions = filteredTransactions.slice(startIndex, endIndex);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const generatePageNumbers = () => {
+    const pages = [];
+    const maxVisiblePages = 5;
+    
+    if (totalPages <= maxVisiblePages) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      const halfVisible = Math.floor(maxVisiblePages / 2);
+      let startPage = Math.max(1, currentPage - halfVisible);
+      let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+      
+      if (endPage - startPage < maxVisiblePages - 1) {
+        startPage = Math.max(1, endPage - maxVisiblePages + 1);
+      }
+      
+      for (let i = startPage; i <= endPage; i++) {
+        pages.push(i);
+      }
+    }
+    
+    return pages;
+  };
 
   // Chart data
   const customerChartData = [
@@ -283,7 +328,7 @@ const AdminAnalytics = () => {
             <CardHeader>
               <CardTitle>All Transaction Details</CardTitle>
               <CardDescription>
-                Complete details of all delivery transactions
+                Complete details of all delivery transactions - Page {currentPage} of {totalPages} ({filteredTransactions.length} total transactions)
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -293,7 +338,10 @@ const AdminAnalytics = () => {
                   <Input
                     placeholder="Search by shop, customer name, or phone..."
                     value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onChange={(e) => {
+                      setSearchTerm(e.target.value);
+                      setCurrentPage(1); // Reset to first page when searching
+                    }}
                     className="max-w-sm"
                   />
                 </div>
@@ -315,7 +363,7 @@ const AdminAnalytics = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredTransactions.map((transaction) => (
+                      {currentTransactions.map((transaction) => (
                         <TableRow key={transaction.id}>
                           <TableCell>
                             {new Date(transaction.date).toLocaleDateString()}
@@ -373,6 +421,61 @@ const AdminAnalytics = () => {
                       ))}
                     </TableBody>
                   </Table>
+                </div>
+
+                {totalPages > 1 && (
+                  <div className="mt-4 flex justify-center">
+                    <Pagination>
+                      <PaginationContent>
+                        <PaginationItem>
+                          <PaginationPrevious 
+                            href="#"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              if (currentPage > 1) handlePageChange(currentPage - 1);
+                            }}
+                            className={currentPage === 1 ? 'pointer-events-none opacity-50' : ''}
+                          />
+                        </PaginationItem>
+                        
+                        {generatePageNumbers().map((pageNum) => (
+                          <PaginationItem key={pageNum}>
+                            <PaginationLink
+                              href="#"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                handlePageChange(pageNum);
+                              }}
+                              isActive={pageNum === currentPage}
+                            >
+                              {pageNum}
+                            </PaginationLink>
+                          </PaginationItem>
+                        ))}
+                        
+                        {totalPages > 5 && currentPage < totalPages - 2 && (
+                          <PaginationItem>
+                            <PaginationEllipsis />
+                          </PaginationItem>
+                        )}
+                        
+                        <PaginationItem>
+                          <PaginationNext 
+                            href="#"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              if (currentPage < totalPages) handlePageChange(currentPage + 1);
+                            }}
+                            className={currentPage === totalPages ? 'pointer-events-none opacity-50' : ''}
+                          />
+                        </PaginationItem>
+                      </PaginationContent>
+                    </Pagination>
+                  </div>
+                )}
+
+                <div className="mt-4 text-center text-sm text-muted-foreground">
+                  Showing {startIndex + 1}-{Math.min(endIndex, filteredTransactions.length)} of {filteredTransactions.length} transactions
                 </div>
               </div>
             </CardContent>

@@ -24,6 +24,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination';
 import EditCustomerForm from '../forms/EditCustomerForm';
 
 interface CustomerReportProps {
@@ -33,6 +42,14 @@ interface CustomerReportProps {
 const CustomerReport: React.FC<CustomerReportProps> = ({ customers }) => {
   const { deleteCustomer } = useData();
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  // Calculate pagination
+  const totalPages = Math.ceil(customers.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentCustomers = customers.slice(startIndex, endIndex);
 
   const handleExport = () => {
     const data = generateCsvData(customers, 'customers');
@@ -43,6 +60,10 @@ const CustomerReport: React.FC<CustomerReportProps> = ({ customers }) => {
   const handleDelete = async (id: string) => {
     try {
       await deleteCustomer(id);
+      // If current page becomes empty after deletion, go to previous page
+      if (currentCustomers.length === 1 && currentPage > 1) {
+        setCurrentPage(currentPage - 1);
+      }
     } catch (error) {
       console.error('Failed to delete customer:', error);
     }
@@ -51,6 +72,35 @@ const CustomerReport: React.FC<CustomerReportProps> = ({ customers }) => {
   const handleEditSuccess = () => {
     setEditingCustomer(null);
   };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const generatePageNumbers = () => {
+    const pages = [];
+    const maxVisiblePages = 5;
+    
+    if (totalPages <= maxVisiblePages) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      const halfVisible = Math.floor(maxVisiblePages / 2);
+      let startPage = Math.max(1, currentPage - halfVisible);
+      let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+      
+      if (endPage - startPage < maxVisiblePages - 1) {
+        startPage = Math.max(1, endPage - maxVisiblePages + 1);
+      }
+      
+      for (let i = startPage; i <= endPage; i++) {
+        pages.push(i);
+      }
+    }
+    
+    return pages;
+  };
   
   return (
     <>
@@ -58,7 +108,9 @@ const CustomerReport: React.FC<CustomerReportProps> = ({ customers }) => {
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
             <CardTitle>Customer Report</CardTitle>
-            <CardDescription>Comprehensive customer data</CardDescription>
+            <CardDescription>
+              Comprehensive customer data - Page {currentPage} of {totalPages} ({customers.length} total customers)
+            </CardDescription>
           </div>
           <Button size="sm" onClick={handleExport} className="flex items-center gap-1">
             <Download className="h-4 w-4" />
@@ -78,7 +130,7 @@ const CustomerReport: React.FC<CustomerReportProps> = ({ customers }) => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {customers.slice(0, 10).map((customer) => (
+              {currentCustomers.map((customer) => (
                 <TableRow key={customer.id}>
                   <TableCell>{customer.name}</TableCell>
                   <TableCell>{customer.phone}</TableCell>
@@ -133,11 +185,61 @@ const CustomerReport: React.FC<CustomerReportProps> = ({ customers }) => {
               ))}
             </TableBody>
           </Table>
-          {customers.length > 10 && (
-            <div className="mt-4 text-center text-sm text-muted-foreground">
-              Showing 10 of {customers.length} customers. Export to CSV for full data.
+
+          {totalPages > 1 && (
+            <div className="mt-4 flex justify-center">
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious 
+                      href="#"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        if (currentPage > 1) handlePageChange(currentPage - 1);
+                      }}
+                      className={currentPage === 1 ? 'pointer-events-none opacity-50' : ''}
+                    />
+                  </PaginationItem>
+                  
+                  {generatePageNumbers().map((pageNum) => (
+                    <PaginationItem key={pageNum}>
+                      <PaginationLink
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handlePageChange(pageNum);
+                        }}
+                        isActive={pageNum === currentPage}
+                      >
+                        {pageNum}
+                      </PaginationLink>
+                    </PaginationItem>
+                  ))}
+                  
+                  {totalPages > 5 && currentPage < totalPages - 2 && (
+                    <PaginationItem>
+                      <PaginationEllipsis />
+                    </PaginationItem>
+                  )}
+                  
+                  <PaginationItem>
+                    <PaginationNext 
+                      href="#"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        if (currentPage < totalPages) handlePageChange(currentPage + 1);
+                      }}
+                      className={currentPage === totalPages ? 'pointer-events-none opacity-50' : ''}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
             </div>
           )}
+
+          <div className="mt-4 text-center text-sm text-muted-foreground">
+            Showing {startIndex + 1}-{Math.min(endIndex, customers.length)} of {customers.length} customers
+          </div>
         </CardContent>
       </Card>
 
