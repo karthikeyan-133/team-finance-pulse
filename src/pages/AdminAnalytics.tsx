@@ -51,7 +51,7 @@ import DailyAnalytics from '../components/analytics/DailyAnalytics';
 
 const AdminAnalytics = () => {
   const { user } = useAuth();
-  const { transactions, customers, getCustomerById } = useData();
+  const { transactions, customers, getCustomerById, dashboardStats } = useData();
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20;
@@ -61,13 +61,12 @@ const AdminAnalytics = () => {
     return <Navigate to="/delivery-update" replace />;
   }
 
-  // Calculate analytics
-  const totalTransactions = transactions.length;
-  const totalRevenue = transactions.reduce((sum, t) => sum + t.amount, 0);
-  const pendingAmount = transactions
-    .filter(t => t.paymentStatus === 'pending')
-    .reduce((sum, t) => sum + t.amount, 0);
-  const totalCommission = transactions.reduce((sum, t) => sum + (t.commission || 0), 0);
+  // Calculate analytics using dashboardStats
+  const totalOrders = dashboardStats.totalOrders;
+  const totalRevenue = dashboardStats.totalRevenue;
+  const pendingAmount = dashboardStats.pendingAmount;
+  const totalCommission = dashboardStats.totalCommission;
+  const pendingOrders = dashboardStats.pendingOrders;
 
   // Customer analytics
   const newCustomers = customers.filter(c => c.isNew).length;
@@ -192,11 +191,11 @@ const AdminAnalytics = () => {
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <Package className="h-4 w-4" />
-              Total Transactions
+              Total Orders
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalTransactions}</div>
+            <div className="text-2xl font-bold">{totalOrders}</div>
             <p className="text-xs text-muted-foreground">
               ₹{totalRevenue.toLocaleString('en-IN')} total revenue
             </p>
@@ -213,7 +212,7 @@ const AdminAnalytics = () => {
           <CardContent>
             <div className="text-2xl font-bold">₹{pendingAmount.toLocaleString('en-IN')}</div>
             <p className="text-xs text-muted-foreground">
-              {transactions.filter(t => t.paymentStatus === 'pending').length} pending payments
+              {pendingOrders} pending orders
             </p>
           </CardContent>
         </Card>
@@ -243,7 +242,7 @@ const AdminAnalytics = () => {
           <CardContent>
             <div className="text-2xl font-bold">₹{totalCommission.toLocaleString('en-IN')}</div>
             <p className="text-xs text-muted-foreground">
-              From all transactions
+              From all orders
             </p>
           </CardContent>
         </Card>
