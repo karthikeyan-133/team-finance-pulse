@@ -1,3 +1,4 @@
+
 export interface User {
   id: string;
   name: string;
@@ -57,4 +58,14 @@ export interface DashboardStats {
   totalCommission: number;
   recentTransactions: Transaction[];
   recentExpenses: Expense[];
+  totalOrders: number;
+  pendingOrders: number;
+  totalRevenue: number;
+  totalExpenses: number;
+  totalDeliveryCharges: number;
+  pendingAmount: number;
+  paidAmount: number;
+  pendingCommission: number;
+  paidCommission: number;
+  newCustomers: number;
 }

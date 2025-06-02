@@ -46,13 +46,13 @@ export const useDashboardStats = (transactions: Transaction[], expenses: Expense
     const recentExpenses = expenses.slice(0, 5);
 
     return {
-      dailyTransactions: totalOrders,
-      weeklyTransactions: totalOrders, 
-      pendingPayments: pendingOrders,
+      dailyTransactions: transactions.length, // Total individual transactions
+      weeklyTransactions: transactions.length, // Total individual transactions 
+      pendingPayments: pendingOrders, // Pending orders count
       totalCommission,
       recentTransactions,
       recentExpenses,
-      totalOrders,
+      totalOrders, // Unique orders count
       pendingOrders,
       totalRevenue,
       totalExpenses,
