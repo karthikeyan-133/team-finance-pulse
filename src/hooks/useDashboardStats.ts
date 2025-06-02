@@ -4,16 +4,19 @@ import { Transaction, Expense, DashboardStats } from '../types';
 
 export const useDashboardStats = (transactions: Transaction[], expenses: Expense[]) => {
   const dashboardStats = useMemo((): DashboardStats => {
-    // Calculate unique orders instead of individual transactions
-    const uniqueOrderIds = new Set(transactions.map(t => t.orderId).filter(Boolean));
+    // Calculate unique orders based on orderId - each form submission creates one unique orderId
+    const uniqueOrderIds = new Set(
+      transactions
+        .map(t => t.orderId)
+        .filter(orderId => orderId && orderId.trim() !== '')
+    );
     const totalOrders = uniqueOrderIds.size;
 
-    // Calculate pending orders (orders with at least one pending transaction)
+    // Calculate pending orders (orders with pending status)
     const pendingOrderIds = new Set(
       transactions
-        .filter(t => t.paymentStatus === 'pending')
+        .filter(t => t.paymentStatus === 'pending' && t.orderId && t.orderId.trim() !== '')
         .map(t => t.orderId)
-        .filter(Boolean)
     );
     const pendingOrders = pendingOrderIds.size;
 
@@ -46,13 +49,13 @@ export const useDashboardStats = (transactions: Transaction[], expenses: Expense
     const recentExpenses = expenses.slice(0, 5);
 
     return {
-      dailyTransactions: transactions.length, // Total individual transactions
-      weeklyTransactions: transactions.length, // Total individual transactions 
+      dailyTransactions: totalOrders, // Now shows total orders (each submission = 1 order)
+      weeklyTransactions: totalOrders, // Now shows total orders (each submission = 1 order)
       pendingPayments: pendingOrders, // Pending orders count
       totalCommission,
       recentTransactions,
       recentExpenses,
-      totalOrders, // Unique orders count
+      totalOrders, // Unique orders count (each form submission = 1 order)
       pendingOrders,
       totalRevenue,
       totalExpenses,
