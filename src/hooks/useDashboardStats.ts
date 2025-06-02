@@ -1,9 +1,9 @@
 
 import { useMemo } from 'react';
-import { Transaction, Expense } from '../types';
+import { Transaction, Expense, DashboardStats } from '../types';
 
 export const useDashboardStats = (transactions: Transaction[], expenses: Expense[]) => {
-  const dashboardStats = useMemo(() => {
+  const dashboardStats = useMemo((): DashboardStats => {
     // Calculate unique orders instead of individual transactions
     const uniqueOrderIds = new Set(transactions.map(t => t.orderId).filter(Boolean));
     const totalOrders = uniqueOrderIds.size;
@@ -41,12 +41,21 @@ export const useDashboardStats = (transactions: Transaction[], expenses: Expense
     // New customers calculation
     const newCustomers = transactions.filter(t => t.isNewCustomer === 'true').length;
 
+    // Get recent transactions and expenses
+    const recentTransactions = transactions.slice(0, 5);
+    const recentExpenses = expenses.slice(0, 5);
+
     return {
+      dailyTransactions: totalOrders,
+      weeklyTransactions: totalOrders, 
+      pendingPayments: pendingOrders,
+      totalCommission,
+      recentTransactions,
+      recentExpenses,
       totalOrders,
       pendingOrders,
       totalRevenue,
       totalExpenses,
-      totalCommission,
       totalDeliveryCharges,
       pendingAmount,
       paidAmount,

@@ -91,6 +91,7 @@ export type Database = {
           handled_by: string | null
           id: string
           is_new_customer: string | null
+          order_id: string | null
           payment_method: string | null
           payment_status: string | null
           shop_name: string
@@ -111,6 +112,7 @@ export type Database = {
           handled_by?: string | null
           id?: string
           is_new_customer?: string | null
+          order_id?: string | null
           payment_method?: string | null
           payment_status?: string | null
           shop_name: string
@@ -131,6 +133,7 @@ export type Database = {
           handled_by?: string | null
           id?: string
           is_new_customer?: string | null
+          order_id?: string | null
           payment_method?: string | null
           payment_status?: string | null
           shop_name?: string
