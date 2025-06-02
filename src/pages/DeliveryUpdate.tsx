@@ -151,6 +151,9 @@ const DeliveryUpdate = () => {
         toast.success('New customer added');
       }
 
+      // Generate unique order ID for this submission
+      const orderId = `order_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
       // Create transactions - pair each shop with its corresponding amount
       const maxEntries = Math.max(validShops.length, validAmounts.length);
       
@@ -176,7 +179,8 @@ const DeliveryUpdate = () => {
           commission: formData.commission ? parseFloat(formData.commission) : null,
           commissionStatus: 'pending' as const,
           description: '',
-          handledBy: user?.name || 'Unknown'
+          handledBy: user?.name || 'Unknown',
+          orderId: orderId
         };
         
         await addTransaction(newTransaction);

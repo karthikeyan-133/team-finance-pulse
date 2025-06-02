@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Transaction } from '../types';
@@ -35,6 +36,7 @@ export const useSupabaseTransactions = () => {
           commissionStatus: transaction.commission_status as 'paid' | 'pending',
           description: transaction.description || '',
           handledBy: transaction.handled_by || '',
+          orderId: transaction.order_id || '',
           createdAt: transaction.created_at,
           updatedAt: transaction.updated_at
         }));
@@ -85,7 +87,8 @@ export const useSupabaseTransactions = () => {
           commission: transaction.commission,
           commission_status: transaction.commissionStatus,
           description: transaction.description,
-          handled_by: transaction.handledBy
+          handled_by: transaction.handledBy,
+          order_id: transaction.orderId
         }])
         .select()
         .single();
@@ -120,6 +123,7 @@ export const useSupabaseTransactions = () => {
           commission_status: updates.commissionStatus,
           description: updates.description,
           handled_by: updates.handledBy,
+          order_id: updates.orderId,
           updated_at: new Date().toISOString()
         })
         .eq('id', id);
@@ -159,9 +163,13 @@ export const useSupabaseTransactions = () => {
 
     const totalAmount = transactions.reduce((sum, t) => sum + t.amount, 0);
 
+    // Count unique orders instead of individual transactions
+    const uniqueOrders = new Set(transactions.map(t => t.orderId)).size;
+
     return {
       pendingAmount,
-      totalAmount
+      totalAmount,
+      totalOrders: uniqueOrders
     };
   };
 

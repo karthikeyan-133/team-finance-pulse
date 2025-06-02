@@ -1,4 +1,3 @@
-
 export interface User {
   id: string;
   name: string;
@@ -21,10 +20,10 @@ export interface Customer {
 export interface Transaction {
   id: string;
   customerId: string;
-  customerName?: string; // Added for form submission
-  customerPhone?: string; // Added for form submission
-  customerLocation?: string; // Added for location coordinates
-  isNewCustomer?: string; // Added for form submission
+  customerName?: string;
+  customerPhone?: string;
+  customerLocation?: string;
+  isNewCustomer?: string;
   shopName: string;
   date: string;
   amount: number;
@@ -33,10 +32,11 @@ export interface Transaction {
   deliveryCharge: number | null;
   commission: number | null;
   commissionStatus: 'paid' | 'pending';
-  description?: string;
+  description: string;
   handledBy: string;
-  updatedAt: string;
-  createdAt: string;
+  orderId?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface Expense {

@@ -72,6 +72,9 @@ const DeliveryForm = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Generate unique order ID for this submission
+    const orderId = `order_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
     const newTransaction = {
       shopName: formData.shopName,
       customerId: isManualCustomer ? 'temp-' + Date.now() : formData.customerId,
@@ -84,6 +87,7 @@ const DeliveryForm = () => {
       commissionStatus: formData.commissionStatus as 'paid' | 'pending',
       description: formData.description,
       handledBy: user?.name || 'Unknown',
+      orderId: orderId,
     };
 
     // Add transaction to the system
