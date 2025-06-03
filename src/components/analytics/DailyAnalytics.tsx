@@ -39,7 +39,7 @@ import {
   ShoppingCart
 } from 'lucide-react';
 import { Transaction, Customer } from '../../types';
-import { format, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns';
+import { format, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfDay, endOfDay } from 'date-fns';
 
 interface DailyAnalyticsProps {
   transactions: Transaction[];
@@ -83,17 +83,30 @@ const DailyAnalytics: React.FC<DailyAnalyticsProps> = ({ transactions, customers
     
     for (let i = days - 1; i >= 0; i--) {
       const date = subDays(new Date(), i);
-      const dateStr = format(date, 'yyyy-MM-dd');
+      const dayStart = startOfDay(date);
+      const dayEnd = endOfDay(date);
       
-      const dayTransactions = transactions.filter(t => 
-        format(new Date(t.date), 'yyyy-MM-dd') === dateStr
-      );
+      // Filter transactions for this specific day
+      const dayTransactions = transactions.filter(t => {
+        const transactionDate = new Date(t.date);
+        return transactionDate >= dayStart && transactionDate <= dayEnd;
+      });
       
-      const dayCustomers = customers.filter(c => 
-        format(new Date(c.createdAt), 'yyyy-MM-dd') === dateStr
-      );
+      // Filter customers for this specific day
+      const dayCustomers = customers.filter(c => {
+        const customerDate = new Date(c.createdAt);
+        return customerDate >= dayStart && customerDate <= dayEnd;
+      });
 
-      const totalOrders = dayTransactions.length;
+      // Calculate unique orders based on orderId
+      const uniqueOrderIds = new Set(
+        dayTransactions
+          .map(t => t.orderId)
+          .filter(orderId => orderId && orderId.trim() !== '')
+      );
+      const totalOrders = uniqueOrderIds.size;
+      
+      const totalTransactions = dayTransactions.length;
       const newOrders = dayTransactions.filter(t => t.isNewCustomer === 'true').length;
       const returnOrders = dayTransactions.filter(t => t.isNewCustomer === 'false').length;
       const totalSales = dayTransactions.reduce((sum, t) => sum + t.amount, 0);
@@ -104,8 +117,9 @@ const DailyAnalytics: React.FC<DailyAnalyticsProps> = ({ transactions, customers
 
       data.push({
         date: format(date, timeRange === 'daily' ? 'MMM dd' : timeRange === 'weekly' ? 'MMM dd' : 'MMM dd'),
-        fullDate: dateStr,
+        fullDate: format(date, 'yyyy-MM-dd'),
         totalOrders,
+        totalTransactions,
         newOrders,
         returnOrders,
         totalSales,
@@ -125,6 +139,7 @@ const DailyAnalytics: React.FC<DailyAnalyticsProps> = ({ transactions, customers
   // Today's specific data
   const todayData = analyticsData[analyticsData.length - 1] || {
     totalOrders: 0,
+    totalTransactions: 0,
     newOrders: 0,
     returnOrders: 0,
     totalSales: 0,
@@ -143,6 +158,7 @@ const DailyAnalytics: React.FC<DailyAnalyticsProps> = ({ transactions, customers
 
   const yesterdayData = analyticsData[analyticsData.length - 2] || todayData;
   const ordersTrend = calculateTrend(todayData.totalOrders, yesterdayData.totalOrders);
+  const transactionsTrend = calculateTrend(todayData.totalTransactions, yesterdayData.totalTransactions);
   const salesTrend = calculateTrend(todayData.totalSales, yesterdayData.totalSales);
   const customersTrend = calculateTrend(todayData.newCustomers, yesterdayData.newCustomers);
 
@@ -182,11 +198,11 @@ const DailyAnalytics: React.FC<DailyAnalyticsProps> = ({ transactions, customers
       </div>
 
       {/* Key Metrics Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <ShoppingCart className="h-4 w-4" />
+              <Package className="h-4 w-4" />
               Total Orders
             </CardTitle>
           </CardHeader>
@@ -200,6 +216,29 @@ const DailyAnalytics: React.FC<DailyAnalyticsProps> = ({ transactions, customers
               )}
               <span className={ordersTrend >= 0 ? 'text-green-500' : 'text-red-500'}>
                 {Math.abs(ordersTrend).toFixed(1)}%
+              </span>
+              <span className="ml-1">from yesterday</span>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <ShoppingCart className="h-4 w-4" />
+              Total Transactions
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{todayData.totalTransactions}</div>
+            <div className="flex items-center text-xs text-muted-foreground">
+              {transactionsTrend >= 0 ? (
+                <TrendingUp className="h-3 w-3 text-green-500 mr-1" />
+              ) : (
+                <TrendingDown className="h-3 w-3 text-red-500 mr-1" />
+              )}
+              <span className={transactionsTrend >= 0 ? 'text-green-500' : 'text-red-500'}>
+                {Math.abs(transactionsTrend).toFixed(1)}%
               </span>
               <span className="ml-1">from yesterday</span>
             </div>
@@ -304,7 +343,7 @@ const DailyAnalytics: React.FC<DailyAnalyticsProps> = ({ transactions, customers
 
             <Card>
               <CardHeader>
-                <CardTitle>Orders Overview ({timeRange})</CardTitle>
+                <CardTitle>Orders vs Transactions ({timeRange})</CardTitle>
               </CardHeader>
               <CardContent className="h-[300px]">
                 <ResponsiveContainer width="100%" height="100%">
@@ -313,7 +352,8 @@ const DailyAnalytics: React.FC<DailyAnalyticsProps> = ({ transactions, customers
                     <XAxis dataKey="date" />
                     <YAxis />
                     <Tooltip />
-                    <Bar dataKey="totalOrders" fill="#6950dd" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="totalOrders" fill="#6950dd" radius={[4, 4, 0, 0]} name="Orders" />
+                    <Bar dataKey="totalTransactions" fill="#4ade80" radius={[4, 4, 0, 0]} name="Transactions" />
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -330,16 +370,20 @@ const DailyAnalytics: React.FC<DailyAnalyticsProps> = ({ transactions, customers
               <CardContent>
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
+                    <span className="text-sm">Total Orders</span>
+                    <Badge variant="default">{todayData.totalOrders}</Badge>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm">Total Transactions</span>
+                    <Badge variant="secondary">{todayData.totalTransactions}</Badge>
+                  </div>
+                  <div className="flex justify-between items-center">
                     <span className="text-sm">New Orders</span>
-                    <Badge variant="default">{todayData.newOrders}</Badge>
+                    <Badge variant="outline">{todayData.newOrders}</Badge>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm">Return Orders</span>
                     <Badge variant="outline">{todayData.returnOrders}</Badge>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">Total</span>
-                    <Badge variant="secondary">{todayData.totalOrders}</Badge>
                   </div>
                 </div>
               </CardContent>
@@ -402,6 +446,7 @@ const DailyAnalytics: React.FC<DailyAnalyticsProps> = ({ transactions, customers
                     <TableRow>
                       <TableHead>Date</TableHead>
                       <TableHead>Total Orders</TableHead>
+                      <TableHead>Total Transactions</TableHead>
                       <TableHead>New Orders</TableHead>
                       <TableHead>Return Orders</TableHead>
                       <TableHead>Sales</TableHead>
@@ -415,7 +460,12 @@ const DailyAnalytics: React.FC<DailyAnalyticsProps> = ({ transactions, customers
                     {analyticsData.reverse().map((day, index) => (
                       <TableRow key={index}>
                         <TableCell className="font-medium">{day.fullDate}</TableCell>
-                        <TableCell>{day.totalOrders}</TableCell>
+                        <TableCell>
+                          <Badge variant="default" className="text-xs">{day.totalOrders}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="secondary" className="text-xs">{day.totalTransactions}</Badge>
+                        </TableCell>
                         <TableCell>
                           <Badge variant="default" className="text-xs">{day.newOrders}</Badge>
                         </TableCell>
