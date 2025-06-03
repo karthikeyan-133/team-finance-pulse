@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -39,7 +38,7 @@ import {
   ShoppingCart
 } from 'lucide-react';
 import { Transaction, Customer } from '../../types';
-import { format, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfDay, endOfDay } from 'date-fns';
+import { format, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfDay, endOfDay, isToday, isYesterday, parseISO } from 'date-fns';
 
 interface DailyAnalyticsProps {
   transactions: Transaction[];
@@ -77,25 +76,53 @@ const DailyAnalytics: React.FC<DailyAnalyticsProps> = ({ transactions, customers
 
   const { start: rangeStart, end: rangeEnd, days } = getDateRange();
 
+  // Helper function to check if transaction date matches a specific day
+  const isTransactionOnDate = (transaction: Transaction, targetDate: Date) => {
+    try {
+      // Parse the transaction date string properly
+      let transactionDate: Date;
+      
+      if (typeof transaction.date === 'string') {
+        // Handle various date string formats
+        if (transaction.date.includes('T')) {
+          transactionDate = parseISO(transaction.date);
+        } else {
+          transactionDate = new Date(transaction.date);
+        }
+      } else {
+        transactionDate = new Date(transaction.date);
+      }
+
+      // Compare just the date parts (ignore time)
+      const transactionDateStr = format(transactionDate, 'yyyy-MM-dd');
+      const targetDateStr = format(targetDate, 'yyyy-MM-dd');
+      
+      return transactionDateStr === targetDateStr;
+    } catch (error) {
+      console.error('Error parsing transaction date:', transaction.date, error);
+      return false;
+    }
+  };
+
   // Generate analytics data for the time range
   const generateAnalyticsData = () => {
     const data = [];
     
     for (let i = days - 1; i >= 0; i--) {
       const date = subDays(new Date(), i);
-      const dayStart = startOfDay(date);
-      const dayEnd = endOfDay(date);
       
-      // Filter transactions for this specific day
-      const dayTransactions = transactions.filter(t => {
-        const transactionDate = new Date(t.date);
-        return transactionDate >= dayStart && transactionDate <= dayEnd;
-      });
+      // Filter transactions for this specific day using improved date matching
+      const dayTransactions = transactions.filter(t => isTransactionOnDate(t, date));
       
       // Filter customers for this specific day
       const dayCustomers = customers.filter(c => {
-        const customerDate = new Date(c.createdAt);
-        return customerDate >= dayStart && customerDate <= dayEnd;
+        try {
+          const customerDate = new Date(c.createdAt);
+          return format(customerDate, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd');
+        } catch (error) {
+          console.error('Error parsing customer date:', c.createdAt, error);
+          return false;
+        }
       });
 
       // Calculate unique orders based on orderId
@@ -114,6 +141,8 @@ const DailyAnalytics: React.FC<DailyAnalyticsProps> = ({ transactions, customers
       const pendingOrders = dayTransactions.filter(t => t.paymentStatus === 'pending').length;
       const newCustomers = dayCustomers.filter(c => c.isNew).length;
       const totalCommission = dayTransactions.reduce((sum, t) => sum + (t.commission || 0), 0);
+
+      console.log(`Date: ${format(date, 'yyyy-MM-dd')}, Transactions found: ${dayTransactions.length}, Orders: ${totalOrders}`);
 
       data.push({
         date: format(date, timeRange === 'daily' ? 'MMM dd' : timeRange === 'weekly' ? 'MMM dd' : 'MMM dd'),
@@ -196,6 +225,17 @@ const DailyAnalytics: React.FC<DailyAnalyticsProps> = ({ transactions, customers
           </Popover>
         </div>
       </div>
+
+      {/* Debug Info - Remove this after testing */}
+      <Card className="bg-yellow-50 border-yellow-200">
+        <CardContent className="pt-4">
+          <p className="text-sm text-yellow-800">
+            Debug: Total transactions in database: {transactions.length} | 
+            Today's data: {todayData.totalTransactions} transactions, {todayData.totalOrders} orders |
+            Yesterday's data: {yesterdayData.totalTransactions} transactions, {yesterdayData.totalOrders} orders
+          </p>
+        </CardContent>
+      </Card>
 
       {/* Key Metrics Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
