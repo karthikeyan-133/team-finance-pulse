@@ -38,7 +38,7 @@ import {
   ShoppingCart
 } from 'lucide-react';
 import { Transaction, Customer } from '../../types';
-import { format, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfDay, endOfDay, isToday, isYesterday, parseISO } from 'date-fns';
+import { format, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfDay, endOfDay, isToday, isYesterday, parseISO, isSameDay } from 'date-fns';
 
 interface DailyAnalyticsProps {
   transactions: Transaction[];
@@ -69,7 +69,7 @@ const DailyAnalytics: React.FC<DailyAnalyticsProps> = ({ transactions, customers
         return {
           start: today,
           end: today,
-          days: 1
+          days: 7 // Show last 7 days for daily view
         };
     }
   };
@@ -79,25 +79,17 @@ const DailyAnalytics: React.FC<DailyAnalyticsProps> = ({ transactions, customers
   // Helper function to check if transaction date matches a specific day
   const isTransactionOnDate = (transaction: Transaction, targetDate: Date) => {
     try {
-      // Parse the transaction date string properly
       let transactionDate: Date;
       
       if (typeof transaction.date === 'string') {
-        // Handle various date string formats
-        if (transaction.date.includes('T')) {
-          transactionDate = parseISO(transaction.date);
-        } else {
-          transactionDate = new Date(transaction.date);
-        }
+        // Handle ISO string format
+        transactionDate = new Date(transaction.date);
       } else {
         transactionDate = new Date(transaction.date);
       }
 
-      // Compare just the date parts (ignore time)
-      const transactionDateStr = format(transactionDate, 'yyyy-MM-dd');
-      const targetDateStr = format(targetDate, 'yyyy-MM-dd');
-      
-      return transactionDateStr === targetDateStr;
+      // Use isSameDay from date-fns for accurate comparison
+      return isSameDay(transactionDate, targetDate);
     } catch (error) {
       console.error('Error parsing transaction date:', transaction.date, error);
       return false;
@@ -111,38 +103,51 @@ const DailyAnalytics: React.FC<DailyAnalyticsProps> = ({ transactions, customers
     for (let i = days - 1; i >= 0; i--) {
       const date = subDays(new Date(), i);
       
-      // Filter transactions for this specific day using improved date matching
+      // Filter transactions for this specific day
       const dayTransactions = transactions.filter(t => isTransactionOnDate(t, date));
       
       // Filter customers for this specific day
       const dayCustomers = customers.filter(c => {
         try {
           const customerDate = new Date(c.createdAt);
-          return format(customerDate, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd');
+          return isSameDay(customerDate, date);
         } catch (error) {
           console.error('Error parsing customer date:', c.createdAt, error);
           return false;
         }
       });
 
-      // Calculate unique orders based on orderId
-      const uniqueOrderIds = new Set(
-        dayTransactions
-          .map(t => t.orderId)
-          .filter(orderId => orderId && orderId.trim() !== '')
-      );
-      const totalOrders = uniqueOrderIds.size;
-      
+      // Calculate unique orders - group by customer, date, and similar transaction details
+      const orderGroups = new Map();
+      dayTransactions.forEach(transaction => {
+        // Create a unique key based on customer and timestamp (within same hour)
+        const transactionDate = new Date(transaction.date);
+        const hourKey = `${transaction.customerId}_${transaction.customerName}_${format(transactionDate, 'yyyy-MM-dd-HH')}`;
+        
+        if (!orderGroups.has(hourKey)) {
+          orderGroups.set(hourKey, []);
+        }
+        orderGroups.get(hourKey).push(transaction);
+      });
+
+      const totalOrders = orderGroups.size;
       const totalTransactions = dayTransactions.length;
       const newOrders = dayTransactions.filter(t => t.isNewCustomer === 'true').length;
       const returnOrders = dayTransactions.filter(t => t.isNewCustomer === 'false').length;
       const totalSales = dayTransactions.reduce((sum, t) => sum + t.amount, 0);
-      const paidOrders = dayTransactions.filter(t => t.paymentStatus === 'paid').length;
-      const pendingOrders = dayTransactions.filter(t => t.paymentStatus === 'pending').length;
+      const paidTransactions = dayTransactions.filter(t => t.paymentStatus === 'paid');
+      const pendingTransactions = dayTransactions.filter(t => t.paymentStatus === 'pending');
+      const paidOrders = paidTransactions.length;
+      const pendingOrders = pendingTransactions.length;
       const newCustomers = dayCustomers.filter(c => c.isNew).length;
       const totalCommission = dayTransactions.reduce((sum, t) => sum + (t.commission || 0), 0);
 
-      console.log(`Date: ${format(date, 'yyyy-MM-dd')}, Transactions found: ${dayTransactions.length}, Orders: ${totalOrders}`);
+      console.log(`Analytics for ${format(date, 'yyyy-MM-dd')}:`, {
+        totalTransactions,
+        totalOrders,
+        dayTransactions: dayTransactions.length,
+        orderGroups: orderGroups.size
+      });
 
       data.push({
         date: format(date, timeRange === 'daily' ? 'MMM dd' : timeRange === 'weekly' ? 'MMM dd' : 'MMM dd'),
@@ -185,7 +190,19 @@ const DailyAnalytics: React.FC<DailyAnalyticsProps> = ({ transactions, customers
     return ((current - previous) / previous) * 100;
   };
 
-  const yesterdayData = analyticsData[analyticsData.length - 2] || todayData;
+  const yesterdayData = analyticsData[analyticsData.length - 2] || {
+    totalOrders: 0,
+    totalTransactions: 0,
+    newOrders: 0,
+    returnOrders: 0,
+    totalSales: 0,
+    paidOrders: 0,
+    pendingOrders: 0,
+    newCustomers: 0,
+    totalCommission: 0,
+    averageOrderValue: 0
+  };
+  
   const ordersTrend = calculateTrend(todayData.totalOrders, yesterdayData.totalOrders);
   const transactionsTrend = calculateTrend(todayData.totalTransactions, yesterdayData.totalTransactions);
   const salesTrend = calculateTrend(todayData.totalSales, yesterdayData.totalSales);
@@ -226,13 +243,14 @@ const DailyAnalytics: React.FC<DailyAnalyticsProps> = ({ transactions, customers
         </div>
       </div>
 
-      {/* Debug Info - Remove this after testing */}
-      <Card className="bg-yellow-50 border-yellow-200">
+      {/* Debug Info */}
+      <Card className="bg-blue-50 border-blue-200">
         <CardContent className="pt-4">
-          <p className="text-sm text-yellow-800">
-            Debug: Total transactions in database: {transactions.length} | 
-            Today's data: {todayData.totalTransactions} transactions, {todayData.totalOrders} orders |
-            Yesterday's data: {yesterdayData.totalTransactions} transactions, {yesterdayData.totalOrders} orders
+          <p className="text-sm text-blue-800">
+            Debug Info - Total DB transactions: {transactions.length} | 
+            Today: {todayData.totalTransactions} transactions, {todayData.totalOrders} orders | 
+            Yesterday: {yesterdayData.totalTransactions} transactions, {yesterdayData.totalOrders} orders |
+            Analytics Data Points: {analyticsData.length}
           </p>
         </CardContent>
       </Card>
@@ -497,7 +515,7 @@ const DailyAnalytics: React.FC<DailyAnalyticsProps> = ({ transactions, customers
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {analyticsData.reverse().map((day, index) => (
+                    {analyticsData.slice().reverse().map((day, index) => (
                       <TableRow key={index}>
                         <TableCell className="font-medium">{day.fullDate}</TableCell>
                         <TableCell>
