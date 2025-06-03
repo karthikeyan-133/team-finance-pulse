@@ -59,6 +59,7 @@ export interface DashboardStats {
   recentTransactions: Transaction[];
   recentExpenses: Expense[];
   totalOrders: number;
+  totalTransactions: number; // Added separate field for total transactions
   pendingOrders: number;
   totalRevenue: number;
   totalExpenses: number;

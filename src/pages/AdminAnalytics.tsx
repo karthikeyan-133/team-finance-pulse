@@ -63,6 +63,7 @@ const AdminAnalytics = () => {
 
   // Calculate analytics using dashboardStats
   const totalOrders = dashboardStats.totalOrders;
+  const totalTransactions = dashboardStats.totalTransactions;
   const totalRevenue = dashboardStats.totalRevenue;
   const pendingAmount = dashboardStats.pendingAmount;
   const totalCommission = dashboardStats.totalCommission;
@@ -186,7 +187,7 @@ const AdminAnalytics = () => {
       </div>
 
       {/* Key Metrics */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
@@ -196,6 +197,21 @@ const AdminAnalytics = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalOrders}</div>
+            <p className="text-xs text-muted-foreground">
+              Unique submissions
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <TrendingUp className="h-4 w-4" />
+              Total Transactions
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{totalTransactions}</div>
             <p className="text-xs text-muted-foreground">
               ₹{totalRevenue.toLocaleString('en-IN')} total revenue
             </p>
