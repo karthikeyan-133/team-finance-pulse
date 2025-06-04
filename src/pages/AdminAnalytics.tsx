@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
@@ -48,12 +47,14 @@ import {
   Calendar
 } from 'lucide-react';
 import DailyAnalytics from '../components/analytics/DailyAnalytics';
+import { toast } from '@/components/ui/sonner';
 
 const AdminAnalytics = () => {
   const { user } = useAuth();
-  const { transactions, customers, getCustomerById, dashboardStats } = useData();
+  const { transactions, customers, getCustomerById, dashboardStats, updateTransaction } = useData();
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [updatingTransactions, setUpdatingTransactions] = useState<Set<string>>(new Set());
   const itemsPerPage = 20;
 
   // Redirect non-admin users to delivery update page
@@ -176,6 +177,24 @@ const AdminAnalytics = () => {
   };
 
   const dailySalesData = getDailySales();
+
+  const handleUpdateTransactionStatus = async (transactionId: string, newStatus: 'paid' | 'pending') => {
+    setUpdatingTransactions(prev => new Set(prev).add(transactionId));
+    
+    try {
+      await updateTransaction(transactionId, { paymentStatus: newStatus });
+      toast.success(`Transaction status updated to ${newStatus}`);
+    } catch (error) {
+      console.error('Failed to update transaction status:', error);
+      toast.error('Failed to update transaction status');
+    } finally {
+      setUpdatingTransactions(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(transactionId);
+        return newSet;
+      });
+    }
+  };
 
   return (
     <div className="space-y-6 p-6">
@@ -417,11 +436,26 @@ const AdminAnalytics = () => {
                             ₹{transaction.amount.toLocaleString('en-IN')}
                           </TableCell>
                           <TableCell>
-                            <Badge
-                              variant={transaction.paymentStatus === 'paid' ? 'default' : 'destructive'}
-                            >
-                              {transaction.paymentStatus}
-                            </Badge>
+                            <div className="flex items-center gap-2">
+                              <Select
+                                value={transaction.paymentStatus}
+                                onValueChange={(value: 'paid' | 'pending') => 
+                                  handleUpdateTransactionStatus(transaction.id, value)
+                                }
+                                disabled={updatingTransactions.has(transaction.id)}
+                              >
+                                <SelectTrigger className="w-24 h-8">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="paid">Paid</SelectItem>
+                                  <SelectItem value="pending">Pending</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              {updatingTransactions.has(transaction.id) && (
+                                <div className="animate-spin h-4 w-4 border-2 border-gray-300 border-t-blue-600 rounded-full" />
+                              )}
+                            </div>
                           </TableCell>
                           <TableCell className="capitalize">
                             {transaction.paymentMethod}
