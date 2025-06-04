@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
@@ -6,13 +7,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import {
   Table,
   TableBody,
@@ -54,20 +48,13 @@ import {
   Calendar
 } from 'lucide-react';
 import DailyAnalytics from '../components/analytics/DailyAnalytics';
-import { toast } from '@/components/ui/sonner';
 
 const AdminAnalytics = () => {
   const { user } = useAuth();
-  const { transactions, customers, getCustomerById, dashboardStats, updateTransaction } = useData();
+  const { transactions, customers, getCustomerById, dashboardStats } = useData();
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [updatingTransactions, setUpdatingTransactions] = useState<Set<string>>(new Set());
   const itemsPerPage = 20;
-
-  // Add console logging to debug
-  console.log('AdminAnalytics: user role:', user?.role);
-  console.log('AdminAnalytics: transactions count:', transactions.length);
-  console.log('AdminAnalytics: customers count:', customers.length);
 
   // Redirect non-admin users to delivery update page
   if (user?.role !== 'admin') {
@@ -136,7 +123,7 @@ const AdminAnalytics = () => {
     } else {
       const halfVisible = Math.floor(maxVisiblePages / 2);
       let startPage = Math.max(1, currentPage - halfVisible);
-      let endPage = Math.max(totalPages, startPage + maxVisiblePages - 1);
+      let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
       
       if (endPage - startPage < maxVisiblePages - 1) {
         startPage = Math.max(1, endPage - maxVisiblePages + 1);
@@ -189,24 +176,6 @@ const AdminAnalytics = () => {
   };
 
   const dailySalesData = getDailySales();
-
-  const handleUpdateTransactionStatus = async (transactionId: string, newStatus: 'paid' | 'pending') => {
-    setUpdatingTransactions(prev => new Set(prev).add(transactionId));
-    
-    try {
-      await updateTransaction(transactionId, { paymentStatus: newStatus });
-      toast.success(`Transaction status updated to ${newStatus}`);
-    } catch (error) {
-      console.error('Failed to update transaction status:', error);
-      toast.error('Failed to update transaction status');
-    } finally {
-      setUpdatingTransactions(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(transactionId);
-        return newSet;
-      });
-    }
-  };
 
   return (
     <div className="space-y-6 p-6">
@@ -307,13 +276,7 @@ const AdminAnalytics = () => {
         </TabsList>
 
         <TabsContent value="daily" className="space-y-4">
-          <div className="border-2 border-blue-500 p-4 rounded-lg">
-            <h2 className="text-lg font-semibold mb-4">Daily Analytics Section</h2>
-            <p className="text-sm text-gray-600 mb-4">
-              Transactions: {transactions.length} | Customers: {customers.length}
-            </p>
-            <DailyAnalytics transactions={transactions} customers={customers} />
-          </div>
+          <DailyAnalytics transactions={transactions} customers={customers} />
         </TabsContent>
 
         <TabsContent value="overview" className="space-y-4">
@@ -454,26 +417,11 @@ const AdminAnalytics = () => {
                             ₹{transaction.amount.toLocaleString('en-IN')}
                           </TableCell>
                           <TableCell>
-                            <div className="flex items-center gap-2">
-                              <Select
-                                value={transaction.paymentStatus}
-                                onValueChange={(value: 'paid' | 'pending') => 
-                                  handleUpdateTransactionStatus(transaction.id, value)
-                                }
-                                disabled={updatingTransactions.has(transaction.id)}
-                              >
-                                <SelectTrigger className="w-24 h-8">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="paid">Paid</SelectItem>
-                                  <SelectItem value="pending">Pending</SelectItem>
-                                </SelectContent>
-                              </Select>
-                              {updatingTransactions.has(transaction.id) && (
-                                <div className="animate-spin h-4 w-4 border-2 border-gray-300 border-t-blue-600 rounded-full" />
-                              )}
-                            </div>
+                            <Badge
+                              variant={transaction.paymentStatus === 'paid' ? 'default' : 'destructive'}
+                            >
+                              {transaction.paymentStatus}
+                            </Badge>
                           </TableCell>
                           <TableCell className="capitalize">
                             {transaction.paymentMethod}
