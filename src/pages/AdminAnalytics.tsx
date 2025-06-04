@@ -64,6 +64,11 @@ const AdminAnalytics = () => {
   const [updatingTransactions, setUpdatingTransactions] = useState<Set<string>>(new Set());
   const itemsPerPage = 20;
 
+  // Add console logging to debug
+  console.log('AdminAnalytics: user role:', user?.role);
+  console.log('AdminAnalytics: transactions count:', transactions.length);
+  console.log('AdminAnalytics: customers count:', customers.length);
+
   // Redirect non-admin users to delivery update page
   if (user?.role !== 'admin') {
     return <Navigate to="/delivery-update" replace />;
@@ -131,7 +136,7 @@ const AdminAnalytics = () => {
     } else {
       const halfVisible = Math.floor(maxVisiblePages / 2);
       let startPage = Math.max(1, currentPage - halfVisible);
-      let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+      let endPage = Math.max(totalPages, startPage + maxVisiblePages - 1);
       
       if (endPage - startPage < maxVisiblePages - 1) {
         startPage = Math.max(1, endPage - maxVisiblePages + 1);
@@ -302,7 +307,13 @@ const AdminAnalytics = () => {
         </TabsList>
 
         <TabsContent value="daily" className="space-y-4">
-          <DailyAnalytics transactions={transactions} customers={customers} />
+          <div className="border-2 border-blue-500 p-4 rounded-lg">
+            <h2 className="text-lg font-semibold mb-4">Daily Analytics Section</h2>
+            <p className="text-sm text-gray-600 mb-4">
+              Transactions: {transactions.length} | Customers: {customers.length}
+            </p>
+            <DailyAnalytics transactions={transactions} customers={customers} />
+          </div>
         </TabsContent>
 
         <TabsContent value="overview" className="space-y-4">
