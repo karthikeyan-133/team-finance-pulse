@@ -1,5 +1,3 @@
-
-
 import React, { useState } from 'react';
 import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
@@ -55,6 +53,7 @@ import {
   Search,
   Calendar
 } from 'lucide-react';
+import DailyAnalytics from '../components/analytics/DailyAnalytics';
 import { toast } from '@/components/ui/sonner';
 
 const AdminAnalytics = () => {
@@ -303,66 +302,7 @@ const AdminAnalytics = () => {
         </TabsList>
 
         <TabsContent value="daily" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Daily Sales (Last 7 Days)</CardTitle>
-              </CardHeader>
-              <CardContent className="h-[300px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={dailySalesData}>
-                    <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                    <XAxis dataKey="date" />
-                    <YAxis />
-                    <Tooltip 
-                      formatter={(value) => [`₹${Number(value).toLocaleString('en-IN')}`, 'Amount']}
-                    />
-                    <Bar dataKey="total" fill="#6950dd" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Payment Method Distribution</CardTitle>
-              </CardHeader>
-              <CardContent className="h-[300px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={paymentMethodData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={80}
-                      paddingAngle={5}
-                      dataKey="value"
-                    >
-                      {paymentMethodData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
-                <div className="mt-2 flex justify-center gap-4">
-                  <div className="flex items-center">
-                    <span className="mr-1 h-3 w-3 rounded-full bg-[#4ade80]"></span>
-                    <span className="text-sm">UPI ({paymentMethods.upi})</span>
-                  </div>
-                  <div className="flex items-center">
-                    <span className="mr-1 h-3 w-3 rounded-full bg-[#f97316]"></span>
-                    <span className="text-sm">Cash ({paymentMethods.cash})</span>
-                  </div>
-                  <div className="flex items-center">
-                    <span className="mr-1 h-3 w-3 rounded-full bg-[#8b5cf6]"></span>
-                    <span className="text-sm">Other ({paymentMethods.other})</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+          <DailyAnalytics transactions={transactions} customers={customers} />
         </TabsContent>
 
         <TabsContent value="overview" className="space-y-4">
@@ -672,4 +612,3 @@ const AdminAnalytics = () => {
 };
 
 export default AdminAnalytics;
-
