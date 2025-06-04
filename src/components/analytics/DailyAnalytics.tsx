@@ -4,547 +4,325 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer,
-  LineChart,
-  Line,
-  PieChart,
-  Pie,
-  Cell
-} from 'recharts';
-import { 
+  Calendar, 
   TrendingUp, 
-  TrendingDown, 
+  Users, 
   Package,
-  Users,
-  DollarSign,
-  Calendar as CalendarIcon,
-  RefreshCw,
-  ShoppingCart
+  Edit,
+  Check,
+  X
 } from 'lucide-react';
 import { Transaction, Customer } from '../../types';
-import { format, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfDay, endOfDay, isToday, isYesterday, parseISO, isSameDay } from 'date-fns';
+import { isSameDay, format, subDays } from 'date-fns';
+import { useData } from '../../context/DataContext';
+import { toast } from '@/components/ui/sonner';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 interface DailyAnalyticsProps {
   transactions: Transaction[];
   customers: Customer[];
 }
 
+interface OrderGroup {
+  orderId: string;
+  customerName: string;
+  customerPhone: string;
+  transactions: Transaction[];
+  totalAmount: number;
+  overallPaymentStatus: 'paid' | 'pending' | 'mixed';
+  createdAt: string;
+}
+
 const DailyAnalytics: React.FC<DailyAnalyticsProps> = ({ transactions, customers }) => {
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [timeRange, setTimeRange] = useState<'daily' | 'weekly' | 'monthly'>('daily');
+  const { updateTransaction } = useData();
+  const [editingOrder, setEditingOrder] = useState<string | null>(null);
+  const [updatingTransactions, setUpdatingTransactions] = useState<Set<string>>(new Set());
 
-  // Calculate date ranges
-  const getDateRange = () => {
-    const today = new Date();
-    switch (timeRange) {
-      case 'weekly':
-        return {
-          start: startOfWeek(today),
-          end: endOfWeek(today),
-          days: 7
-        };
-      case 'monthly':
-        return {
-          start: startOfMonth(today),
-          end: endOfMonth(today),
-          days: 30
-        };
-      default:
-        return {
-          start: today,
-          end: today,
-          days: 7 // Show last 7 days for daily view
-        };
-    }
-  };
+  const today = new Date();
+  const yesterday = subDays(today, 1);
 
-  const { start: rangeStart, end: rangeEnd, days } = getDateRange();
+  // Helper function to group transactions into orders
+  const groupTransactionsIntoOrders = (transactionList: Transaction[]): OrderGroup[] => {
+    const orderMap = new Map<string, OrderGroup>();
 
-  // Helper function to check if transaction date matches a specific day
-  const isTransactionOnDate = (transaction: Transaction, targetDate: Date) => {
-    try {
-      let transactionDate: Date;
+    transactionList.forEach(transaction => {
+      const key = transaction.orderId || `${transaction.customerName}_${transaction.customerPhone}_${format(new Date(transaction.date), 'yyyy-MM-dd_HH')}`;
       
-      if (typeof transaction.date === 'string') {
-        // Handle ISO string format
-        transactionDate = new Date(transaction.date);
-      } else {
-        transactionDate = new Date(transaction.date);
+      if (!orderMap.has(key)) {
+        orderMap.set(key, {
+          orderId: key,
+          customerName: transaction.customerName || 'Unknown',
+          customerPhone: transaction.customerPhone || 'Unknown',
+          transactions: [],
+          totalAmount: 0,
+          overallPaymentStatus: 'pending',
+          createdAt: transaction.date
+        });
       }
 
-      // Use isSameDay from date-fns for accurate comparison
-      return isSameDay(transactionDate, targetDate);
+      const order = orderMap.get(key)!;
+      order.transactions.push(transaction);
+      order.totalAmount += transaction.amount;
+    });
+
+    // Calculate overall payment status for each order
+    orderMap.forEach(order => {
+      const paidCount = order.transactions.filter(t => t.paymentStatus === 'paid').length;
+      const totalCount = order.transactions.length;
+      
+      if (paidCount === totalCount) {
+        order.overallPaymentStatus = 'paid';
+      } else if (paidCount === 0) {
+        order.overallPaymentStatus = 'pending';
+      } else {
+        order.overallPaymentStatus = 'mixed';
+      }
+    });
+
+    return Array.from(orderMap.values()).sort((a, b) => 
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+  };
+
+  // Filter transactions for today and yesterday
+  const todayTransactions = transactions.filter(transaction => 
+    isSameDay(new Date(transaction.date), today)
+  );
+
+  const yesterdayTransactions = transactions.filter(transaction => 
+    isSameDay(new Date(transaction.date), yesterday)
+  );
+
+  // Group transactions into orders
+  const todayOrders = groupTransactionsIntoOrders(todayTransactions);
+  const yesterdayOrders = groupTransactionsIntoOrders(yesterdayTransactions);
+
+  // Calculate stats
+  const todayStats = {
+    totalTransactions: todayTransactions.length,
+    totalOrders: todayOrders.length,
+    totalRevenue: todayTransactions.reduce((sum, t) => sum + t.amount, 0),
+    paidOrders: todayOrders.filter(o => o.overallPaymentStatus === 'paid').length,
+    pendingOrders: todayOrders.filter(o => o.overallPaymentStatus === 'pending').length,
+    mixedOrders: todayOrders.filter(o => o.overallPaymentStatus === 'mixed').length
+  };
+
+  const yesterdayStats = {
+    totalTransactions: yesterdayTransactions.length,
+    totalOrders: yesterdayOrders.length,
+    totalRevenue: yesterdayTransactions.reduce((sum, t) => sum + t.amount, 0),
+    paidOrders: yesterdayOrders.filter(o => o.overallPaymentStatus === 'paid').length,
+    pendingOrders: yesterdayOrders.filter(o => o.overallPaymentStatus === 'pending').length,
+    mixedOrders: yesterdayOrders.filter(o => o.overallPaymentStatus === 'mixed').length
+  };
+
+  const handleUpdateTransactionStatus = async (transactionId: string, newStatus: 'paid' | 'pending') => {
+    setUpdatingTransactions(prev => new Set(prev).add(transactionId));
+    
+    try {
+      await updateTransaction(transactionId, { paymentStatus: newStatus });
+      toast.success(`Transaction status updated to ${newStatus}`);
     } catch (error) {
-      console.error('Error parsing transaction date:', transaction.date, error);
-      return false;
-    }
-  };
-
-  // Generate analytics data for the time range
-  const generateAnalyticsData = () => {
-    const data = [];
-    
-    for (let i = days - 1; i >= 0; i--) {
-      const date = subDays(new Date(), i);
-      
-      // Filter transactions for this specific day
-      const dayTransactions = transactions.filter(t => isTransactionOnDate(t, date));
-      
-      // Filter customers for this specific day
-      const dayCustomers = customers.filter(c => {
-        try {
-          const customerDate = new Date(c.createdAt);
-          return isSameDay(customerDate, date);
-        } catch (error) {
-          console.error('Error parsing customer date:', c.createdAt, error);
-          return false;
-        }
-      });
-
-      // Calculate unique orders - group by customer, date, and similar transaction details
-      const orderGroups = new Map();
-      dayTransactions.forEach(transaction => {
-        // Create a unique key based on customer and timestamp (within same hour)
-        const transactionDate = new Date(transaction.date);
-        const hourKey = `${transaction.customerId}_${transaction.customerName}_${format(transactionDate, 'yyyy-MM-dd-HH')}`;
-        
-        if (!orderGroups.has(hourKey)) {
-          orderGroups.set(hourKey, []);
-        }
-        orderGroups.get(hourKey).push(transaction);
-      });
-
-      const totalOrders = orderGroups.size;
-      const totalTransactions = dayTransactions.length;
-      const newOrders = dayTransactions.filter(t => t.isNewCustomer === 'true').length;
-      const returnOrders = dayTransactions.filter(t => t.isNewCustomer === 'false').length;
-      const totalSales = dayTransactions.reduce((sum, t) => sum + t.amount, 0);
-      const paidTransactions = dayTransactions.filter(t => t.paymentStatus === 'paid');
-      const pendingTransactions = dayTransactions.filter(t => t.paymentStatus === 'pending');
-      const paidOrders = paidTransactions.length;
-      const pendingOrders = pendingTransactions.length;
-      const newCustomers = dayCustomers.filter(c => c.isNew).length;
-      const totalCommission = dayTransactions.reduce((sum, t) => sum + (t.commission || 0), 0);
-
-      console.log(`Analytics for ${format(date, 'yyyy-MM-dd')}:`, {
-        totalTransactions,
-        totalOrders,
-        dayTransactions: dayTransactions.length,
-        orderGroups: orderGroups.size
-      });
-
-      data.push({
-        date: format(date, timeRange === 'daily' ? 'MMM dd' : timeRange === 'weekly' ? 'MMM dd' : 'MMM dd'),
-        fullDate: format(date, 'yyyy-MM-dd'),
-        totalOrders,
-        totalTransactions,
-        newOrders,
-        returnOrders,
-        totalSales,
-        paidOrders,
-        pendingOrders,
-        newCustomers,
-        totalCommission,
-        averageOrderValue: totalOrders > 0 ? totalSales / totalOrders : 0
+      console.error('Failed to update transaction status:', error);
+      toast.error('Failed to update transaction status');
+    } finally {
+      setUpdatingTransactions(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(transactionId);
+        return newSet;
       });
     }
-    
-    return data;
   };
 
-  const analyticsData = generateAnalyticsData();
-
-  // Today's specific data
-  const todayData = analyticsData[analyticsData.length - 1] || {
-    totalOrders: 0,
-    totalTransactions: 0,
-    newOrders: 0,
-    returnOrders: 0,
-    totalSales: 0,
-    paidOrders: 0,
-    pendingOrders: 0,
-    newCustomers: 0,
-    totalCommission: 0,
-    averageOrderValue: 0
-  };
-
-  // Calculate trends (comparing to previous period)
-  const calculateTrend = (current: number, previous: number) => {
-    if (previous === 0) return current > 0 ? 100 : 0;
-    return ((current - previous) / previous) * 100;
-  };
-
-  const yesterdayData = analyticsData[analyticsData.length - 2] || {
-    totalOrders: 0,
-    totalTransactions: 0,
-    newOrders: 0,
-    returnOrders: 0,
-    totalSales: 0,
-    paidOrders: 0,
-    pendingOrders: 0,
-    newCustomers: 0,
-    totalCommission: 0,
-    averageOrderValue: 0
-  };
-  
-  const ordersTrend = calculateTrend(todayData.totalOrders, yesterdayData.totalOrders);
-  const transactionsTrend = calculateTrend(todayData.totalTransactions, yesterdayData.totalTransactions);
-  const salesTrend = calculateTrend(todayData.totalSales, yesterdayData.totalSales);
-  const customersTrend = calculateTrend(todayData.newCustomers, yesterdayData.newCustomers);
-
-  // Chart colors
-  const chartColors = ['#6950dd', '#4ade80', '#f97316', '#8b5cf6', '#06b6d4'];
+  const renderOrderDetails = (orders: OrderGroup[]) => (
+    <div className="space-y-4">
+      {orders.length === 0 ? (
+        <p className="text-muted-foreground text-center py-4">No orders found</p>
+      ) : (
+        orders.map((order) => (
+          <Card key={order.orderId} className="border-l-4 border-l-blue-500">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Package className="h-5 w-5" />
+                    Order #{order.orderId.substring(0, 8)}...
+                  </CardTitle>
+                  <CardDescription>
+                    {order.customerName} • {order.customerPhone}
+                  </CardDescription>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant={
+                    order.overallPaymentStatus === 'paid' ? 'default' :
+                    order.overallPaymentStatus === 'pending' ? 'destructive' : 'secondary'
+                  }>
+                    {order.overallPaymentStatus === 'mixed' ? 'Partial' : order.overallPaymentStatus}
+                  </Badge>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setEditingOrder(editingOrder === order.orderId ? null : order.orderId)}
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center text-sm">
+                  <span>Total Amount:</span>
+                  <span className="font-semibold">₹{order.totalAmount.toLocaleString('en-IN')}</span>
+                </div>
+                
+                {editingOrder === order.orderId && (
+                  <div className="space-y-2 border-t pt-3">
+                    <h4 className="font-medium text-sm">Transaction Details:</h4>
+                    {order.transactions.map((transaction) => (
+                      <div key={transaction.id} className="flex items-center justify-between bg-gray-50 p-2 rounded">
+                        <div className="flex flex-col">
+                          <span className="text-sm font-medium">{transaction.shopName}</span>
+                          <span className="text-xs text-gray-500">₹{transaction.amount}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Select
+                            value={transaction.paymentStatus}
+                            onValueChange={(value: 'paid' | 'pending') => 
+                              handleUpdateTransactionStatus(transaction.id, value)
+                            }
+                            disabled={updatingTransactions.has(transaction.id)}
+                          >
+                            <SelectTrigger className="w-24 h-8">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="paid">Paid</SelectItem>
+                              <SelectItem value="pending">Pending</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          {updatingTransactions.has(transaction.id) && (
+                            <div className="animate-spin h-4 w-4 border-2 border-gray-300 border-t-blue-600 rounded-full" />
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                <div className="grid grid-cols-2 gap-4 text-xs text-muted-foreground">
+                  <div>Transactions: {order.transactions.length}</div>
+                  <div>Created: {format(new Date(order.createdAt), 'HH:mm')}</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))
+      )}
+    </div>
+  );
 
   return (
     <div className="space-y-6">
-      {/* Time Range Selector */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">Daily Analytics</h2>
-        <div className="flex items-center gap-2">
-          <Tabs value={timeRange} onValueChange={(value) => setTimeRange(value as any)}>
-            <TabsList>
-              <TabsTrigger value="daily">Daily</TabsTrigger>
-              <TabsTrigger value="weekly">Weekly</TabsTrigger>
-              <TabsTrigger value="monthly">Monthly</TabsTrigger>
-            </TabsList>
-          </Tabs>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline" className="ml-2">
-                <CalendarIcon className="h-4 w-4 mr-2" />
-                {format(selectedDate, 'PPP')}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="end">
-              <Calendar
-                mode="single"
-                selected={selectedDate}
-                onSelect={(date) => date && setSelectedDate(date)}
-                initialFocus
-              />
-            </PopoverContent>
-          </Popover>
-        </div>
-      </div>
-
-      {/* Debug Info */}
-      <Card className="bg-blue-50 border-blue-200">
-        <CardContent className="pt-4">
-          <p className="text-sm text-blue-800">
-            Debug Info - Total DB transactions: {transactions.length} | 
-            Today: {todayData.totalTransactions} transactions, {todayData.totalOrders} orders | 
-            Yesterday: {yesterdayData.totalTransactions} transactions, {yesterdayData.totalOrders} orders |
-            Analytics Data Points: {analyticsData.length}
-          </p>
-        </CardContent>
-      </Card>
-
-      {/* Key Metrics Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <Package className="h-4 w-4" />
-              Total Orders
+              <Calendar className="h-4 w-4" />
+              Today's Orders
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{todayData.totalOrders}</div>
-            <div className="flex items-center text-xs text-muted-foreground">
-              {ordersTrend >= 0 ? (
-                <TrendingUp className="h-3 w-3 text-green-500 mr-1" />
-              ) : (
-                <TrendingDown className="h-3 w-3 text-red-500 mr-1" />
-              )}
-              <span className={ordersTrend >= 0 ? 'text-green-500' : 'text-red-500'}>
-                {Math.abs(ordersTrend).toFixed(1)}%
-              </span>
-              <span className="ml-1">from yesterday</span>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <ShoppingCart className="h-4 w-4" />
-              Total Transactions
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{todayData.totalTransactions}</div>
-            <div className="flex items-center text-xs text-muted-foreground">
-              {transactionsTrend >= 0 ? (
-                <TrendingUp className="h-3 w-3 text-green-500 mr-1" />
-              ) : (
-                <TrendingDown className="h-3 w-3 text-red-500 mr-1" />
-              )}
-              <span className={transactionsTrend >= 0 ? 'text-green-500' : 'text-red-500'}>
-                {Math.abs(transactionsTrend).toFixed(1)}%
-              </span>
-              <span className="ml-1">from yesterday</span>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <DollarSign className="h-4 w-4" />
-              Total Sales
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">₹{todayData.totalSales.toLocaleString('en-IN')}</div>
-            <div className="flex items-center text-xs text-muted-foreground">
-              {salesTrend >= 0 ? (
-                <TrendingUp className="h-3 w-3 text-green-500 mr-1" />
-              ) : (
-                <TrendingDown className="h-3 w-3 text-red-500 mr-1" />
-              )}
-              <span className={salesTrend >= 0 ? 'text-green-500' : 'text-red-500'}>
-                {Math.abs(salesTrend).toFixed(1)}%
-              </span>
-              <span className="ml-1">from yesterday</span>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              New Customers
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{todayData.newCustomers}</div>
-            <div className="flex items-center text-xs text-muted-foreground">
-              {customersTrend >= 0 ? (
-                <TrendingUp className="h-3 w-3 text-green-500 mr-1" />
-              ) : (
-                <TrendingDown className="h-3 w-3 text-red-500 mr-1" />
-              )}
-              <span className={customersTrend >= 0 ? 'text-green-500' : 'text-red-500'}>
-                {Math.abs(customersTrend).toFixed(1)}%
-              </span>
-              <span className="ml-1">from yesterday</span>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <Package className="h-4 w-4" />
-              Average Order
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">₹{todayData.averageOrderValue.toFixed(0)}</div>
+            <div className="text-2xl font-bold">{todayStats.totalOrders}</div>
             <p className="text-xs text-muted-foreground">
-              {todayData.paidOrders} paid, {todayData.pendingOrders} pending
+              {todayStats.totalTransactions} transactions
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <TrendingUp className="h-4 w-4" />
+              Today's Revenue
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">₹{todayStats.totalRevenue.toLocaleString('en-IN')}</div>
+            <p className="text-xs text-muted-foreground">
+              Total earnings today
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <Check className="h-4 w-4" />
+              Paid Orders
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">{todayStats.paidOrders}</div>
+            <p className="text-xs text-muted-foreground">
+              Completed payments
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <X className="h-4 w-4" />
+              Pending Orders
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-red-600">{todayStats.pendingOrders}</div>
+            <p className="text-xs text-muted-foreground">
+              Awaiting payment
             </p>
           </CardContent>
         </Card>
       </div>
 
-      <Tabs defaultValue="charts" className="w-full">
+      <Tabs defaultValue="today" className="w-full">
         <TabsList>
-          <TabsTrigger value="charts">Charts</TabsTrigger>
-          <TabsTrigger value="breakdown">Order Breakdown</TabsTrigger>
-          <TabsTrigger value="detailed">Detailed View</TabsTrigger>
+          <TabsTrigger value="today">Today's Orders</TabsTrigger>
+          <TabsTrigger value="yesterday">Yesterday's Orders</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="charts" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Sales Trend ({timeRange})</CardTitle>
-              </CardHeader>
-              <CardContent className="h-[300px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={analyticsData}>
-                    <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                    <XAxis dataKey="date" />
-                    <YAxis />
-                    <Tooltip 
-                      formatter={(value) => [`₹${Number(value).toLocaleString('en-IN')}`, 'Sales']}
-                    />
-                    <Line 
-                      type="monotone" 
-                      dataKey="totalSales" 
-                      stroke="#6950dd" 
-                      strokeWidth={2}
-                      dot={{ fill: '#6950dd' }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Orders vs Transactions ({timeRange})</CardTitle>
-              </CardHeader>
-              <CardContent className="h-[300px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={analyticsData}>
-                    <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                    <XAxis dataKey="date" />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="totalOrders" fill="#6950dd" radius={[4, 4, 0, 0]} name="Orders" />
-                    <Bar dataKey="totalTransactions" fill="#4ade80" radius={[4, 4, 0, 0]} name="Transactions" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="breakdown" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-3">
-            <Card>
-              <CardHeader>
-                <CardTitle>Order Types Today</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">Total Orders</span>
-                    <Badge variant="default">{todayData.totalOrders}</Badge>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">Total Transactions</span>
-                    <Badge variant="secondary">{todayData.totalTransactions}</Badge>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">New Orders</span>
-                    <Badge variant="outline">{todayData.newOrders}</Badge>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">Return Orders</span>
-                    <Badge variant="outline">{todayData.returnOrders}</Badge>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Payment Status Today</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">Paid Orders</span>
-                    <Badge variant="default" className="bg-green-500">{todayData.paidOrders}</Badge>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">Pending Orders</span>
-                    <Badge variant="destructive">{todayData.pendingOrders}</Badge>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">Commission</span>
-                    <span className="text-sm font-medium">₹{todayData.totalCommission.toLocaleString('en-IN')}</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Customer Metrics</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">New Customers</span>
-                    <Badge variant="default">{todayData.newCustomers}</Badge>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">Avg. Order Value</span>
-                    <span className="text-sm font-medium">₹{todayData.averageOrderValue.toFixed(0)}</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="detailed" className="space-y-4">
+        <TabsContent value="today" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Detailed {timeRange.charAt(0).toUpperCase() + timeRange.slice(1)} Report</CardTitle>
+              <CardTitle>Today's Order Details</CardTitle>
               <CardDescription>
-                Day-by-day breakdown of all metrics
+                {format(today, 'EEEE, MMMM d, yyyy')} - {todayStats.totalOrders} orders, {todayStats.totalTransactions} transactions
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Total Orders</TableHead>
-                      <TableHead>Total Transactions</TableHead>
-                      <TableHead>New Orders</TableHead>
-                      <TableHead>Return Orders</TableHead>
-                      <TableHead>Sales</TableHead>
-                      <TableHead>Paid</TableHead>
-                      <TableHead>Pending</TableHead>
-                      <TableHead>New Customers</TableHead>
-                      <TableHead>Commission</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {analyticsData.slice().reverse().map((day, index) => (
-                      <TableRow key={index}>
-                        <TableCell className="font-medium">{day.fullDate}</TableCell>
-                        <TableCell>
-                          <Badge variant="default" className="text-xs">{day.totalOrders}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="secondary" className="text-xs">{day.totalTransactions}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="default" className="text-xs">{day.newOrders}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="text-xs">{day.returnOrders}</Badge>
-                        </TableCell>
-                        <TableCell>₹{day.totalSales.toLocaleString('en-IN')}</TableCell>
-                        <TableCell>
-                          <Badge variant="default" className="bg-green-500 text-xs">{day.paidOrders}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="destructive" className="text-xs">{day.pendingOrders}</Badge>
-                        </TableCell>
-                        <TableCell>{day.newCustomers}</TableCell>
-                        <TableCell>₹{day.totalCommission.toLocaleString('en-IN')}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+              {renderOrderDetails(todayOrders)}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="yesterday" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Yesterday's Order Details</CardTitle>
+              <CardDescription>
+                {format(yesterday, 'EEEE, MMMM d, yyyy')} - {yesterdayStats.totalOrders} orders, {yesterdayStats.totalTransactions} transactions
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {renderOrderDetails(yesterdayOrders)}
             </CardContent>
           </Card>
         </TabsContent>
