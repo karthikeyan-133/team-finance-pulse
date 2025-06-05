@@ -47,16 +47,20 @@ import {
   Search,
   Calendar,
   CheckCircle,
-  Clock
+  Clock,
+  Plus,
+  Receipt
 } from 'lucide-react';
 import DailyAnalytics from '../components/analytics/DailyAnalytics';
 import { toast } from '@/components/ui/sonner';
+import AddExpenseForm from '../components/forms/AddExpenseForm';
 
 const AdminAnalytics = () => {
   const { user } = useAuth();
-  const { transactions, customers, getCustomerById, dashboardStats, updateTransaction } = useData();
+  const { transactions, customers, expenses, getCustomerById, dashboardStats, updateTransaction } = useData();
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [showAddExpense, setShowAddExpense] = useState(false);
   const itemsPerPage = 20;
 
   // Redirect non-admin users to delivery update page
@@ -287,6 +291,10 @@ const AdminAnalytics = () => {
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="transactions">All Transactions</TabsTrigger>
           <TabsTrigger value="customers">Customer Details</TabsTrigger>
+          <TabsTrigger value="expenses">
+            <Receipt className="h-4 w-4 mr-2" />
+            Expenses
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="daily" className="space-y-4">
@@ -590,6 +598,85 @@ const AdminAnalytics = () => {
                   </TableBody>
                 </Table>
               </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="expenses" className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-bold">Expense Management</h2>
+              <p className="text-muted-foreground">Add and manage business expenses</p>
+            </div>
+            <Button onClick={() => setShowAddExpense(true)} className="flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              Add Expense
+            </Button>
+          </div>
+
+          {showAddExpense && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Add New Expense</CardTitle>
+                <CardDescription>Enter expense details below</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <AddExpenseForm onClose={() => setShowAddExpense(false)} />
+              </CardContent>
+            </Card>
+          )}
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Recent Expenses</CardTitle>
+              <CardDescription>
+                All business expenses ({expenses.length} total)
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Title</TableHead>
+                      <TableHead>Category</TableHead>
+                      <TableHead>Amount</TableHead>
+                      <TableHead>Description</TableHead>
+                      <TableHead>Added By</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {expenses
+                      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                      .map((expense) => (
+                        <TableRow key={expense.id}>
+                          <TableCell>
+                            {new Date(expense.date).toLocaleDateString()}
+                          </TableCell>
+                          <TableCell className="font-medium">{expense.title}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline">{expense.category}</Badge>
+                          </TableCell>
+                          <TableCell>₹{expense.amount.toLocaleString('en-IN')}</TableCell>
+                          <TableCell className="max-w-xs truncate">
+                            {expense.description || '-'}
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {expense.addedBy}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {expenses.length === 0 && (
+                <div className="text-center py-8">
+                  <Receipt className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
+                  <p className="text-muted-foreground">No expenses recorded yet</p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
