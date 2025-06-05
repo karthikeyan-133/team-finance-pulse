@@ -25,6 +25,12 @@ import {
   PaginationPrevious,
 } from '@/components/ui/pagination';
 import { 
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { 
   BarChart, 
   Bar, 
   XAxis, 
@@ -49,11 +55,14 @@ import {
   CheckCircle,
   Clock,
   Plus,
-  Receipt
+  Receipt,
+  Edit
 } from 'lucide-react';
 import DailyAnalytics from '../components/analytics/DailyAnalytics';
 import { toast } from '@/components/ui/sonner';
 import AddExpenseForm from '../components/forms/AddExpenseForm';
+import EditTransactionForm from '../components/forms/EditTransactionForm';
+import { Transaction } from '../types';
 
 const AdminAnalytics = () => {
   const { user } = useAuth();
@@ -61,6 +70,7 @@ const AdminAnalytics = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [showAddExpense, setShowAddExpense] = useState(false);
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const itemsPerPage = 20;
 
   // Redirect non-admin users to delivery update page
@@ -153,6 +163,10 @@ const AdminAnalytics = () => {
       console.error('Failed to update payment status:', error);
       toast.error('Failed to update payment status');
     }
+  };
+
+  const handleEditSuccess = () => {
+    setEditingTransaction(null);
   };
 
   // Chart data
@@ -397,6 +411,7 @@ const AdminAnalytics = () => {
                         <TableHead>Method</TableHead>
                         <TableHead>Commission</TableHead>
                         <TableHead>Handled By</TableHead>
+                        <TableHead>Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -467,6 +482,16 @@ const AdminAnalytics = () => {
                           </TableCell>
                           <TableCell className="text-sm text-muted-foreground">
                             {transaction.handledBy}
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setEditingTransaction(transaction)}
+                              className="h-8 w-8 p-0"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -681,6 +706,22 @@ const AdminAnalytics = () => {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Edit Transaction Dialog */}
+      <Dialog open={!!editingTransaction} onOpenChange={() => setEditingTransaction(null)}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Transaction</DialogTitle>
+          </DialogHeader>
+          {editingTransaction && (
+            <EditTransactionForm 
+              transaction={editingTransaction}
+              onSuccess={handleEditSuccess}
+              onCancel={() => setEditingTransaction(null)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
