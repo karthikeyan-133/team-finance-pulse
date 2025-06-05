@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
@@ -7,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import {
   Table,
   TableBody,
@@ -45,13 +45,16 @@ import {
   Phone,
   User,
   Search,
-  Calendar
+  Calendar,
+  CheckCircle,
+  Clock
 } from 'lucide-react';
 import DailyAnalytics from '../components/analytics/DailyAnalytics';
+import { toast } from '@/components/ui/sonner';
 
 const AdminAnalytics = () => {
   const { user } = useAuth();
-  const { transactions, customers, getCustomerById, dashboardStats } = useData();
+  const { transactions, customers, getCustomerById, dashboardStats, updateTransaction } = useData();
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20;
@@ -135,6 +138,17 @@ const AdminAnalytics = () => {
     }
     
     return pages;
+  };
+
+  const handlePaymentStatusToggle = async (transactionId: string, currentStatus: 'paid' | 'pending') => {
+    try {
+      const newStatus = currentStatus === 'paid' ? 'pending' : 'paid';
+      await updateTransaction(transactionId, { paymentStatus: newStatus });
+      toast.success(`Payment status updated to ${newStatus}`);
+    } catch (error) {
+      console.error('Failed to update payment status:', error);
+      toast.error('Failed to update payment status');
+    }
   };
 
   // Chart data
@@ -417,11 +431,25 @@ const AdminAnalytics = () => {
                             ₹{transaction.amount.toLocaleString('en-IN')}
                           </TableCell>
                           <TableCell>
-                            <Badge
-                              variant={transaction.paymentStatus === 'paid' ? 'default' : 'destructive'}
-                            >
-                              {transaction.paymentStatus}
-                            </Badge>
+                            <div className="flex items-center gap-2">
+                              <Badge
+                                variant={transaction.paymentStatus === 'paid' ? 'default' : 'destructive'}
+                              >
+                                {transaction.paymentStatus}
+                              </Badge>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handlePaymentStatusToggle(transaction.id, transaction.paymentStatus)}
+                                className="h-6 w-6 p-0"
+                              >
+                                {transaction.paymentStatus === 'paid' ? (
+                                  <Clock className="h-3 w-3 text-amber-600" />
+                                ) : (
+                                  <CheckCircle className="h-3 w-3 text-green-600" />
+                                )}
+                              </Button>
+                            </div>
                           </TableCell>
                           <TableCell className="capitalize">
                             {transaction.paymentMethod}
