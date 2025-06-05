@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -38,15 +39,15 @@ const EditTransactionForm: React.FC<EditTransactionFormProps> = ({
   const { updateTransaction } = useData();
   const activeShops = getActiveShops();
   
-  const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm({
+  const { register, handleSubmit, setValue, watch, formState: { errors, isSubmitting } } = useForm({
     resolver: zodResolver(transactionSchema),
     defaultValues: {
       shopName: transaction.shopName,
       amount: transaction.amount,
       paymentStatus: transaction.paymentStatus,
       paymentMethod: transaction.paymentMethod,
-      deliveryCharge: transaction.deliveryCharge,
-      commission: transaction.commission,
+      deliveryCharge: transaction.deliveryCharge || 0,
+      commission: transaction.commission || 0,
       commissionStatus: transaction.commissionStatus,
       description: transaction.description || '',
       handledBy: transaction.handledBy || '',
@@ -55,7 +56,18 @@ const EditTransactionForm: React.FC<EditTransactionFormProps> = ({
 
   const onSubmit = async (data: z.infer<typeof transactionSchema>) => {
     try {
-      await updateTransaction(transaction.id, data);
+      console.log('Form data being submitted:', data);
+      await updateTransaction(transaction.id, {
+        shopName: data.shopName,
+        amount: data.amount,
+        paymentStatus: data.paymentStatus,
+        paymentMethod: data.paymentMethod,
+        deliveryCharge: data.deliveryCharge,
+        commission: data.commission,
+        commissionStatus: data.commissionStatus,
+        description: data.description,
+        handledBy: data.handledBy,
+      });
       toast.success('Transaction updated successfully');
       onSuccess();
     } catch (error) {
@@ -198,8 +210,8 @@ const EditTransactionForm: React.FC<EditTransactionFormProps> = ({
         <Button type="button" variant="outline" onClick={onCancel}>
           Cancel
         </Button>
-        <Button type="submit">
-          Update Transaction
+        <Button type="submit" disabled={isSubmitting}>
+          {isSubmitting ? 'Updating...' : 'Update Transaction'}
         </Button>
       </div>
     </form>

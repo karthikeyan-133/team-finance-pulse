@@ -106,30 +106,43 @@ export const useSupabaseTransactions = () => {
 
   const updateTransaction = async (id: string, updates: Partial<Transaction>) => {
     try {
+      console.log('Updating transaction:', id, updates);
+      
+      // Build the update object with only the fields that are provided
+      const updateData: any = {
+        updated_at: new Date().toISOString()
+      };
+
+      // Only include fields that are actually being updated
+      if (updates.shopName !== undefined) updateData.shop_name = updates.shopName;
+      if (updates.amount !== undefined) updateData.amount = updates.amount;
+      if (updates.paymentStatus !== undefined) updateData.payment_status = updates.paymentStatus;
+      if (updates.paymentMethod !== undefined) updateData.payment_method = updates.paymentMethod;
+      if (updates.deliveryCharge !== undefined) updateData.delivery_charge = updates.deliveryCharge;
+      if (updates.commission !== undefined) updateData.commission = updates.commission;
+      if (updates.commissionStatus !== undefined) updateData.commission_status = updates.commissionStatus;
+      if (updates.description !== undefined) updateData.description = updates.description;
+      if (updates.handledBy !== undefined) updateData.handled_by = updates.handledBy;
+      if (updates.customerId !== undefined) updateData.customer_id = updates.customerId;
+      if (updates.customerName !== undefined) updateData.customer_name = updates.customerName;
+      if (updates.customerPhone !== undefined) updateData.customer_phone = updates.customerPhone;
+      if (updates.customerLocation !== undefined) updateData.customer_location = updates.customerLocation;
+      if (updates.isNewCustomer !== undefined) updateData.is_new_customer = updates.isNewCustomer;
+      if (updates.orderId !== undefined) updateData.order_id = updates.orderId;
+
+      console.log('Update data being sent:', updateData);
+
       const { error } = await supabase
         .from('transactions')
-        .update({
-          customer_id: updates.customerId,
-          customer_name: updates.customerName,
-          customer_phone: updates.customerPhone,
-          customer_location: updates.customerLocation,
-          is_new_customer: updates.isNewCustomer,
-          shop_name: updates.shopName,
-          amount: updates.amount,
-          payment_status: updates.paymentStatus,
-          payment_method: updates.paymentMethod,
-          delivery_charge: updates.deliveryCharge,
-          commission: updates.commission,
-          commission_status: updates.commissionStatus,
-          description: updates.description,
-          handled_by: updates.handledBy,
-          order_id: updates.orderId,
-          updated_at: new Date().toISOString()
-        })
+        .update(updateData)
         .eq('id', id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase update error:', error);
+        throw error;
+      }
       
+      console.log('Transaction updated successfully');
       toast.success('Transaction updated successfully');
     } catch (error) {
       console.error('Error updating transaction:', error);
