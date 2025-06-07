@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -118,17 +117,27 @@ const DailyAnalytics: React.FC<DailyAnalyticsProps> = ({ transactions, customers
         }
       });
 
-      // Calculate unique orders - group by customer, date, and similar transaction details
+      // Calculate unique orders - improved logic
+      // Use orderId if available, otherwise group by customer and approximate time
       const orderGroups = new Map();
+      
       dayTransactions.forEach(transaction => {
-        // Create a unique key based on customer and timestamp (within same hour)
-        const transactionDate = new Date(transaction.date);
-        const hourKey = `${transaction.customerId}_${transaction.customerName}_${format(transactionDate, 'yyyy-MM-dd-HH')}`;
+        let orderKey;
         
-        if (!orderGroups.has(hourKey)) {
-          orderGroups.set(hourKey, []);
+        // If orderId exists and is not empty, use it as the primary key
+        if (transaction.orderId && transaction.orderId.trim() !== '') {
+          orderKey = transaction.orderId;
+        } else {
+          // Fallback: group by customer info and date/time (within same hour)
+          const transactionDate = new Date(transaction.date);
+          const hourKey = format(transactionDate, 'yyyy-MM-dd-HH');
+          orderKey = `${transaction.customerId || transaction.customerName || 'unknown'}_${transaction.customerPhone || 'unknown'}_${hourKey}`;
         }
-        orderGroups.get(hourKey).push(transaction);
+        
+        if (!orderGroups.has(orderKey)) {
+          orderGroups.set(orderKey, []);
+        }
+        orderGroups.get(orderKey).push(transaction);
       });
 
       const totalOrders = orderGroups.size;
@@ -147,7 +156,9 @@ const DailyAnalytics: React.FC<DailyAnalyticsProps> = ({ transactions, customers
         totalTransactions,
         totalOrders,
         dayTransactions: dayTransactions.length,
-        orderGroups: orderGroups.size
+        orderGroups: orderGroups.size,
+        orderIds: Array.from(orderGroups.keys()).slice(0, 5), // Show first 5 order keys for debugging
+        transactionsWithOrderId: dayTransactions.filter(t => t.orderId && t.orderId.trim() !== '').length
       });
 
       data.push({
