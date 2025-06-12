@@ -88,7 +88,7 @@ const OrderDetailsForm = () => {
         shop_name: formData.shop_name,
         shop_address: formData.shop_address || null,
         shop_phone: formData.shop_phone || null,
-        product_details: validProducts,
+        product_details: validProducts as any, // Cast to Json type for Supabase
         total_amount: calculateTotal(),
         delivery_charge: parseFloat(formData.delivery_charge) || 0,
         commission: parseFloat(formData.commission) || 0,

@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Truck, Package, MapPin, Phone, Store, User, Clock, CheckCircle, XCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Order, DeliveryBoy, OrderAssignment } from '@/types/orders';
+import { Order, DeliveryBoy, OrderAssignment, ProductDetail } from '@/types/orders';
 
 const DeliveryBoyPage = () => {
   const [deliveryBoys, setDeliveryBoys] = useState<DeliveryBoy[]>([]);
@@ -57,9 +57,29 @@ const DeliveryBoyPage = () => {
 
       if (assignmentsError) throw assignmentsError;
 
-      setDeliveryBoys(deliveryBoysData || []);
-      setPendingOrders(ordersData || []);
-      setAssignments(assignmentsData || []);
+      // Type cast and convert Json to ProductDetail[]
+      const typedDeliveryBoys = (deliveryBoysData || []).map(boy => ({
+        ...boy,
+        vehicle_type: boy.vehicle_type as 'bike' | 'bicycle' | 'car' | 'scooter' | null
+      }));
+
+      const typedOrders = (ordersData || []).map(order => ({
+        ...order,
+        product_details: order.product_details as ProductDetail[]
+      }));
+
+      const typedAssignments = (assignmentsData || []).map(assignment => ({
+        ...assignment,
+        status: assignment.status as 'pending' | 'accepted' | 'rejected',
+        orders: assignment.orders ? {
+          ...assignment.orders,
+          product_details: assignment.orders.product_details as ProductDetail[]
+        } : undefined
+      }));
+
+      setDeliveryBoys(typedDeliveryBoys);
+      setPendingOrders(typedOrders);
+      setAssignments(typedAssignments);
     } catch (error) {
       console.error('Error fetching data:', error);
       toast.error('Failed to load data');
@@ -164,7 +184,7 @@ const DeliveryBoyPage = () => {
                     <SelectItem key={boy.id} value={boy.id}>
                       <div className="flex flex-col">
                         <span className="font-medium">{boy.name}</span>
-                        <span className="text-xs text-gray-500">{boy.phone} - {boy.vehicle_type}</span>
+                        <span className="text-xs text-gray-500">{boy.phone} - {boy.vehicle_type || 'N/A'}</span>
                       </div>
                     </SelectItem>
                   ))}
@@ -308,7 +328,7 @@ const DeliveryBoyPage = () => {
                   <div className="font-medium">{boy.name}</div>
                   <div className="text-sm text-gray-600">{boy.phone}</div>
                   <div className="flex items-center gap-2">
-                    <Badge variant="secondary">{boy.vehicle_type}</Badge>
+                    <Badge variant="secondary">{boy.vehicle_type || 'N/A'}</Badge>
                     {boy.vehicle_number && (
                       <span className="text-xs text-gray-500">{boy.vehicle_number}</span>
                     )}

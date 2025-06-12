@@ -38,7 +38,7 @@ export interface DeliveryBoy {
   name: string;
   phone: string;
   email?: string;
-  vehicle_type?: 'bike' | 'bicycle' | 'car' | 'scooter';
+  vehicle_type?: 'bike' | 'bicycle' | 'car' | 'scooter' | null;
   vehicle_number?: string;
   is_active: boolean;
   current_location?: string;
@@ -54,4 +54,6 @@ export interface OrderAssignment {
   assigned_at: string;
   responded_at?: string;
   notes?: string;
+  orders?: Order;
+  delivery_boys?: DeliveryBoy;
 }
