@@ -6,10 +6,12 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Truck, Package, MapPin, Phone, Store, User, Clock, CheckCircle, XCircle } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Truck, Package, MapPin, Phone, Store, User, Clock, CheckCircle, XCircle, Plus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Order, DeliveryBoy, OrderAssignment, ProductDetail } from '@/types/orders';
+import AddDeliveryBoyForm from '@/components/forms/AddDeliveryBoyForm';
 
 const DeliveryBoyPage = () => {
   const [deliveryBoys, setDeliveryBoys] = useState<DeliveryBoy[]>([]);
@@ -170,191 +172,216 @@ const DeliveryBoyPage = () => {
     <div className="container mx-auto px-4 py-6 space-y-6">
       <div className="mb-6">
         <h1 className="text-2xl font-bold">Delivery Management</h1>
-        <p className="text-gray-600">Manage order assignments and delivery requests</p>
+        <p className="text-gray-600">Manage delivery boys, assign orders, and track delivery requests</p>
       </div>
 
-      {/* Assign New Order */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Truck className="h-5 w-5" />
-            Assign Order to Delivery Boy
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label>Select Delivery Boy</Label>
-              <Select value={selectedDeliveryBoy} onValueChange={setSelectedDeliveryBoy}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Choose delivery boy" />
-                </SelectTrigger>
-                <SelectContent>
-                  {deliveryBoys.map((boy) => (
-                    <SelectItem key={boy.id} value={boy.id}>
-                      <div className="flex flex-col">
-                        <span className="font-medium">{boy.name}</span>
-                        <span className="text-xs text-gray-500">{boy.phone} - {boy.vehicle_type || 'N/A'}</span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Select Order</Label>
-              <Select value={selectedOrder} onValueChange={setSelectedOrder}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Choose order" />
-                </SelectTrigger>
-                <SelectContent>
-                  {pendingOrders.map((order) => (
-                    <SelectItem key={order.id} value={order.id}>
-                      <div className="flex flex-col">
-                        <span className="font-medium">{order.order_number}</span>
-                        <span className="text-xs text-gray-500">{order.customer_name} - ₹{order.total_amount}</span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <div>
-            <Label>Assignment Notes (Optional)</Label>
-            <Textarea
-              value={assignmentNotes}
-              onChange={(e) => setAssignmentNotes(e.target.value)}
-              placeholder="Any special instructions for the delivery boy..."
-            />
-          </div>
-          <Button onClick={assignOrder} className="w-full">
-            Assign Order
-          </Button>
-        </CardContent>
-      </Card>
+      <Tabs defaultValue="assignments" className="w-full">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="assignments">Order Assignments</TabsTrigger>
+          <TabsTrigger value="pending">Pending Requests</TabsTrigger>
+          <TabsTrigger value="delivery-boys">Delivery Boys</TabsTrigger>
+          <TabsTrigger value="add-delivery-boy">Add Delivery Boy</TabsTrigger>
+        </TabsList>
 
-      {/* Pending Assignments */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Clock className="h-5 w-5" />
-            Pending Assignment Requests
-          </CardTitle>
-          <CardDescription>Orders waiting for delivery boy response</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {assignments.length === 0 ? (
-            <p className="text-gray-500 text-center py-6">No pending assignments</p>
-          ) : (
-            <div className="space-y-4">
-              {assignments.map((assignment) => (
-                <div key={assignment.id} className="border rounded-lg p-4 space-y-4">
-                  <div className="flex justify-between items-start">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <Package className="h-4 w-4" />
-                        <span className="font-medium">{assignment.orders?.order_number}</span>
-                        <Badge variant="outline">Pending Response</Badge>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <User className="h-3 w-3" />
-                        <span>Assigned to: {assignment.delivery_boys?.name}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <Phone className="h-3 w-3" />
-                        <span>{assignment.delivery_boys?.phone}</span>
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => updateAssignmentStatus(assignment.id, 'accepted', assignment.order_id)}
-                      >
-                        <CheckCircle className="h-4 w-4 mr-1" />
-                        Accept
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => updateAssignmentStatus(assignment.id, 'rejected', assignment.order_id)}
-                      >
-                        <XCircle className="h-4 w-4 mr-1" />
-                        Reject
-                      </Button>
-                    </div>
-                  </div>
-                  
-                  {assignment.orders && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm bg-gray-50 p-3 rounded">
-                      <div>
-                        <div className="font-medium mb-1">Customer Details:</div>
-                        <div>{assignment.orders.customer_name}</div>
-                        <div>{assignment.orders.customer_phone}</div>
-                        <div className="flex items-start gap-1">
-                          <MapPin className="h-3 w-3 mt-0.5" />
-                          <span>{assignment.orders.customer_address}</span>
-                        </div>
-                      </div>
-                      <div>
-                        <div className="font-medium mb-1">Order Details:</div>
-                        <div className="flex items-center gap-1">
-                          <Store className="h-3 w-3" />
-                          <span>{assignment.orders.shop_name}</span>
-                        </div>
-                        <div>Amount: ₹{assignment.orders.total_amount}</div>
-                        <div>Payment: {assignment.orders.payment_method}</div>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {assignment.notes && (
-                    <div className="text-sm">
-                      <span className="font-medium">Notes: </span>
-                      {assignment.notes}
-                    </div>
-                  )}
+        <TabsContent value="assignments" className="space-y-4">
+          {/* Assign New Order */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Truck className="h-5 w-5" />
+                Assign Order to Delivery Boy
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label>Select Delivery Boy</Label>
+                  <Select value={selectedDeliveryBoy} onValueChange={setSelectedDeliveryBoy}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choose delivery boy" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {deliveryBoys.map((boy) => (
+                        <SelectItem key={boy.id} value={boy.id}>
+                          <div className="flex flex-col">
+                            <span className="font-medium">{boy.name}</span>
+                            <span className="text-xs text-gray-500">{boy.phone} - {boy.vehicle_type || 'N/A'}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Available Delivery Boys */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <User className="h-5 w-5" />
-            Available Delivery Boys
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {deliveryBoys.map((boy) => (
-              <div key={boy.id} className="border rounded-lg p-4">
-                <div className="space-y-2">
-                  <div className="font-medium">{boy.name}</div>
-                  <div className="text-sm text-gray-600">{boy.phone}</div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="secondary">{boy.vehicle_type || 'N/A'}</Badge>
-                    {boy.vehicle_number && (
-                      <span className="text-xs text-gray-500">{boy.vehicle_number}</span>
-                    )}
-                  </div>
-                  {boy.current_location && (
-                    <div className="flex items-center gap-1 text-xs text-gray-500">
-                      <MapPin className="h-3 w-3" />
-                      <span>{boy.current_location}</span>
-                    </div>
-                  )}
+                <div>
+                  <Label>Select Order</Label>
+                  <Select value={selectedOrder} onValueChange={setSelectedOrder}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choose order" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {pendingOrders.map((order) => (
+                        <SelectItem key={order.id} value={order.id}>
+                          <div className="flex flex-col">
+                            <span className="font-medium">{order.order_number}</span>
+                            <span className="text-xs text-gray-500">{order.customer_name} - ₹{order.total_amount}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+              <div>
+                <Label>Assignment Notes (Optional)</Label>
+                <Textarea
+                  value={assignmentNotes}
+                  onChange={(e) => setAssignmentNotes(e.target.value)}
+                  placeholder="Any special instructions for the delivery boy..."
+                />
+              </div>
+              <Button onClick={assignOrder} className="w-full">
+                Assign Order
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="pending" className="space-y-4">
+          {/* Pending Assignments */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Clock className="h-5 w-5" />
+                Pending Assignment Requests
+              </CardTitle>
+              <CardDescription>Orders waiting for delivery boy response</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {assignments.length === 0 ? (
+                <p className="text-gray-500 text-center py-6">No pending assignments</p>
+              ) : (
+                <div className="space-y-4">
+                  {assignments.map((assignment) => (
+                    <div key={assignment.id} className="border rounded-lg p-4 space-y-4">
+                      <div className="flex justify-between items-start">
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <Package className="h-4 w-4" />
+                            <span className="font-medium">{assignment.orders?.order_number}</span>
+                            <Badge variant="outline">Pending Response</Badge>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm text-gray-600">
+                            <User className="h-3 w-3" />
+                            <span>Assigned to: {assignment.delivery_boys?.name}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm text-gray-600">
+                            <Phone className="h-3 w-3" />
+                            <span>{assignment.delivery_boys?.phone}</span>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => updateAssignmentStatus(assignment.id, 'accepted', assignment.order_id)}
+                          >
+                            <CheckCircle className="h-4 w-4 mr-1" />
+                            Accept
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => updateAssignmentStatus(assignment.id, 'rejected', assignment.order_id)}
+                          >
+                            <XCircle className="h-4 w-4 mr-1" />
+                            Reject
+                          </Button>
+                        </div>
+                      </div>
+                      
+                      {assignment.orders && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm bg-gray-50 p-3 rounded">
+                          <div>
+                            <div className="font-medium mb-1">Customer Details:</div>
+                            <div>{assignment.orders.customer_name}</div>
+                            <div>{assignment.orders.customer_phone}</div>
+                            <div className="flex items-start gap-1">
+                              <MapPin className="h-3 w-3 mt-0.5" />
+                              <span>{assignment.orders.customer_address}</span>
+                            </div>
+                          </div>
+                          <div>
+                            <div className="font-medium mb-1">Order Details:</div>
+                            <div className="flex items-center gap-1">
+                              <Store className="h-3 w-3" />
+                              <span>{assignment.orders.shop_name}</span>
+                            </div>
+                            <div>Amount: ₹{assignment.orders.total_amount}</div>
+                            <div>Payment: {assignment.orders.payment_method}</div>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {assignment.notes && (
+                        <div className="text-sm">
+                          <span className="font-medium">Notes: </span>
+                          {assignment.notes}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="delivery-boys" className="space-y-4">
+          {/* Available Delivery Boys */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <User className="h-5 w-5" />
+                Available Delivery Boys
+              </CardTitle>
+              <CardDescription>
+                Manage your delivery team members
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {deliveryBoys.map((boy) => (
+                  <div key={boy.id} className="border rounded-lg p-4">
+                    <div className="space-y-2">
+                      <div className="font-medium">{boy.name}</div>
+                      <div className="text-sm text-gray-600">{boy.phone}</div>
+                      {boy.email && (
+                        <div className="text-sm text-gray-600">{boy.email}</div>
+                      )}
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary">{boy.vehicle_type || 'N/A'}</Badge>
+                        {boy.vehicle_number && (
+                          <span className="text-xs text-gray-500">{boy.vehicle_number}</span>
+                        )}
+                      </div>
+                      {boy.current_location && (
+                        <div className="flex items-center gap-1 text-xs text-gray-500">
+                          <MapPin className="h-3 w-3" />
+                          <span>{boy.current_location}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="add-delivery-boy" className="space-y-4">
+          <AddDeliveryBoyForm />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
