@@ -65,7 +65,10 @@ const DeliveryBoyPage = () => {
 
       const typedOrders = (ordersData || []).map(order => ({
         ...order,
-        product_details: order.product_details as ProductDetail[]
+        product_details: (order.product_details as unknown) as ProductDetail[],
+        payment_status: order.payment_status as 'pending' | 'paid',
+        payment_method: order.payment_method as 'cash' | 'upi' | 'card' | 'other',
+        order_status: order.order_status as 'pending' | 'assigned' | 'picked_up' | 'delivered' | 'cancelled'
       }));
 
       const typedAssignments = (assignmentsData || []).map(assignment => ({
@@ -73,7 +76,14 @@ const DeliveryBoyPage = () => {
         status: assignment.status as 'pending' | 'accepted' | 'rejected',
         orders: assignment.orders ? {
           ...assignment.orders,
-          product_details: assignment.orders.product_details as ProductDetail[]
+          product_details: (assignment.orders.product_details as unknown) as ProductDetail[],
+          payment_status: assignment.orders.payment_status as 'pending' | 'paid',
+          payment_method: assignment.orders.payment_method as 'cash' | 'upi' | 'card' | 'other',
+          order_status: assignment.orders.order_status as 'pending' | 'assigned' | 'picked_up' | 'delivered' | 'cancelled'
+        } : undefined,
+        delivery_boys: assignment.delivery_boys ? {
+          ...assignment.delivery_boys,
+          vehicle_type: assignment.delivery_boys.vehicle_type as 'bike' | 'bicycle' | 'car' | 'scooter' | null
         } : undefined
       }));
 
