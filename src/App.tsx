@@ -12,6 +12,8 @@ import React from 'react'; // Standard React import
 import Login from "./pages/Login";
 import DeliveryUpdate from "./pages/DeliveryUpdate";
 import AdminAnalytics from "./pages/AdminAnalytics";
+import CreateOrder from "./pages/CreateOrder";
+import DeliveryBoy from "./pages/DeliveryBoy";
 
 // Layout
 import AppLayout from "./components/layout/AppLayout";
@@ -35,6 +37,8 @@ const App = () => {
                 <Route path="/" element={<AppLayout />}>
                   <Route path="/delivery-update" element={<DeliveryUpdate />} />
                   <Route path="/admin-analytics" element={<AdminAnalytics />} />
+                  <Route path="/create-order" element={<CreateOrder />} />
+                  <Route path="/delivery-boy" element={<DeliveryBoy />} />
                 </Route>
                 
                 <Route path="*" element={<Navigate to="/delivery-update" replace />} />

@@ -42,6 +42,45 @@ export type Database = {
         }
         Relationships: []
       }
+      delivery_boys: {
+        Row: {
+          created_at: string
+          current_location: string | null
+          email: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          phone: string
+          updated_at: string
+          vehicle_number: string | null
+          vehicle_type: string | null
+        }
+        Insert: {
+          created_at?: string
+          current_location?: string | null
+          email?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          phone: string
+          updated_at?: string
+          vehicle_number?: string | null
+          vehicle_type?: string | null
+        }
+        Update: {
+          created_at?: string
+          current_location?: string | null
+          email?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          phone?: string
+          updated_at?: string
+          vehicle_number?: string | null
+          vehicle_type?: string | null
+        }
+        Relationships: []
+      }
       expenses: {
         Row: {
           added_by: string | null
@@ -74,6 +113,140 @@ export type Database = {
           title?: string
         }
         Relationships: []
+      }
+      order_assignments: {
+        Row: {
+          assigned_at: string
+          delivery_boy_id: string
+          id: string
+          notes: string | null
+          order_id: string
+          responded_at: string | null
+          status: string | null
+        }
+        Insert: {
+          assigned_at?: string
+          delivery_boy_id: string
+          id?: string
+          notes?: string | null
+          order_id: string
+          responded_at?: string | null
+          status?: string | null
+        }
+        Update: {
+          assigned_at?: string
+          delivery_boy_id?: string
+          id?: string
+          notes?: string | null
+          order_id?: string
+          responded_at?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_assignments_delivery_boy_id_fkey"
+            columns: ["delivery_boy_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_boys"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_assignments_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orders: {
+        Row: {
+          assigned_at: string | null
+          commission: number | null
+          created_at: string
+          created_by: string
+          customer_address: string
+          customer_id: string | null
+          customer_name: string
+          customer_phone: string
+          delivered_at: string | null
+          delivery_boy_id: string | null
+          delivery_charge: number | null
+          id: string
+          order_number: string
+          order_status: string | null
+          payment_method: string | null
+          payment_status: string | null
+          picked_up_at: string | null
+          product_details: Json
+          shop_address: string | null
+          shop_name: string
+          shop_phone: string | null
+          special_instructions: string | null
+          total_amount: number
+          updated_at: string
+        }
+        Insert: {
+          assigned_at?: string | null
+          commission?: number | null
+          created_at?: string
+          created_by: string
+          customer_address: string
+          customer_id?: string | null
+          customer_name: string
+          customer_phone: string
+          delivered_at?: string | null
+          delivery_boy_id?: string | null
+          delivery_charge?: number | null
+          id?: string
+          order_number: string
+          order_status?: string | null
+          payment_method?: string | null
+          payment_status?: string | null
+          picked_up_at?: string | null
+          product_details: Json
+          shop_address?: string | null
+          shop_name: string
+          shop_phone?: string | null
+          special_instructions?: string | null
+          total_amount: number
+          updated_at?: string
+        }
+        Update: {
+          assigned_at?: string | null
+          commission?: number | null
+          created_at?: string
+          created_by?: string
+          customer_address?: string
+          customer_id?: string | null
+          customer_name?: string
+          customer_phone?: string
+          delivered_at?: string | null
+          delivery_boy_id?: string | null
+          delivery_charge?: number | null
+          id?: string
+          order_number?: string
+          order_status?: string | null
+          payment_method?: string | null
+          payment_status?: string | null
+          picked_up_at?: string | null
+          product_details?: Json
+          shop_address?: string | null
+          shop_name?: string
+          shop_phone?: string | null
+          special_instructions?: string | null
+          total_amount?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       transactions: {
         Row: {
