@@ -1,75 +1,102 @@
 
-import React from 'react';
-import { Outlet, Link, useLocation } from 'react-router-dom';
+import { Outlet, useLocation, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { useAuth } from '@/context/AuthContext';
-import { Truck, BarChart3, LogOut, Package, Users } from 'lucide-react';
+import { LogOut, Package, BarChart3, PlusCircle, Truck } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
+import AdminNotifications from "@/components/notifications/AdminNotifications";
 
 const AppLayout = () => {
-  const { user, logout } = useAuth();
+  const { logout, user } = useAuth();
   const location = useLocation();
 
-  const isActive = (path: string) => location.pathname === path;
+  const handleLogout = () => {
+    logout();
+  };
+
+  const navigation = [
+    { name: "Delivery Updates", href: "/delivery-update", icon: Package },
+    { name: "Analytics", href: "/admin-analytics", icon: BarChart3 },
+    { name: "Create Order", href: "/create-order", icon: PlusCircle },
+    { name: "Delivery Management", href: "/delivery-boy", icon: Truck },
+  ];
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white shadow-sm border-b">
+      {/* Navigation Header */}
+      <header className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center space-x-8">
-              <div className="flex-shrink-0">
-                <h1 className="text-xl font-bold text-gray-900">Delivery Dashboard</h1>
-              </div>
-              <div className="hidden md:flex space-x-1">
-                <Link to="/delivery-update">
-                  <Button 
-                    variant={isActive('/delivery-update') ? "default" : "ghost"}
-                    className="flex items-center gap-2"
-                  >
-                    <Truck className="h-4 w-4" />
-                    Delivery Update
-                  </Button>
-                </Link>
-                <Link to="/create-order">
-                  <Button 
-                    variant={isActive('/create-order') ? "default" : "ghost"}
-                    className="flex items-center gap-2"
-                  >
-                    <Package className="h-4 w-4" />
-                    Create Order
-                  </Button>
-                </Link>
-                <Link to="/delivery-boy">
-                  <Button 
-                    variant={isActive('/delivery-boy') ? "default" : "ghost"}
-                    className="flex items-center gap-2"
-                  >
-                    <Users className="h-4 w-4" />
-                    Delivery Boys
-                  </Button>
-                </Link>
-                <Link to="/admin-analytics">
-                  <Button 
-                    variant={isActive('/admin-analytics') ? "default" : "ghost"}
-                    className="flex items-center gap-2"
-                  >
-                    <BarChart3 className="h-4 w-4" />
-                    Analytics
-                  </Button>
-                </Link>
-              </div>
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center">
+              <h1 className="text-xl font-semibold text-gray-900">
+                Delivery Management System
+              </h1>
             </div>
+            
+            <nav className="hidden md:flex space-x-8">
+              {navigation.map((item) => {
+                const Icon = item.icon;
+                const isActive = location.pathname === item.href;
+                return (
+                  <Link
+                    key={item.name}
+                    to={item.href}
+                    className={`inline-flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                      isActive
+                        ? "bg-blue-100 text-blue-700"
+                        : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                    }`}
+                  >
+                    <Icon className="w-4 h-4 mr-2" />
+                    {item.name}
+                  </Link>
+                );
+              })}
+            </nav>
+
             <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-700">Welcome, {user?.name}</span>
-              <Button variant="ghost" onClick={logout} className="flex items-center gap-2">
-                <LogOut className="h-4 w-4" />
-                Logout
-              </Button>
+              <AdminNotifications />
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-gray-700">
+                  Welcome, {user?.email}
+                </span>
+                <Button onClick={handleLogout} variant="outline" size="sm">
+                  <LogOut className="w-4 h-4 mr-1" />
+                  Logout
+                </Button>
+              </div>
             </div>
           </div>
         </div>
-      </nav>
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+      </header>
+
+      {/* Mobile Navigation */}
+      <div className="md:hidden bg-white border-b">
+        <div className="px-4 py-2">
+          <nav className="flex space-x-4 overflow-x-auto">
+            {navigation.map((item) => {
+              const Icon = item.icon;
+              const isActive = location.pathname === item.href;
+              return (
+                <Link
+                  key={item.name}
+                  to={item.href}
+                  className={`inline-flex items-center px-3 py-2 text-sm font-medium rounded-md whitespace-nowrap transition-colors ${
+                    isActive
+                      ? "bg-blue-100 text-blue-700"
+                      : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                  }`}
+                >
+                  <Icon className="w-4 h-4 mr-2" />
+                  {item.name}
+                </Link>
+              );
+            })}
+          </nav>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
         <Outlet />
       </main>
     </div>
