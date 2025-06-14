@@ -1,14 +1,14 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
-import { Send, MessageCircle, ShoppingCart, User, LogOut } from 'lucide-react';
-import { SHOPS } from '@/config/shops';
+import { Send, MessageCircle, ShoppingCart, User, LogOut, Loader2 } from 'lucide-react';
 import ChatMessage from '@/components/chat/ChatMessage';
 import ProductCard from '@/components/chat/ProductCard';
 import { toast } from '@/components/ui/sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { useShops } from '@/hooks/useShops';
+import { useProducts } from '@/hooks/useProducts';
 
 interface Message {
   id: string;
@@ -47,12 +47,17 @@ const CustomerPortal = () => {
   const [currentStep, setCurrentStep] = useState('login');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedShop, setSelectedShop] = useState('');
+  const [selectedShopId, setSelectedShopId] = useState('');
   const [customer, setCustomer] = useState<CustomerData | null>(null);
   const [cart, setCart] = useState<OrderItem[]>([]);
   const [showLoginForm, setShowLoginForm] = useState(false);
   const [loginPhone, setLoginPhone] = useState('');
   const [registrationName, setRegistrationName] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Fetch shops and products based on current selection
+  const { shops, loading: shopsLoading } = useShops(selectedCategory);
+  const { products, loading: productsLoading } = useProducts(selectedShopId, selectedCategory);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -205,6 +210,9 @@ const CustomerPortal = () => {
     setCurrentStep('login');
     setLoginPhone('');
     setRegistrationName('');
+    setSelectedCategory('');
+    setSelectedShop('');
+    setSelectedShopId('');
     showLoginMessage();
     toast.info('Logged out successfully');
   };
@@ -217,154 +225,42 @@ const CustomerPortal = () => {
     setCurrentStep('shop_selection');
     
     setTimeout(() => {
-      addBotMessage(
-        `Great choice! You've selected ${categoryName}. Now please choose a shop:`,
-        SHOPS.map(shop => shop.name)
-      );
+      if (shopsLoading) {
+        addBotMessage(`Great choice! You've selected ${categoryName}. Loading shops...`);
+      } else if (shops.length === 0) {
+        addBotMessage(`Sorry, no shops are currently available for ${categoryName}. Please try another category.`, CATEGORIES.map(cat => `${cat.emoji} ${cat.name}`));
+        setCurrentStep('welcome');
+      } else {
+        addBotMessage(
+          `Great choice! You've selected ${categoryName}. Now please choose a shop:`,
+          shops.map(shop => shop.name)
+        );
+      }
     }, 500);
   };
 
   const handleShopSelection = (shopName: string) => {
+    const selectedShopData = shops.find(shop => shop.name === shopName);
+    if (!selectedShopData) return;
+
     setSelectedShop(shopName);
+    setSelectedShopId(selectedShopData.id);
     addUserMessage(shopName);
     setCurrentStep('products');
     
-    // Mock products for the selected shop and category
-    const getMockProducts = () => {
-      const baseProducts = {
-        'Food': [
-          {
-            id: 1,
-            name: 'Chicken Biryani',
-            price: 250,
-            description: 'Delicious aromatic basmati rice cooked with tender chicken and spices',
-            image: '/api/placeholder/300/200'
-          },
-          {
-            id: 2,
-            name: 'Butter Chicken',
-            price: 280,
-            description: 'Creamy tomato-based curry with tender chicken pieces',
-            image: '/api/placeholder/300/200'
-          },
-          {
-            id: 3,
-            name: 'Paneer Butter Masala',
-            price: 220,
-            description: 'Rich and creamy paneer curry with butter and spices',
-            image: '/api/placeholder/300/200'
-          },
-          {
-            id: 4,
-            name: 'Chicken Fried Rice',
-            price: 180,
-            description: 'Wok-tossed rice with chicken and vegetables',
-            image: '/api/placeholder/300/200'
-          }
-        ],
-        'Grocery': [
-          {
-            id: 5,
-            name: 'Basmati Rice (1kg)',
-            price: 120,
-            description: 'Premium quality basmati rice',
-            image: '/api/placeholder/300/200'
-          },
-          {
-            id: 6,
-            name: 'Cooking Oil (1L)',
-            price: 150,
-            description: 'Refined sunflower oil',
-            image: '/api/placeholder/300/200'
-          },
-          {
-            id: 7,
-            name: 'Wheat Flour (1kg)',
-            price: 45,
-            description: 'Fine quality wheat flour',
-            image: '/api/placeholder/300/200'
-          },
-          {
-            id: 8,
-            name: 'Sugar (1kg)',
-            price: 50,
-            description: 'Crystal white sugar',
-            image: '/api/placeholder/300/200'
-          }
-        ],
-        'Vegetables': [
-          {
-            id: 9,
-            name: 'Fresh Tomatoes (1kg)',
-            price: 40,
-            description: 'Fresh red tomatoes',
-            image: '/api/placeholder/300/200'
-          },
-          {
-            id: 10,
-            name: 'Onions (1kg)',
-            price: 35,
-            description: 'Fresh red onions',
-            image: '/api/placeholder/300/200'
-          },
-          {
-            id: 11,
-            name: 'Potatoes (1kg)',
-            price: 30,
-            description: 'Fresh potatoes',
-            image: '/api/placeholder/300/200'
-          },
-          {
-            id: 12,
-            name: 'Green Chilies (250g)',
-            price: 20,
-            description: 'Fresh green chilies',
-            image: '/api/placeholder/300/200'
-          }
-        ],
-        'Meat': [
-          {
-            id: 13,
-            name: 'Chicken Breast (1kg)',
-            price: 300,
-            description: 'Fresh chicken breast',
-            image: '/api/placeholder/300/200'
-          },
-          {
-            id: 14,
-            name: 'Mutton (1kg)',
-            price: 650,
-            description: 'Fresh mutton pieces',
-            image: '/api/placeholder/300/200'
-          },
-          {
-            id: 15,
-            name: 'Fish Fillet (500g)',
-            price: 200,
-            description: 'Fresh fish fillet',
-            image: '/api/placeholder/300/200'
-          },
-          {
-            id: 16,
-            name: 'Prawns (500g)',
-            price: 350,
-            description: 'Fresh prawns',
-            image: '/api/placeholder/300/200'
-          }
-        ]
-      };
-      
-      return baseProducts[selectedCategory] || baseProducts['Food'];
-    };
-
-    const mockProducts = getMockProducts();
-
     setTimeout(() => {
-      addBotMessage(
-        `Perfect! Here are the available ${selectedCategory.toLowerCase()} items from ${shopName}. You can add items to your cart by clicking on them:`,
-        undefined,
-        mockProducts
-      );
+      if (productsLoading) {
+        addBotMessage(`Loading products from ${shopName}...`);
+      } else if (products.length === 0) {
+        addBotMessage(`Sorry, no products are currently available from ${shopName}. Please try another shop.`, shops.map(shop => shop.name));
+        setCurrentStep('shop_selection');
+      } else {
+        addBotMessage(
+          `Perfect! Here are the available ${selectedCategory.toLowerCase()} items from ${shopName}. You can add items to your cart by clicking on them:`,
+          undefined,
+          products
+        );
+      }
     }, 500);
   };
 
@@ -499,6 +395,9 @@ const CustomerPortal = () => {
             <span className="text-sm text-gray-600 bg-gray-100 px-2 py-1 rounded">
               {selectedCategory}
             </span>
+          )}
+          {(shopsLoading || productsLoading) && (
+            <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
           )}
         </div>
         <div className="flex items-center gap-4">
