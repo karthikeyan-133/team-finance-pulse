@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -7,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Calendar, TrendingUp, TrendingDown, DollarSign, Package, Users, Download } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Order } from '@/types/orders';
+import { Order, ProductDetail } from '@/types/orders';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend } from 'recharts';
 
@@ -24,7 +23,14 @@ const FinancialAnalytics = () => {
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      return data as Order[];
+      
+      // Transform the data to match our Order interface
+      return data.map(order => ({
+        ...order,
+        product_details: Array.isArray(order.product_details) 
+          ? order.product_details as ProductDetail[]
+          : []
+      })) as Order[];
     }
   });
 
