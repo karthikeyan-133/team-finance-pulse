@@ -48,10 +48,62 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Order, DeliveryBoy, OrderAssignment } from '@/types/orders';
 import { useSupabaseTransactions } from '@/hooks/useSupabaseTransactions';
 import { useSupabaseExpenses } from '@/hooks/useSupabaseExpenses';
 import { useDashboardStats } from '@/hooks/useDashboardStats';
+
+// Define proper types for the dashboard
+interface DashboardOrder {
+  id: string;
+  order_number: string;
+  customer_name: string;
+  customer_phone: string;
+  shop_name: string;
+  total_amount: number;
+  delivery_charge: number;
+  commission: number;
+  order_status: string;
+  created_at: string;
+  delivery_boy_id?: string;
+  delivery_boy?: {
+    id: string;
+    name: string;
+    phone: string;
+    vehicle_type?: string;
+  };
+}
+
+interface DashboardDeliveryBoy {
+  id: string;
+  name: string;
+  phone: string;
+  email?: string;
+  vehicle_type?: string;
+  vehicle_number?: string;
+  current_location?: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+interface DashboardOrderAssignment {
+  id: string;
+  order_id: string;
+  delivery_boy_id: string;
+  status: string;
+  assigned_at: string;
+  responded_at?: string;
+  notes?: string;
+  orders?: {
+    order_number: string;
+    customer_name: string;
+    total_amount: number;
+  };
+  delivery_boys?: {
+    name: string;
+    phone: string;
+  };
+}
 
 const FinancialAnalyticsDashboard = () => {
   const { user } = useAuth();
@@ -59,9 +111,9 @@ const FinancialAnalyticsDashboard = () => {
   const { expenses } = useSupabaseExpenses();
   const { dashboardStats } = useDashboardStats(transactions, expenses);
   
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [deliveryBoys, setDeliveryBoys] = useState<DeliveryBoy[]>([]);
-  const [assignments, setAssignments] = useState<OrderAssignment[]>([]);
+  const [orders, setOrders] = useState<DashboardOrder[]>([]);
+  const [deliveryBoys, setDeliveryBoys] = useState<DashboardDeliveryBoy[]>([]);
+  const [assignments, setAssignments] = useState<DashboardOrderAssignment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // Redirect non-admin users
@@ -109,9 +161,9 @@ const FinancialAnalyticsDashboard = () => {
 
       if (assignmentsError) throw assignmentsError;
 
-      setOrders(ordersData || []);
-      setDeliveryBoys(deliveryBoysData || []);
-      setAssignments(assignmentsData || []);
+      setOrders((ordersData || []) as DashboardOrder[]);
+      setDeliveryBoys((deliveryBoysData || []) as DashboardDeliveryBoy[]);
+      setAssignments((assignmentsData || []) as DashboardOrderAssignment[]);
     } catch (error) {
       console.error('Error fetching delivery data:', error);
       toast.error('Failed to load delivery data');
