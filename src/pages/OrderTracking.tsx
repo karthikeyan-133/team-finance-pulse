@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -148,8 +149,8 @@ const OrderTracking = () => {
         created_by: order.created_by || 'Unknown',
         created_at: order.created_at,
         updated_at: order.updated_at,
-        // Fix: Properly handle the delivery_boys join - it's an object, not an array
-        deliveryBoyName: (order.delivery_boys as any)?.name || 'Not Assigned'
+        // Now properly handle the delivery_boys join with the foreign key relationship
+        deliveryBoyName: order.delivery_boys?.name || 'Not Assigned'
       }));
 
       console.log('Processed orders:', typedOrders);
