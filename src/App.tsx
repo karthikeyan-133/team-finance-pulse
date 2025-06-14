@@ -16,6 +16,7 @@ import CreateOrder from "./pages/CreateOrder";
 import DeliveryBoy from "./pages/DeliveryBoy";
 import DeliveryBoyLogin from "./pages/DeliveryBoyLogin";
 import DeliveryBoyDashboard from "./pages/DeliveryBoyDashboard";
+import OrderTracking from "./pages/OrderTracking";
 
 // Layout
 import AppLayout from "./components/layout/AppLayout";
@@ -43,6 +44,7 @@ const App = () => {
                 {/* Admin Routes */}
                 <Route path="/" element={<AppLayout />}>
                   <Route path="/delivery-update" element={<DeliveryUpdate />} />
+                  <Route path="/order-tracking" element={<OrderTracking />} />
                   <Route path="/admin-analytics" element={<AdminAnalytics />} />
                   <Route path="/create-order" element={<CreateOrder />} />
                   <Route path="/delivery-boy" element={<DeliveryBoy />} />

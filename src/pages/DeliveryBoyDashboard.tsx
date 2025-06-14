@@ -1,17 +1,20 @@
-
 import React, { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Package, MapPin, Phone, Store, User, Clock, CheckCircle, XCircle, LogOut } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Package, MapPin, Phone, Store, User, Clock, CheckCircle, XCircle, LogOut, Truck } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { OrderAssignment, ProductDetail } from '@/types/orders';
+import { OrderAssignment, ProductDetail, Order } from '@/types/orders';
+import DeliveryStatusUpdater from '@/components/orders/DeliveryStatusUpdater';
+import OrderStatusTracker from '@/components/orders/OrderStatusTracker';
 
 const DeliveryBoyDashboard = () => {
   const [deliveryBoy, setDeliveryBoy] = useState(null);
   const [assignments, setAssignments] = useState<OrderAssignment[]>([]);
+  const [acceptedOrders, setAcceptedOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -24,6 +27,7 @@ const DeliveryBoyDashboard = () => {
     const deliveryBoyData = JSON.parse(savedSession);
     setDeliveryBoy(deliveryBoyData);
     fetchAssignments(deliveryBoyData.id);
+    fetchAcceptedOrders(deliveryBoyData.id);
   }, []);
 
   const fetchAssignments = async (deliveryBoyId: string) => {
@@ -57,6 +61,32 @@ const DeliveryBoyDashboard = () => {
     } catch (error) {
       console.error('Error fetching assignments:', error);
       toast.error('Failed to load assignments');
+    }
+  };
+
+  const fetchAcceptedOrders = async (deliveryBoyId: string) => {
+    try {
+      const { data: ordersData, error } = await supabase
+        .from('orders')
+        .select('*')
+        .eq('delivery_boy_id', deliveryBoyId)
+        .in('order_status', ['assigned', 'picked_up'])
+        .order('assigned_at', { ascending: false });
+
+      if (error) throw error;
+
+      const typedOrders = (ordersData || []).map(order => ({
+        ...order,
+        product_details: (order.product_details as unknown) as ProductDetail[],
+        payment_status: order.payment_status as 'pending' | 'paid',
+        payment_method: order.payment_method as 'cash' | 'upi' | 'card' | 'other',
+        order_status: order.order_status as 'pending' | 'assigned' | 'picked_up' | 'delivered' | 'cancelled'
+      }));
+
+      setAcceptedOrders(typedOrders);
+    } catch (error) {
+      console.error('Error fetching accepted orders:', error);
+      toast.error('Failed to load accepted orders');
     } finally {
       setIsLoading(false);
     }
@@ -89,10 +119,15 @@ const DeliveryBoyDashboard = () => {
 
       toast.success(`Order ${status} successfully!`);
       fetchAssignments(deliveryBoy.id);
+      fetchAcceptedOrders(deliveryBoy.id);
     } catch (error) {
       console.error('Error updating assignment:', error);
       toast.error('Failed to update assignment');
     }
+  };
+
+  const handleStatusUpdate = () => {
+    fetchAcceptedOrders(deliveryBoy.id);
   };
 
   const handleLogout = () => {
@@ -123,92 +158,126 @@ const DeliveryBoyDashboard = () => {
         </Button>
       </div>
 
-      {/* Pending Assignments */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Clock className="h-5 w-5" />
-            Pending Assignment Requests
-          </CardTitle>
-          <CardDescription>Orders waiting for your response</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {assignments.length === 0 ? (
-            <p className="text-gray-500 text-center py-6">No pending assignments</p>
-          ) : (
-            <div className="space-y-4">
-              {assignments.map((assignment) => (
-                <div key={assignment.id} className="border rounded-lg p-4 space-y-4">
-                  <div className="flex justify-between items-start">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <Package className="h-4 w-4" />
-                        <span className="font-medium">{assignment.orders?.order_number}</span>
-                        <Badge variant="outline">Pending Response</Badge>
-                      </div>
-                      <div className="text-sm text-gray-600">
-                        Assigned at: {new Date(assignment.assigned_at).toLocaleString()}
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        onClick={() => updateAssignmentStatus(assignment.id, 'accepted', assignment.order_id)}
-                        className="bg-green-600 hover:bg-green-700"
-                      >
-                        <CheckCircle className="h-4 w-4 mr-1" />
-                        Accept
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => updateAssignmentStatus(assignment.id, 'rejected', assignment.order_id)}
-                      >
-                        <XCircle className="h-4 w-4 mr-1" />
-                        Reject
-                      </Button>
-                    </div>
-                  </div>
-                  
-                  {assignment.orders && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm bg-gray-50 p-3 rounded">
-                      <div>
-                        <div className="font-medium mb-1">Customer Details:</div>
-                        <div>{assignment.orders.customer_name}</div>
-                        <div className="flex items-center gap-1">
-                          <Phone className="h-3 w-3" />
-                          <span>{assignment.orders.customer_phone}</span>
+      <Tabs defaultValue="pending" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="pending" className="flex items-center gap-2">
+            <Clock className="h-4 w-4" />
+            Pending Requests ({assignments.length})
+          </TabsTrigger>
+          <TabsTrigger value="active" className="flex items-center gap-2">
+            <Truck className="h-4 w-4" />
+            Active Orders ({acceptedOrders.length})
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="pending">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Clock className="h-5 w-5" />
+                Pending Assignment Requests
+              </CardTitle>
+              <CardDescription>Orders waiting for your response</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {assignments.length === 0 ? (
+                <p className="text-gray-500 text-center py-6">No pending assignments</p>
+              ) : (
+                <div className="space-y-4">
+                  {assignments.map((assignment) => (
+                    <div key={assignment.id} className="border rounded-lg p-4 space-y-4">
+                      <div className="flex justify-between items-start">
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <Package className="h-4 w-4" />
+                            <span className="font-medium">{assignment.orders?.order_number}</span>
+                            <Badge variant="outline">Pending Response</Badge>
+                          </div>
+                          <div className="text-sm text-gray-600">
+                            Assigned at: {new Date(assignment.assigned_at).toLocaleString()}
+                          </div>
                         </div>
-                        <div className="flex items-start gap-1">
-                          <MapPin className="h-3 w-3 mt-0.5" />
-                          <span>{assignment.orders.customer_address}</span>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            onClick={() => updateAssignmentStatus(assignment.id, 'accepted', assignment.order_id)}
+                            className="bg-green-600 hover:bg-green-700"
+                          >
+                            <CheckCircle className="h-4 w-4 mr-1" />
+                            Accept
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => updateAssignmentStatus(assignment.id, 'rejected', assignment.order_id)}
+                          >
+                            <XCircle className="h-4 w-4 mr-1" />
+                            Reject
+                          </Button>
                         </div>
                       </div>
-                      <div>
-                        <div className="font-medium mb-1">Order Details:</div>
-                        <div className="flex items-center gap-1">
-                          <Store className="h-3 w-3" />
-                          <span>{assignment.orders.shop_name}</span>
+                      
+                      {assignment.orders && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm bg-gray-50 p-3 rounded">
+                          <div>
+                            <div className="font-medium mb-1">Customer Details:</div>
+                            <div>{assignment.orders.customer_name}</div>
+                            <div className="flex items-center gap-1">
+                              <Phone className="h-3 w-3" />
+                              <span>{assignment.orders.customer_phone}</span>
+                            </div>
+                            <div className="flex items-start gap-1">
+                              <MapPin className="h-3 w-3 mt-0.5" />
+                              <span>{assignment.orders.customer_address}</span>
+                            </div>
+                          </div>
+                          <div>
+                            <div className="font-medium mb-1">Order Details:</div>
+                            <div className="flex items-center gap-1">
+                              <Store className="h-3 w-3" />
+                              <span>{assignment.orders.shop_name}</span>
+                            </div>
+                            <div>Amount: ₹{assignment.orders.total_amount}</div>
+                            <div>Payment: {assignment.orders.payment_method}</div>
+                            <div>Delivery Charge: ₹{assignment.orders.delivery_charge || 0}</div>
+                          </div>
                         </div>
-                        <div>Amount: ₹{assignment.orders.total_amount}</div>
-                        <div>Payment: {assignment.orders.payment_method}</div>
-                        <div>Delivery Charge: ₹{assignment.orders.delivery_charge || 0}</div>
-                      </div>
+                      )}
+                      
+                      {assignment.notes && (
+                        <div className="text-sm">
+                          <span className="font-medium">Special Instructions: </span>
+                          {assignment.notes}
+                        </div>
+                      )}
                     </div>
-                  )}
-                  
-                  {assignment.notes && (
-                    <div className="text-sm">
-                      <span className="font-medium">Special Instructions: </span>
-                      {assignment.notes}
-                    </div>
-                  )}
+                  ))}
                 </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="active">
+          <div className="space-y-4">
+            {acceptedOrders.length === 0 ? (
+              <Card>
+                <CardContent className="text-center py-6">
+                  <p className="text-gray-500">No active orders</p>
+                </CardContent>
+              </Card>
+            ) : (
+              acceptedOrders.map((order) => (
+                <DeliveryStatusUpdater
+                  key={order.id}
+                  order={order}
+                  onStatusUpdate={handleStatusUpdate}
+                />
+              ))
+            )}
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
