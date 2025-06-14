@@ -16,18 +16,38 @@ const DeliveryBoyLogin = () => {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!phone.trim()) {
+      toast.error('Please enter your phone number');
+      return;
+    }
+
     setIsLoading(true);
 
     try {
+      console.log('Attempting login with phone:', phone);
+      
       // Check if delivery boy exists with this phone number
       const { data, error } = await supabase
         .from('delivery_boys')
         .select('*')
-        .eq('phone', phone)
+        .eq('phone', phone.trim())
         .eq('is_active', true)
         .single();
 
-      if (error || !data) {
+      console.log('Database response:', { data, error });
+
+      if (error) {
+        console.error('Database error:', error);
+        if (error.code === 'PGRST116') {
+          toast.error('Phone number not found or account is inactive');
+        } else {
+          toast.error('Login failed. Please try again.');
+        }
+        return;
+      }
+
+      if (!data) {
         toast.error('Phone number not found or account is inactive');
         return;
       }
@@ -49,7 +69,13 @@ const DeliveryBoyLogin = () => {
   React.useEffect(() => {
     const savedSession = localStorage.getItem('delivery_boy_session');
     if (savedSession) {
-      setDeliveryBoyData(JSON.parse(savedSession));
+      try {
+        const parsedSession = JSON.parse(savedSession);
+        setDeliveryBoyData(parsedSession);
+      } catch (error) {
+        console.error('Error parsing saved session:', error);
+        localStorage.removeItem('delivery_boy_session');
+      }
     }
   }, []);
 
@@ -80,12 +106,13 @@ const DeliveryBoyLogin = () => {
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 required
+                disabled={isLoading}
               />
             </div>
             <Button 
               type="submit" 
               className="w-full"
-              disabled={isLoading}
+              disabled={isLoading || !phone.trim()}
             >
               {isLoading ? 'Signing in...' : 'Sign in'}
             </Button>
