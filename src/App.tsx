@@ -1,79 +1,89 @@
 
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider } from "./context/AuthContext";
-import { DataProvider } from "./context/DataContext";
-import { ShopOwnerProvider } from "./context/ShopOwnerContext";
-import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
+import { DataProvider } from './context/DataContext';
+import { ShopOwnerProvider } from './context/ShopOwnerContext';
+import { Toaster } from '@/components/ui/sonner';
+import ProtectedRoute from './components/ProtectedRoute';
+import Index from './pages/Index';
+import Login from './pages/Login';
+import ShopOwnerLogin from './pages/ShopOwnerLogin';
+import DeliveryBoyLogin from './pages/DeliveryBoyLogin';
+import AdminAnalytics from './pages/AdminAnalytics';
+import FinancialAnalyticsDashboard from './pages/FinancialAnalyticsDashboard';
+import DeliveryUpdate from './pages/DeliveryUpdate';
+import CreateOrder from './pages/CreateOrder';
+import OrderTracking from './pages/OrderTracking';
+import CustomerPortal from './pages/CustomerPortal';
+import ShopOwnerDashboard from './pages/ShopOwnerDashboard';
+import DeliveryBoyDashboard from './pages/DeliveryBoyDashboard';
+import DeliveryBoy from './pages/DeliveryBoy';
+import './App.css';
 
-// Pages
-import Index from "./pages/Index";
-import Login from "./pages/Login";
-import AdminAnalytics from "./pages/AdminAnalytics";
-import DeliveryBoy from "./pages/DeliveryBoy";
-import DeliveryBoyLogin from "./pages/DeliveryBoyLogin";
-import DeliveryBoyDashboard from "./pages/DeliveryBoyDashboard";
-import OrderTracking from "./pages/OrderTracking";
-import ShopOwnerLogin from "./pages/ShopOwnerLogin";
-import ShopOwnerDashboard from "./pages/ShopOwnerDashboard";
-import CustomerPortal from "./pages/CustomerPortal";
-
-// Layout
-import AppLayout from "./components/layout/AppLayout";
-
-// Components
-import ProtectedRoute from "./components/ProtectedRoute";
-
-// Create a QueryClient instance outside of the component
-const queryClient = new QueryClient();
-
-const App = () => {
+function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <AuthProvider>
-          <DataProvider>
-            <ShopOwnerProvider>
-              <BrowserRouter>
-                <Routes>
-                  <Route path="/" element={<Index />} />
-                  <Route path="/login" element={<Login />} />
-                  <Route path="/customer-portal" element={<CustomerPortal />} />
-                  
-                  {/* Delivery Boy Routes (separate from admin) */}
-                  <Route path="/delivery-boy-login" element={<DeliveryBoyLogin />} />
-                  <Route path="/delivery-boy-dashboard" element={<DeliveryBoyDashboard />} />
-                  
-                  {/* Shop Owner Routes */}
-                  <Route path="/shop-login" element={<ShopOwnerLogin />} />
-                  <Route path="/shop-dashboard" element={<ShopOwnerDashboard />} />
-                  
-                  {/* Admin Routes - Protected */}
-                  <Route path="/admin" element={
-                    <ProtectedRoute>
-                      <AppLayout />
+    <AuthProvider>
+      <DataProvider>
+        <ShopOwnerProvider>
+          <Router>
+            <div className="min-h-screen bg-background">
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/shop-owner-login" element={<ShopOwnerLogin />} />
+                <Route path="/delivery-boy-login" element={<DeliveryBoyLogin />} />
+                <Route 
+                  path="/admin-analytics" 
+                  element={
+                    <ProtectedRoute requiredRole="admin">
+                      <AdminAnalytics />
                     </ProtectedRoute>
-                  }>
-                    <Route index element={<Navigate to="/admin/order-tracking" replace />} />
-                    <Route path="order-tracking" element={<OrderTracking />} />
-                    <Route path="analytics" element={<AdminAnalytics />} />
-                    <Route path="delivery-boy" element={<DeliveryBoy />} />
-                  </Route>
-                  
-                  <Route path="*" element={<Navigate to="/" replace />} />
-                </Routes>
-              </BrowserRouter>
-            </ShopOwnerProvider>
-          </DataProvider>
-        </AuthProvider>
-      </TooltipProvider>
-    </QueryClientProvider>
+                  } 
+                />
+                <Route 
+                  path="/financial-analytics" 
+                  element={
+                    <ProtectedRoute requiredRole="admin">
+                      <FinancialAnalyticsDashboard />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route path="/delivery-update" element={<DeliveryUpdate />} />
+                <Route path="/create-order" element={<CreateOrder />} />
+                <Route path="/order-tracking/:orderNumber" element={<OrderTracking />} />
+                <Route path="/customer-portal" element={<CustomerPortal />} />
+                <Route 
+                  path="/shop-owner-dashboard" 
+                  element={
+                    <ProtectedRoute requiredRole="shop_owner">
+                      <ShopOwnerDashboard />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/delivery-boy-dashboard" 
+                  element={
+                    <ProtectedRoute requiredRole="delivery_boy">
+                      <DeliveryBoyDashboard />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/delivery-boy" 
+                  element={
+                    <ProtectedRoute requiredRole="admin">
+                      <DeliveryBoy />
+                    </ProtectedRoute>
+                  } 
+                />
+              </Routes>
+              <Toaster />
+            </div>
+          </Router>
+        </ShopOwnerProvider>
+      </DataProvider>
+    </AuthProvider>
   );
-};
+}
 
 export default App;
