@@ -41,20 +41,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    console.log('AuthProvider: Checking for saved user...');
     // Check for saved user in local storage
     const savedUser = localStorage.getItem('delivery_user');
     if (savedUser) {
       try {
-        setUser(JSON.parse(savedUser));
+        const parsedUser = JSON.parse(savedUser);
+        console.log('AuthProvider: Found saved user:', parsedUser);
+        setUser(parsedUser);
       } catch (error) {
         console.error('Error parsing saved user:', error);
         localStorage.removeItem('delivery_user');
       }
+    } else {
+      console.log('AuthProvider: No saved user found');
     }
     setIsLoading(false);
   }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
+    console.log('AuthContext: Login attempt for:', email);
     setIsLoading(true);
     
     try {
@@ -62,14 +68,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await new Promise(resolve => setTimeout(resolve, 800));
       
       const user = mockUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
+      console.log('AuthContext: Found user:', user);
       
       if (user && password === 'password') {
+        console.log('AuthContext: Login successful for:', user.name);
         setUser(user);
         localStorage.setItem('delivery_user', JSON.stringify(user));
         toast.success(`Welcome back, ${user.name}!`);
         setIsLoading(false);
         return true;
       } else {
+        console.log('AuthContext: Invalid credentials');
         toast.error('Invalid email or password');
         setIsLoading(false);
         return false;
@@ -83,10 +92,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = () => {
+    console.log('AuthContext: Logging out user');
     setUser(null);
     localStorage.removeItem('delivery_user');
     toast.info('Logged out successfully');
   };
+
+  console.log('AuthProvider: Current user state:', user);
 
   return (
     <AuthContext.Provider value={{ user, login, logout, isLoading }}>

@@ -11,18 +11,33 @@ const Login: React.FC = () => {
   const { user, login, isLoading } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loginError, setLoginError] = useState('');
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const success = await login(email, password);
-    if (success) {
-      // Redirect to admin dashboard after successful login
-      navigate('/admin/delivery-update');
+    setLoginError('');
+    
+    console.log('Attempting login with:', { email, password });
+    
+    try {
+      const success = await login(email, password);
+      console.log('Login result:', success);
+      
+      if (success) {
+        console.log('Login successful, redirecting to admin panel');
+        navigate('/admin/delivery-update');
+      } else {
+        setLoginError('Login failed. Please check your credentials.');
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      setLoginError('Login failed. Please try again.');
     }
   };
 
   if (user) {
+    console.log('User already logged in, redirecting to admin panel');
     return <Navigate to="/admin/delivery-update" replace />;
   }
 
@@ -37,6 +52,11 @@ const Login: React.FC = () => {
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
+            {loginError && (
+              <div className="bg-red-50 p-3 rounded-md">
+                <p className="text-sm text-red-800">{loginError}</p>
+              </div>
+            )}
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
