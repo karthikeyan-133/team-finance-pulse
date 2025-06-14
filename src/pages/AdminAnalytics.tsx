@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
@@ -42,7 +41,11 @@ import {
   ResponsiveContainer,
   PieChart,
   Pie,
-  Cell
+  Cell,
+  LineChart,
+  Line,
+  Area,
+  AreaChart
 } from 'recharts';
 import { 
   Users, 
@@ -58,7 +61,13 @@ import {
   Clock,
   Plus,
   Receipt,
-  Edit
+  Edit,
+  IndianRupee,
+  Truck,
+  TrendingDown,
+  Wallet,
+  CreditCard,
+  PieChart as PieChartIcon
 } from 'lucide-react';
 import DailyAnalytics from '../components/analytics/DailyAnalytics';
 import { toast } from '@/components/ui/sonner';
@@ -80,25 +89,34 @@ const AdminAnalytics = () => {
     return <Navigate to="/delivery-update" replace />;
   }
 
-  // Calculate analytics using dashboardStats
-  const totalOrders = dashboardStats.totalOrders;
-  const totalTransactions = dashboardStats.totalTransactions;
+  // Enhanced financial calculations
   const totalRevenue = dashboardStats.totalRevenue;
-  const pendingAmount = dashboardStats.pendingAmount;
+  const totalExpenses = dashboardStats.totalExpenses;
+  const totalDeliveryCharges = dashboardStats.totalDeliveryCharges;
   const totalCommission = dashboardStats.totalCommission;
-  const pendingOrders = dashboardStats.pendingOrders;
+  const netIncome = totalRevenue - totalExpenses;
+  const grossProfit = totalDeliveryCharges + totalCommission;
+  
+  // Payment method breakdown
+  const paymentMethodStats = {
+    upi: {
+      count: transactions.filter(t => t.paymentMethod === 'upi').length,
+      amount: transactions.filter(t => t.paymentMethod === 'upi').reduce((sum, t) => sum + t.amount, 0)
+    },
+    cash: {
+      count: transactions.filter(t => t.paymentMethod === 'cash').length,
+      amount: transactions.filter(t => t.paymentMethod === 'cash').reduce((sum, t) => sum + t.amount, 0)
+    },
+    other: {
+      count: transactions.filter(t => t.paymentMethod === 'other').length,
+      amount: transactions.filter(t => t.paymentMethod === 'other').reduce((sum, t) => sum + t.amount, 0)
+    }
+  };
 
   // Customer analytics
   const newCustomers = customers.filter(c => c.isNew).length;
   const oldCustomers = customers.filter(c => !c.isNew).length;
   const totalCustomers = customers.length;
-
-  // Payment method distribution
-  const paymentMethods = {
-    upi: transactions.filter(t => t.paymentMethod === 'upi').length,
-    cash: transactions.filter(t => t.paymentMethod === 'cash').length,
-    other: transactions.filter(t => t.paymentMethod === 'other').length,
-  };
 
   // Recent transactions with customer details
   const recentTransactionsWithDetails = transactions
@@ -171,20 +189,22 @@ const AdminAnalytics = () => {
     setEditingTransaction(null);
   };
 
-  // Chart data
-  const customerChartData = [
-    { name: 'New Customers', value: newCustomers, color: '#4ade80' },
-    { name: 'Old Customers', value: oldCustomers, color: '#60a5fa' }
+  // Chart data for financial overview
+  const financialOverviewData = [
+    { name: 'Total Revenue', value: totalRevenue, color: '#10b981' },
+    { name: 'Total Expenses', value: totalExpenses, color: '#ef4444' },
+    { name: 'Delivery Charges', value: totalDeliveryCharges, color: '#3b82f6' },
+    { name: 'Commission', value: totalCommission, color: '#8b5cf6' }
   ];
 
-  const paymentMethodData = [
-    { name: 'UPI', value: paymentMethods.upi, color: '#4ade80' },
-    { name: 'Cash', value: paymentMethods.cash, color: '#f97316' },
-    { name: 'Other', value: paymentMethods.other, color: '#8b5cf6' }
+  const paymentMethodChartData = [
+    { name: 'UPI', value: paymentMethodStats.upi.amount, count: paymentMethodStats.upi.count, color: '#10b981' },
+    { name: 'Cash', value: paymentMethodStats.cash.amount, count: paymentMethodStats.cash.count, color: '#f59e0b' },
+    { name: 'Other', value: paymentMethodStats.other.amount, count: paymentMethodStats.other.count, color: '#8b5cf6' }
   ];
 
-  // Daily sales for last 7 days
-  const getDailySales = () => {
+  // Daily revenue vs expenses for last 7 days
+  const getDailyFinancials = () => {
     const data = [];
     const today = new Date();
     
@@ -197,43 +217,56 @@ const AdminAnalytics = () => {
         new Date(t.date).toISOString().split('T')[0] === dateStr
       );
       
-      const total = dailyTransactions.reduce((sum, t) => sum + t.amount, 0);
+      const dailyExpenses = expenses.filter(e => 
+        new Date(e.date).toISOString().split('T')[0] === dateStr
+      );
+      
+      const revenue = dailyTransactions.reduce((sum, t) => sum + t.amount, 0);
+      const expense = dailyExpenses.reduce((sum, e) => sum + e.amount, 0);
+      const deliveryCharges = dailyTransactions.reduce((sum, t) => sum + (t.deliveryCharge || 0), 0);
+      const commission = dailyTransactions.reduce((sum, t) => sum + (t.commission || 0), 0);
       
       data.push({
         date: new Date(date).toLocaleDateString('en-US', { weekday: 'short' }),
-        total,
-        count: dailyTransactions.length
+        revenue,
+        expense,
+        deliveryCharges,
+        commission,
+        profit: revenue - expense
       });
     }
     
     return data;
   };
 
-  const dailySalesData = getDailySales();
+  const dailyFinancialData = getDailyFinancials();
 
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="space-y-4 sm:space-y-6 p-4 sm:p-6 max-w-7xl mx-auto">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Admin Analytics</h1>
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Financial Analytics Dashboard</h1>
+            <p className="text-gray-600">Comprehensive business insights and transaction analysis</p>
+          </div>
           <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 w-fit">
             Admin View
           </Badge>
         </div>
 
-        {/* Key Metrics */}
-        <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+        {/* Enhanced Financial Overview Cards */}
+        <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
           <Card className="hover:shadow-md transition-shadow">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <Package className="h-4 w-4 text-blue-600" />
-                <span className="truncate">Total Orders</span>
+                <IndianRupee className="h-4 w-4 text-green-600" />
+                <span className="truncate">Total Revenue</span>
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-xl sm:text-2xl font-bold">{totalOrders}</div>
+              <div className="text-xl sm:text-2xl font-bold text-green-600">₹{totalRevenue.toLocaleString('en-IN')}</div>
               <p className="text-xs text-muted-foreground">
-                Unique submissions
+                From {dashboardStats.totalTransactions} transactions
               </p>
             </CardContent>
           </Card>
@@ -241,14 +274,61 @@ const AdminAnalytics = () => {
           <Card className="hover:shadow-md transition-shadow">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <TrendingUp className="h-4 w-4 text-green-600" />
-                <span className="truncate">Transactions</span>
+                <TrendingDown className="h-4 w-4 text-red-600" />
+                <span className="truncate">Total Expenses</span>
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-xl sm:text-2xl font-bold">{totalTransactions}</div>
+              <div className="text-xl sm:text-2xl font-bold text-red-600">₹{totalExpenses.toLocaleString('en-IN')}</div>
               <p className="text-xs text-muted-foreground">
-                ₹{totalRevenue.toLocaleString('en-IN')} revenue
+                From {expenses.length} expense entries
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="hover:shadow-md transition-shadow">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
+                <Wallet className="h-4 w-4 text-blue-600" />
+                <span className="truncate">Net Income</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className={`text-xl sm:text-2xl font-bold ${netIncome >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                ₹{netIncome.toLocaleString('en-IN')}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Revenue - Expenses
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="hover:shadow-md transition-shadow">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
+                <Truck className="h-4 w-4 text-purple-600" />
+                <span className="truncate">Delivery Charges</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-xl sm:text-2xl font-bold text-purple-600">₹{totalDeliveryCharges.toLocaleString('en-IN')}</div>
+              <p className="text-xs text-muted-foreground">
+                Total delivery income
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="hover:shadow-md transition-shadow">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
+                <TrendingUp className="h-4 w-4 text-indigo-600" />
+                <span className="truncate">Commission</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-xl sm:text-2xl font-bold text-indigo-600">₹{totalCommission.toLocaleString('en-IN')}</div>
+              <p className="text-xs text-muted-foreground">
+                Total commission earned
               </p>
             </CardContent>
           </Card>
@@ -261,54 +341,25 @@ const AdminAnalytics = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-xl sm:text-2xl font-bold">₹{pendingAmount.toLocaleString('en-IN')}</div>
+              <div className="text-xl sm:text-2xl font-bold text-amber-600">₹{dashboardStats.pendingAmount.toLocaleString('en-IN')}</div>
               <p className="text-xs text-muted-foreground">
-                {pendingOrders} pending orders
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="hover:shadow-md transition-shadow">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <Users className="h-4 w-4 text-purple-600" />
-                <span className="truncate">Total Customers</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-xl sm:text-2xl font-bold">{totalCustomers}</div>
-              <p className="text-xs text-muted-foreground">
-                {newCustomers} new, {oldCustomers} returning
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="hover:shadow-md transition-shadow sm:col-span-2 lg:col-span-1">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <TrendingUp className="h-4 w-4 text-indigo-600" />
-                <span className="truncate">Commission</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-xl sm:text-2xl font-bold">₹{totalCommission.toLocaleString('en-IN')}</div>
-              <p className="text-xs text-muted-foreground">
-                From all orders
+                {dashboardStats.pendingOrders} pending payments
               </p>
             </CardContent>
           </Card>
         </div>
 
-        <Tabs defaultValue="daily" className="w-full">
+        <Tabs defaultValue="financial-overview" className="w-full">
           <div className="overflow-x-auto">
-            <TabsList className="grid w-full grid-cols-5 min-w-max">
+            <TabsList className="grid w-full grid-cols-6 min-w-max">
+              <TabsTrigger value="financial-overview" className="text-xs sm:text-sm">Financial Overview</TabsTrigger>
               <TabsTrigger value="daily" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
                 <Calendar className="h-3 w-3 sm:h-4 sm:w-4" />
                 <span className="hidden sm:inline">Daily Analytics</span>
                 <span className="sm:hidden">Daily</span>
               </TabsTrigger>
-              <TabsTrigger value="overview" className="text-xs sm:text-sm">Overview</TabsTrigger>
-              <TabsTrigger value="transactions" className="text-xs sm:text-sm">Transactions</TabsTrigger>
+              <TabsTrigger value="transactions" className="text-xs sm:text-sm">All Transactions</TabsTrigger>
+              <TabsTrigger value="payment-methods" className="text-xs sm:text-sm">Payment Methods</TabsTrigger>
               <TabsTrigger value="customers" className="text-xs sm:text-sm">Customers</TabsTrigger>
               <TabsTrigger value="expenses" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
                 <Receipt className="h-3 w-3 sm:h-4 sm:w-4" />
@@ -318,49 +369,45 @@ const AdminAnalytics = () => {
             </TabsList>
           </div>
 
-          <TabsContent value="daily" className="space-y-4">
-            <DailyAnalytics transactions={transactions} customers={customers} />
-          </TabsContent>
-
-          <TabsContent value="overview" className="space-y-4">
+          <TabsContent value="financial-overview" className="space-y-4">
             <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg sm:text-xl">Daily Sales (Last 7 Days)</CardTitle>
+                  <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
+                    <BarChart className="h-5 w-5" />
+                    Daily Revenue vs Expenses (Last 7 Days)
+                  </CardTitle>
                 </CardHeader>
-                <CardContent className="h-[250px] sm:h-[300px]">
+                <CardContent className="h-[300px]">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={dailySalesData}>
+                    <AreaChart data={dailyFinancialData}>
                       <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                      <XAxis 
-                        dataKey="date" 
-                        fontSize={12}
-                        tick={{ fontSize: 12 }}
-                      />
-                      <YAxis 
-                        fontSize={12}
-                        tick={{ fontSize: 12 }}
-                      />
+                      <XAxis dataKey="date" fontSize={12} />
+                      <YAxis fontSize={12} />
                       <Tooltip 
-                        formatter={(value) => [`₹${Number(value).toLocaleString('en-IN')}`, 'Amount']}
+                        formatter={(value, name) => [`₹${Number(value).toLocaleString('en-IN')}`, name]}
                         labelStyle={{ fontSize: '12px' }}
                         contentStyle={{ fontSize: '12px' }}
                       />
-                      <Bar dataKey="total" fill="#6950dd" radius={[4, 4, 0, 0]} />
-                    </BarChart>
+                      <Area type="monotone" dataKey="revenue" stackId="1" stroke="#10b981" fill="#10b981" fillOpacity={0.6} />
+                      <Area type="monotone" dataKey="expense" stackId="1" stroke="#ef4444" fill="#ef4444" fillOpacity={0.6} />
+                    </AreaChart>
                   </ResponsiveContainer>
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg sm:text-xl">Customer Distribution</CardTitle>
+                  <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
+                    <PieChartIcon className="h-5 w-5" />
+                    Financial Breakdown
+                  </CardTitle>
                 </CardHeader>
-                <CardContent className="h-[250px] sm:h-[300px]">
+                <CardContent className="h-[300px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
-                        data={customerChartData}
+                        data={financialOverviewData}
                         cx="50%"
                         cy="50%"
                         innerRadius={40}
@@ -368,26 +415,156 @@ const AdminAnalytics = () => {
                         paddingAngle={5}
                         dataKey="value"
                       >
-                        {customerChartData.map((entry, index) => (
+                        {financialOverviewData.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.color} />
                         ))}
                       </Pie>
-                      <Tooltip />
+                      <Tooltip formatter={(value) => `₹${Number(value).toLocaleString('en-IN')}`} />
                     </PieChart>
                   </ResponsiveContainer>
-                  <div className="mt-2 flex justify-center gap-4 text-sm">
-                    <div className="flex items-center">
-                      <span className="mr-1 h-3 w-3 rounded-full bg-[#4ade80]"></span>
-                      <span>New ({newCustomers})</span>
-                    </div>
-                    <div className="flex items-center">
-                      <span className="mr-1 h-3 w-3 rounded-full bg-[#60a5fa]"></span>
-                      <span>Old ({oldCustomers})</span>
-                    </div>
+                  <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
+                    {financialOverviewData.map((entry, index) => (
+                      <div key={index} className="flex items-center gap-2">
+                        <span className="h-3 w-3 rounded-full" style={{ backgroundColor: entry.color }}></span>
+                        <span className="truncate">{entry.name}: ₹{entry.value.toLocaleString('en-IN')}</span>
+                      </div>
+                    ))}
                   </div>
                 </CardContent>
               </Card>
             </div>
+
+            {/* Financial Summary Cards */}
+            <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+              <Card className="bg-gradient-to-r from-green-50 to-green-100 border-green-200">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-green-800">Gross Profit</p>
+                      <p className="text-2xl font-bold text-green-900">₹{grossProfit.toLocaleString('en-IN')}</p>
+                      <p className="text-xs text-green-600">Delivery + Commission</p>
+                    </div>
+                    <TrendingUp className="h-8 w-8 text-green-600" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-blue-800">Total Orders</p>
+                      <p className="text-2xl font-bold text-blue-900">{dashboardStats.totalOrders}</p>
+                      <p className="text-xs text-blue-600">Unique orders</p>
+                    </div>
+                    <Package className="h-8 w-8 text-blue-600" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-gradient-to-r from-purple-50 to-purple-100 border-purple-200">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-purple-800">Avg Order Value</p>
+                      <p className="text-2xl font-bold text-purple-900">
+                        ₹{dashboardStats.totalOrders > 0 ? Math.round(totalRevenue / dashboardStats.totalOrders).toLocaleString('en-IN') : '0'}
+                      </p>
+                      <p className="text-xs text-purple-600">Per order</p>
+                    </div>
+                    <IndianRupee className="h-8 w-8 text-purple-600" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-gradient-to-r from-amber-50 to-amber-100 border-amber-200">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-amber-800">Profit Margin</p>
+                      <p className="text-2xl font-bold text-amber-900">
+                        {totalRevenue > 0 ? ((grossProfit / totalRevenue) * 100).toFixed(1) : '0'}%
+                      </p>
+                      <p className="text-xs text-amber-600">Of total revenue</p>
+                    </div>
+                    <TrendingUp className="h-8 w-8 text-amber-600" />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="payment-methods" className="space-y-4">
+            <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg sm:text-xl">Payment Method Distribution</CardTitle>
+                </CardHeader>
+                <CardContent className="h-[300px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={paymentMethodChartData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={40}
+                        outerRadius={80}
+                        paddingAngle={5}
+                        dataKey="value"
+                      >
+                        {paymentMethodChartData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip formatter={(value) => `₹${Number(value).toLocaleString('en-IN')}`} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="mt-4 flex justify-center gap-4 text-sm">
+                    {paymentMethodChartData.map((entry, index) => (
+                      <div key={index} className="flex items-center gap-2">
+                        <span className="h-3 w-3 rounded-full" style={{ backgroundColor: entry.color }}></span>
+                        <span>{entry.name} ({entry.count})</span>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg sm:text-xl">Payment Method Breakdown</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {Object.entries(paymentMethodStats).map(([method, stats]) => (
+                      <div key={method} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 rounded-full bg-white">
+                            {method === 'upi' && <CreditCard className="h-5 w-5 text-green-600" />}
+                            {method === 'cash' && <Wallet className="h-5 w-5 text-amber-600" />}
+                            {method === 'other' && <DollarSign className="h-5 w-5 text-purple-600" />}
+                          </div>
+                          <div>
+                            <p className="font-medium capitalize">{method}</p>
+                            <p className="text-sm text-gray-600">{stats.count} transactions</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-bold">₹{stats.amount.toLocaleString('en-IN')}</p>
+                          <p className="text-sm text-gray-600">
+                            {totalRevenue > 0 ? ((stats.amount / totalRevenue) * 100).toFixed(1) : '0'}%
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="daily" className="space-y-4">
+            <DailyAnalytics transactions={transactions} customers={customers} />
           </TabsContent>
 
           <TabsContent value="transactions" className="space-y-4">
@@ -415,7 +592,7 @@ const AdminAnalytics = () => {
 
                   <div className="border rounded-md">
                     <ScrollArea className="w-full">
-                      <div className="min-w-[800px]">
+                      <div className="min-w-[1000px]">
                         <Table>
                           <TableHeader>
                             <TableRow>
@@ -423,11 +600,11 @@ const AdminAnalytics = () => {
                               <TableHead className="w-[120px]">Shop</TableHead>
                               <TableHead className="w-[100px]">Customer</TableHead>
                               <TableHead className="w-[100px]">Phone</TableHead>
-                              <TableHead className="w-[120px]">Location</TableHead>
                               <TableHead className="w-[80px]">Amount</TableHead>
+                              <TableHead className="w-[80px]">Delivery</TableHead>
+                              <TableHead className="w-[80px]">Commission</TableHead>
                               <TableHead className="w-[100px]">Status</TableHead>
                               <TableHead className="w-[80px]">Method</TableHead>
-                              <TableHead className="w-[80px]">Commission</TableHead>
                               <TableHead className="w-[100px]">Handled By</TableHead>
                               <TableHead className="w-[60px]">Actions</TableHead>
                             </TableRow>
@@ -466,18 +643,14 @@ const AdminAnalytics = () => {
                                     </span>
                                   </span>
                                 </TableCell>
-                                <TableCell>
-                                  {transaction.customerLocation && (
-                                    <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                                      <MapPin className="h-3 w-3" />
-                                      <span className="max-w-[100px] truncate" title={transaction.customerLocation}>
-                                        {transaction.customerLocation.substring(0, 15)}...
-                                      </span>
-                                    </span>
-                                  )}
-                                </TableCell>
-                                <TableCell className="text-xs font-medium">
+                                <TableCell className="text-xs font-medium text-green-600">
                                   ₹{transaction.amount.toLocaleString('en-IN')}
+                                </TableCell>
+                                <TableCell className="text-xs font-medium text-blue-600">
+                                  ₹{(transaction.deliveryCharge || 0).toLocaleString('en-IN')}
+                                </TableCell>
+                                <TableCell className="text-xs font-medium text-purple-600">
+                                  ₹{(transaction.commission || 0).toLocaleString('en-IN')}
                                 </TableCell>
                                 <TableCell>
                                   <div className="flex items-center gap-1">
@@ -503,9 +676,6 @@ const AdminAnalytics = () => {
                                 </TableCell>
                                 <TableCell className="capitalize text-xs">
                                   {transaction.paymentMethod}
-                                </TableCell>
-                                <TableCell className="text-xs">
-                                  {transaction.commission ? `₹${transaction.commission}` : '-'}
                                 </TableCell>
                                 <TableCell className="text-xs text-muted-foreground">
                                   <div className="max-w-[80px] truncate" title={transaction.handledBy}>
@@ -703,7 +873,7 @@ const AdminAnalytics = () => {
               <CardHeader>
                 <CardTitle className="text-lg sm:text-xl">Recent Expenses</CardTitle>
                 <CardDescription>
-                  All business expenses ({expenses.length} total)
+                  All business expenses ({expenses.length} total) - Total: ₹{totalExpenses.toLocaleString('en-IN')}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -737,7 +907,7 @@ const AdminAnalytics = () => {
                                 <TableCell>
                                   <Badge variant="outline" className="text-xs">{expense.category}</Badge>
                                 </TableCell>
-                                <TableCell className="text-sm font-medium">
+                                <TableCell className="text-sm font-medium text-red-600">
                                   ₹{expense.amount.toLocaleString('en-IN')}
                                 </TableCell>
                                 <TableCell className="text-sm">
