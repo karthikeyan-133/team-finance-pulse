@@ -14,6 +14,7 @@ import Index from "./pages/Index";
 import Login from "./pages/Login";
 import AdminAnalytics from "./pages/AdminAnalytics";
 import FinancialAnalytics from "./pages/FinancialAnalytics";
+import DailyOrderAnalytics from "./pages/DailyOrderAnalytics";
 import DeliveryBoy from "./pages/DeliveryBoy";
 import DeliveryBoyLogin from "./pages/DeliveryBoyLogin";
 import DeliveryBoyDashboard from "./pages/DeliveryBoyDashboard";
