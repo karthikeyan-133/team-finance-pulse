@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Truck, Package, MapPin, Phone, Store, User, Plus } from 'lucide-react';
+import { Truck, Package, MapPin, Phone, Store, User, Plus, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Order, DeliveryBoy, ProductDetail } from '@/types/orders';
@@ -30,7 +31,7 @@ const DeliveryBoyPage = () => {
       setIsLoading(true);
       console.log('Fetching delivery boys and orders...');
       
-      // Fetch delivery boys
+      // Fetch active delivery boys
       const { data: deliveryBoysData, error: deliveryBoysError } = await supabase
         .from('delivery_boys')
         .select('*')
@@ -42,11 +43,12 @@ const DeliveryBoyPage = () => {
         throw deliveryBoysError;
       }
 
-      // Fetch pending orders
+      // Fetch truly pending orders (not assigned to anyone)
       const { data: ordersData, error: ordersError } = await supabase
         .from('orders')
         .select('*')
         .eq('order_status', 'pending')
+        .is('delivery_boy_id', null)
         .order('created_at', { ascending: false });
 
       if (ordersError) {
@@ -85,6 +87,37 @@ const DeliveryBoyPage = () => {
     }
   };
 
+  const checkExistingAssignment = async (orderId: string, deliveryBoyId: string) => {
+    const { data, error } = await supabase
+      .from('order_assignments')
+      .select('id, status')
+      .eq('order_id', orderId)
+      .eq('delivery_boy_id', deliveryBoyId)
+      .maybeSingle();
+
+    if (error) {
+      console.error('Error checking existing assignment:', error);
+      throw error;
+    }
+
+    return data;
+  };
+
+  const checkOrderStatus = async (orderId: string) => {
+    const { data, error } = await supabase
+      .from('orders')
+      .select('order_status, delivery_boy_id, order_number')
+      .eq('id', orderId)
+      .single();
+
+    if (error) {
+      console.error('Error checking order status:', error);
+      throw error;
+    }
+
+    return data;
+  };
+
   const assignOrder = async () => {
     if (!selectedDeliveryBoy || !selectedOrder) {
       toast.error('Please select both delivery boy and order');
@@ -93,12 +126,55 @@ const DeliveryBoyPage = () => {
 
     try {
       setIsAssigning(true);
-      console.log('Assigning order:', { 
+      console.log('Starting order assignment:', { 
         orderId: selectedOrder, 
         deliveryBoyId: selectedDeliveryBoy 
       });
 
-      // Start a transaction to update both tables
+      // First, check if order is still available for assignment
+      const orderStatus = await checkOrderStatus(selectedOrder);
+      
+      if (orderStatus.order_status !== 'pending') {
+        toast.error(`Order ${orderStatus.order_number} is no longer pending (Status: ${orderStatus.order_status})`);
+        await fetchData(); // Refresh data
+        return;
+      }
+
+      if (orderStatus.delivery_boy_id) {
+        toast.error(`Order ${orderStatus.order_number} is already assigned to another delivery boy`);
+        await fetchData(); // Refresh data
+        return;
+      }
+
+      // Check if this specific assignment already exists
+      const existingAssignment = await checkExistingAssignment(selectedOrder, selectedDeliveryBoy);
+      
+      if (existingAssignment) {
+        toast.error(`This order is already assigned to the selected delivery boy (Status: ${existingAssignment.status})`);
+        return;
+      }
+
+      // Proceed with assignment using a transaction-like approach
+      console.log('Creating new assignment...');
+
+      // First, update the order to mark it as assigned
+      const { error: orderUpdateError } = await supabase
+        .from('orders')
+        .update({ 
+          order_status: 'assigned',
+          delivery_boy_id: selectedDeliveryBoy,
+          assigned_at: new Date().toISOString()
+        })
+        .eq('id', selectedOrder)
+        .eq('order_status', 'pending') // Only update if still pending
+        .is('delivery_boy_id', null); // Only update if not already assigned
+
+      if (orderUpdateError) {
+        console.error('Error updating order:', orderUpdateError);
+        throw orderUpdateError;
+      }
+
+      // Then create the assignment record
       const { error: assignmentError } = await supabase
         .from('order_assignments')
         .insert([{
@@ -110,22 +186,18 @@ const DeliveryBoyPage = () => {
 
       if (assignmentError) {
         console.error('Error creating assignment:', assignmentError);
+        
+        // Rollback the order update
+        await supabase
+          .from('orders')
+          .update({ 
+            order_status: 'pending',
+            delivery_boy_id: null,
+            assigned_at: null
+          })
+          .eq('id', selectedOrder);
+        
         throw assignmentError;
-      }
-
-      // Update the order status to 'assigned' and set delivery_boy_id
-      const { error: orderUpdateError } = await supabase
-        .from('orders')
-        .update({ 
-          order_status: 'assigned',
-          delivery_boy_id: selectedDeliveryBoy,
-          assigned_at: new Date().toISOString()
-        })
-        .eq('id', selectedOrder);
-
-      if (orderUpdateError) {
-        console.error('Error updating order:', orderUpdateError);
-        throw orderUpdateError;
       }
 
       console.log('Order assigned successfully');
@@ -140,7 +212,14 @@ const DeliveryBoyPage = () => {
       await fetchData();
     } catch (error) {
       console.error('Error assigning order:', error);
-      toast.error('Failed to assign order: ' + (error as Error).message);
+      
+      // Check if it's the duplicate key error
+      if (error.message?.includes('duplicate key value violates unique constraint')) {
+        toast.error('This order is already assigned to this delivery boy. Please refresh the page.');
+        await fetchData(); // Refresh data to show current state
+      } else {
+        toast.error('Failed to assign order: ' + (error as Error).message);
+      }
     } finally {
       setIsAssigning(false);
     }
@@ -212,6 +291,16 @@ const DeliveryBoyPage = () => {
                 </div>
               ) : (
                 <>
+                  {/* Warning message about duplicate assignments */}
+                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                    <div className="flex items-center gap-2 text-amber-800">
+                      <AlertTriangle className="h-4 w-4" />
+                      <span className="text-sm font-medium">
+                        Each order can only be assigned to one delivery boy at a time
+                      </span>
+                    </div>
+                  </div>
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <Label>Select Delivery Boy ({deliveryBoys.length} available)</Label>
