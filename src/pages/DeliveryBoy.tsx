@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,6 +19,7 @@ const DeliveryBoyPage = () => {
   const [selectedOrder, setSelectedOrder] = useState<string>('');
   const [assignmentNotes, setAssignmentNotes] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [isAssigning, setIsAssigning] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -27,6 +27,9 @@ const DeliveryBoyPage = () => {
 
   const fetchData = async () => {
     try {
+      setIsLoading(true);
+      console.log('Fetching delivery boys and orders...');
+      
       // Fetch delivery boys
       const { data: deliveryBoysData, error: deliveryBoysError } = await supabase
         .from('delivery_boys')
@@ -34,7 +37,10 @@ const DeliveryBoyPage = () => {
         .eq('is_active', true)
         .order('name');
 
-      if (deliveryBoysError) throw deliveryBoysError;
+      if (deliveryBoysError) {
+        console.error('Error fetching delivery boys:', deliveryBoysError);
+        throw deliveryBoysError;
+      }
 
       // Fetch pending orders
       const { data: ordersData, error: ordersError } = await supabase
@@ -43,7 +49,12 @@ const DeliveryBoyPage = () => {
         .eq('order_status', 'pending')
         .order('created_at', { ascending: false });
 
-      if (ordersError) throw ordersError;
+      if (ordersError) {
+        console.error('Error fetching orders:', ordersError);
+        throw ordersError;
+      }
+
+      console.log('Fetched data:', { deliveryBoysData, ordersData });
 
       // Type cast and convert Json to ProductDetail[]
       const typedDeliveryBoys = (deliveryBoysData || []).map(boy => ({
@@ -61,9 +72,14 @@ const DeliveryBoyPage = () => {
 
       setDeliveryBoys(typedDeliveryBoys);
       setPendingOrders(typedOrders);
+      
+      console.log('Set state with:', { 
+        deliveryBoysCount: typedDeliveryBoys.length, 
+        ordersCount: typedOrders.length 
+      });
     } catch (error) {
       console.error('Error fetching data:', error);
-      toast.error('Failed to load data');
+      toast.error('Failed to load data: ' + (error as Error).message);
     } finally {
       setIsLoading(false);
     }
@@ -76,29 +92,69 @@ const DeliveryBoyPage = () => {
     }
 
     try {
-      const { error } = await supabase
+      setIsAssigning(true);
+      console.log('Assigning order:', { 
+        orderId: selectedOrder, 
+        deliveryBoyId: selectedDeliveryBoy 
+      });
+
+      // Start a transaction to update both tables
+      const { error: assignmentError } = await supabase
         .from('order_assignments')
         .insert([{
           order_id: selectedOrder,
           delivery_boy_id: selectedDeliveryBoy,
-          notes: assignmentNotes || null
+          notes: assignmentNotes || null,
+          status: 'pending'
         }]);
 
-      if (error) throw error;
+      if (assignmentError) {
+        console.error('Error creating assignment:', assignmentError);
+        throw assignmentError;
+      }
 
+      // Update the order status to 'assigned' and set delivery_boy_id
+      const { error: orderUpdateError } = await supabase
+        .from('orders')
+        .update({ 
+          order_status: 'assigned',
+          delivery_boy_id: selectedDeliveryBoy,
+          assigned_at: new Date().toISOString()
+        })
+        .eq('id', selectedOrder);
+
+      if (orderUpdateError) {
+        console.error('Error updating order:', orderUpdateError);
+        throw orderUpdateError;
+      }
+
+      console.log('Order assigned successfully');
       toast.success('Order assigned successfully! Delivery boy will be notified.');
+      
+      // Reset form
       setSelectedDeliveryBoy('');
       setSelectedOrder('');
       setAssignmentNotes('');
-      fetchData();
+      
+      // Refresh data
+      await fetchData();
     } catch (error) {
       console.error('Error assigning order:', error);
-      toast.error('Failed to assign order');
+      toast.error('Failed to assign order: ' + (error as Error).message);
+    } finally {
+      setIsAssigning(false);
     }
   };
 
   if (isLoading) {
-    return <div className="container mx-auto px-4 py-6">Loading...</div>;
+    return (
+      <div className="container mx-auto px-4 py-6">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-2 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -136,55 +192,85 @@ const DeliveryBoyPage = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label>Select Delivery Boy</Label>
-                  <Select value={selectedDeliveryBoy} onValueChange={setSelectedDeliveryBoy}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Choose delivery boy" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {deliveryBoys.map((boy) => (
-                        <SelectItem key={boy.id} value={boy.id}>
-                          <div className="flex flex-col">
-                            <span className="font-medium">{boy.name}</span>
-                            <span className="text-xs text-gray-500">{boy.phone} - {boy.vehicle_type || 'N/A'}</span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+              {deliveryBoys.length === 0 && pendingOrders.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <Package className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                  <p>No delivery boys or pending orders available</p>
+                  <p className="text-sm">Add delivery boys and create orders to start assigning</p>
                 </div>
-                <div>
-                  <Label>Select Order</Label>
-                  <Select value={selectedOrder} onValueChange={setSelectedOrder}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Choose order" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {pendingOrders.map((order) => (
-                        <SelectItem key={order.id} value={order.id}>
-                          <div className="flex flex-col">
-                            <span className="font-medium">{order.order_number}</span>
-                            <span className="text-xs text-gray-500">{order.customer_name} - ₹{order.total_amount}</span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+              ) : deliveryBoys.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <User className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                  <p>No delivery boys available</p>
+                  <p className="text-sm">Add delivery boys first before assigning orders</p>
                 </div>
-              </div>
-              <div>
-                <Label>Assignment Notes (Optional)</Label>
-                <Textarea
-                  value={assignmentNotes}
-                  onChange={(e) => setAssignmentNotes(e.target.value)}
-                  placeholder="Any special instructions for the delivery boy..."
-                />
-              </div>
-              <Button onClick={assignOrder} className="w-full">
-                Assign Order
-              </Button>
+              ) : pendingOrders.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <Package className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                  <p>No pending orders available</p>
+                  <p className="text-sm">All orders have been assigned or completed</p>
+                </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label>Select Delivery Boy ({deliveryBoys.length} available)</Label>
+                      <Select value={selectedDeliveryBoy} onValueChange={setSelectedDeliveryBoy}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Choose delivery boy" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {deliveryBoys.map((boy) => (
+                            <SelectItem key={boy.id} value={boy.id}>
+                              <div className="flex flex-col">
+                                <span className="font-medium">{boy.name}</span>
+                                <span className="text-xs text-gray-500">
+                                  {boy.phone} - {boy.vehicle_type || 'N/A'}
+                                </span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label>Select Order ({pendingOrders.length} pending)</Label>
+                      <Select value={selectedOrder} onValueChange={setSelectedOrder}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Choose order" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {pendingOrders.map((order) => (
+                            <SelectItem key={order.id} value={order.id}>
+                              <div className="flex flex-col">
+                                <span className="font-medium">{order.order_number}</span>
+                                <span className="text-xs text-gray-500">
+                                  {order.customer_name} - ₹{order.total_amount}
+                                </span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div>
+                    <Label>Assignment Notes (Optional)</Label>
+                    <Textarea
+                      value={assignmentNotes}
+                      onChange={(e) => setAssignmentNotes(e.target.value)}
+                      placeholder="Any special instructions for the delivery boy..."
+                    />
+                  </div>
+                  <Button 
+                    onClick={assignOrder} 
+                    className="w-full"
+                    disabled={isAssigning || !selectedDeliveryBoy || !selectedOrder}
+                  >
+                    {isAssigning ? 'Assigning Order...' : 'Assign Order'}
+                  </Button>
+                </>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
