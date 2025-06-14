@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -27,7 +26,7 @@ const Login: React.FC = () => {
       if (success) {
         console.log('Login successful, redirecting to admin panel');
         // Use replace to avoid back button issues
-        navigate('/admin/delivery-update', { replace: true });
+        navigate('/admin/order-tracking', { replace: true });
       } else {
         setLoginError('Login failed. Please check your credentials.');
       }
@@ -39,7 +38,7 @@ const Login: React.FC = () => {
 
   if (user) {
     console.log('User already logged in, redirecting to admin panel');
-    return <Navigate to="/admin/delivery-update" replace />;
+    return <Navigate to="/admin/order-tracking" replace />;
   }
 
   return (
