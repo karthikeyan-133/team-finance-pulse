@@ -21,6 +21,11 @@ export const SHOPS: Shop[] = [
     id: 'shop-3',
     name: 'AL Cafe',
     isActive: true
+  },
+  {
+    id: 'shop-4',
+    name: 'Metro Plaza',
+    isActive: true
   }
 ];
 

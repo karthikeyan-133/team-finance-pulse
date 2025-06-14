@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Store } from 'lucide-react';
 import { useShopOwner } from '@/context/ShopOwnerContext';
 import { toast } from '@/components/ui/sonner';
@@ -75,20 +76,18 @@ const ShopOwnerLogin = () => {
           <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="shop">Select Your Shop</Label>
-              <select
-                id="shop"
-                value={selectedShop}
-                onChange={(e) => setSelectedShop(e.target.value)}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                required
-              >
-                <option value="">Choose a shop...</option>
-                {SHOPS.filter(shop => shop.isActive).map(shop => (
-                  <option key={shop.id} value={shop.id}>
-                    {shop.name}
-                  </option>
-                ))}
-              </select>
+              <Select value={selectedShop} onValueChange={setSelectedShop} required>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose a shop..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {SHOPS.filter(shop => shop.isActive).map(shop => (
+                    <SelectItem key={shop.id} value={shop.id}>
+                      {shop.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="accessCode">Access Code</Label>
