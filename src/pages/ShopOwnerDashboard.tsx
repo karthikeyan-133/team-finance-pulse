@@ -1,12 +1,14 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { LogOut, Package, TrendingUp, Clock, CheckCircle, RefreshCw } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { LogOut, Package, TrendingUp, Clock, CheckCircle, RefreshCw, ChefHat } from 'lucide-react';
 import { useShopOwner } from '@/context/ShopOwnerContext';
 import { formatCurrency } from '@/utils/reportUtils';
+import OrderPreparationManager from '@/components/orders/OrderPreparationManager';
 
 const ShopOwnerDashboard = () => {
   const navigate = useNavigate();
@@ -62,13 +64,24 @@ const ShopOwnerDashboard = () => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'assigned': return 'bg-blue-100 text-blue-800';
-      case 'picked_up': return 'bg-purple-100 text-purple-800';
-      case 'delivered': return 'bg-green-100 text-green-800';
+      case 'preparing': return 'bg-orange-100 text-orange-800';
+      case 'prepared': return 'bg-blue-100 text-blue-800';
+      case 'ready': return 'bg-green-100 text-green-800';
+      case 'assigned': return 'bg-purple-100 text-purple-800';
+      case 'picked_up': return 'bg-indigo-100 text-indigo-800';
+      case 'delivered': return 'bg-emerald-100 text-emerald-800';
       case 'cancelled': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
+
+  const preparingOrders = orders.filter(order => 
+    ['pending', 'preparing', 'prepared'].includes(order.order_status)
+  );
+
+  const readyAndActiveOrders = orders.filter(order => 
+    ['ready', 'assigned', 'picked_up'].includes(order.order_status)
+  );
 
   // Show loading state while checking authentication
   if (isLoading || (!shopName && localStorage.getItem('shop_owner_session'))) {
@@ -116,7 +129,7 @@ const ShopOwnerDashboard = () => {
 
       <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Today's Orders</CardTitle>
@@ -126,6 +139,19 @@ const ShopOwnerDashboard = () => {
               <div className="text-2xl font-bold">{todayOrders.length}</div>
               <p className="text-xs text-muted-foreground">
                 Orders received today
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Preparing</CardTitle>
+              <ChefHat className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{preparingOrders.length}</div>
+              <p className="text-xs text-muted-foreground">
+                Orders to prepare
               </p>
             </CardContent>
           </Card>
@@ -170,12 +196,12 @@ const ShopOwnerDashboard = () => {
           </Card>
         </div>
 
-        {/* Orders List */}
+        {/* Orders Management Tabs */}
         <Card>
           <CardHeader>
-            <CardTitle>Recent Orders</CardTitle>
+            <CardTitle>Order Management</CardTitle>
             <CardDescription>
-              All orders for your shop {shopName && `(${orders.length} total)`}
+              Manage your orders from preparation to delivery
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -189,55 +215,126 @@ const ShopOwnerDashboard = () => {
                 <p className="mt-2">Shop: {shopName}</p>
               </div>
             ) : (
-              <div className="space-y-4">
-                {orders.map((order) => (
-                  <div key={order.id} className="border rounded-lg p-4 space-y-3">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="font-medium">Order #{order.order_number}</h3>
-                        <p className="text-sm text-gray-600">{order.customer_name}</p>
-                        <p className="text-sm text-gray-500">{order.customer_phone}</p>
+              <Tabs defaultValue="preparation" className="w-full">
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="preparation">
+                    Preparation ({preparingOrders.length})
+                  </TabsTrigger>
+                  <TabsTrigger value="active">
+                    Active ({readyAndActiveOrders.length})
+                  </TabsTrigger>
+                  <TabsTrigger value="all">
+                    All Orders ({orders.length})
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="preparation" className="space-y-4">
+                  {preparingOrders.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500">
+                      No orders to prepare at the moment
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      {preparingOrders.map((order) => (
+                        <OrderPreparationManager 
+                          key={order.id} 
+                          order={order} 
+                          onStatusUpdate={refreshOrders}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </TabsContent>
+
+                <TabsContent value="active" className="space-y-4">
+                  {readyAndActiveOrders.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500">
+                      No active orders for delivery
+                    </div>
+                  ) : (
+                    readyAndActiveOrders.map((order) => (
+                      <div key={order.id} className="border rounded-lg p-4 space-y-3">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h3 className="font-medium">Order #{order.order_number}</h3>
+                            <p className="text-sm text-gray-600">{order.customer_name}</p>
+                            <p className="text-sm text-gray-500">{order.customer_phone}</p>
+                          </div>
+                          <div className="text-right">
+                            <Badge className={getStatusColor(order.order_status)}>
+                              {order.order_status.replace('_', ' ').toUpperCase()}
+                            </Badge>
+                            <p className="text-lg font-semibold mt-1">
+                              {formatCurrency(order.total_amount)}
+                            </p>
+                          </div>
+                        </div>
+
+                        {order.delivery_boy && (
+                          <div className="bg-gray-50 p-3 rounded">
+                            <p className="text-sm"><strong>Delivery Boy:</strong> {order.delivery_boy.name}</p>
+                            <p className="text-sm"><strong>Phone:</strong> {order.delivery_boy.phone}</p>
+                          </div>
+                        )}
+
+                        <div className="text-xs text-gray-500">
+                          Ready since: {order.ready_at ? new Date(order.ready_at).toLocaleString() : 'N/A'}
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <Badge className={getStatusColor(order.order_status)}>
-                          {order.order_status.replace('_', ' ').toUpperCase()}
-                        </Badge>
-                        <p className="text-lg font-semibold mt-1">
-                          {formatCurrency(order.total_amount)}
-                        </p>
+                    ))
+                  )}
+                </TabsContent>
+
+                <TabsContent value="all" className="space-y-4">
+                  {orders.map((order) => (
+                    <div key={order.id} className="border rounded-lg p-4 space-y-3">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h3 className="font-medium">Order #{order.order_number}</h3>
+                          <p className="text-sm text-gray-600">{order.customer_name}</p>
+                          <p className="text-sm text-gray-500">{order.customer_phone}</p>
+                        </div>
+                        <div className="text-right">
+                          <Badge className={getStatusColor(order.order_status)}>
+                            {order.order_status.replace('_', ' ').toUpperCase()}
+                          </Badge>
+                          <p className="text-lg font-semibold mt-1">
+                            {formatCurrency(order.total_amount)}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <p><strong>Address:</strong> {order.customer_address}</p>
+                          <p><strong>Payment:</strong> {order.payment_method} - {order.payment_status}</p>
+                        </div>
+                        <div>
+                          <p><strong>Delivery Charge:</strong> {formatCurrency(order.delivery_charge || 0)}</p>
+                          <p><strong>Commission:</strong> {formatCurrency(order.commission || 0)}</p>
+                        </div>
+                      </div>
+
+                      {order.delivery_boy && (
+                        <div className="bg-gray-50 p-3 rounded">
+                          <p className="text-sm"><strong>Delivery Boy:</strong> {order.delivery_boy.name}</p>
+                          <p className="text-sm"><strong>Phone:</strong> {order.delivery_boy.phone}</p>
+                        </div>
+                      )}
+
+                      {order.special_instructions && (
+                        <div className="bg-blue-50 p-3 rounded">
+                          <p className="text-sm"><strong>Special Instructions:</strong> {order.special_instructions}</p>
+                        </div>
+                      )}
+
+                      <div className="text-xs text-gray-500">
+                        Created: {new Date(order.created_at).toLocaleString()}
                       </div>
                     </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <p><strong>Address:</strong> {order.customer_address}</p>
-                        <p><strong>Payment:</strong> {order.payment_method} - {order.payment_status}</p>
-                      </div>
-                      <div>
-                        <p><strong>Delivery Charge:</strong> {formatCurrency(order.delivery_charge || 0)}</p>
-                        <p><strong>Commission:</strong> {formatCurrency(order.commission || 0)}</p>
-                      </div>
-                    </div>
-
-                    {order.delivery_boy && (
-                      <div className="bg-gray-50 p-3 rounded">
-                        <p className="text-sm"><strong>Delivery Boy:</strong> {order.delivery_boy.name}</p>
-                        <p className="text-sm"><strong>Phone:</strong> {order.delivery_boy.phone}</p>
-                      </div>
-                    )}
-
-                    {order.special_instructions && (
-                      <div className="bg-blue-50 p-3 rounded">
-                        <p className="text-sm"><strong>Special Instructions:</strong> {order.special_instructions}</p>
-                      </div>
-                    )}
-
-                    <div className="text-xs text-gray-500">
-                      Created: {new Date(order.created_at).toLocaleString()}
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </TabsContent>
+              </Tabs>
             )}
           </CardContent>
         </Card>

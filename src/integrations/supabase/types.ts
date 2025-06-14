@@ -178,7 +178,9 @@ export type Database = {
           payment_method: string | null
           payment_status: string | null
           picked_up_at: string | null
+          prepared_at: string | null
           product_details: Json
+          ready_at: string | null
           shop_address: string | null
           shop_name: string
           shop_phone: string | null
@@ -204,7 +206,9 @@ export type Database = {
           payment_method?: string | null
           payment_status?: string | null
           picked_up_at?: string | null
+          prepared_at?: string | null
           product_details: Json
+          ready_at?: string | null
           shop_address?: string | null
           shop_name: string
           shop_phone?: string | null
@@ -230,7 +234,9 @@ export type Database = {
           payment_method?: string | null
           payment_status?: string | null
           picked_up_at?: string | null
+          prepared_at?: string | null
           product_details?: Json
+          ready_at?: string | null
           shop_address?: string | null
           shop_name?: string
           shop_phone?: string | null

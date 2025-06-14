@@ -15,7 +15,7 @@ export interface Order {
   commission: number;
   payment_status: 'pending' | 'paid';
   payment_method: 'cash' | 'upi' | 'card' | 'other';
-  order_status: 'pending' | 'assigned' | 'picked_up' | 'delivered' | 'cancelled';
+  order_status: 'pending' | 'preparing' | 'prepared' | 'ready' | 'assigned' | 'picked_up' | 'delivered' | 'cancelled';
   delivery_boy_id?: string;
   delivery_boy?: {
     id: string;
@@ -23,6 +23,8 @@ export interface Order {
     phone: string;
   };
   assigned_at?: string;
+  prepared_at?: string;
+  ready_at?: string;
   picked_up_at?: string;
   delivered_at?: string;
   special_instructions?: string;

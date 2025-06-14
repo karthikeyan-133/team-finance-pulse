@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Package, Truck, CheckCircle, MapPin, Phone } from 'lucide-react';
+import { Package, Truck, CheckCircle, MapPin, Phone, ChefHat, Clock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Order } from '@/types/orders';
@@ -51,16 +51,36 @@ const DeliveryStatusUpdater: React.FC<DeliveryStatusUpdaterProps> = ({ order, on
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'assigned': return 'bg-blue-100 text-blue-800';
-      case 'picked_up': return 'bg-orange-100 text-orange-800';
-      case 'delivered': return 'bg-green-100 text-green-800';
+      case 'pending': return 'bg-yellow-100 text-yellow-800';
+      case 'preparing': return 'bg-orange-100 text-orange-800';
+      case 'prepared': return 'bg-blue-100 text-blue-800';
+      case 'ready': return 'bg-green-100 text-green-800';
+      case 'assigned': return 'bg-purple-100 text-purple-800';
+      case 'picked_up': return 'bg-indigo-100 text-indigo-800';
+      case 'delivered': return 'bg-emerald-100 text-emerald-800';
       default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getPreparationStatusInfo = () => {
+    switch (order.order_status) {
+      case 'pending':
+        return { icon: Clock, text: 'Order received, waiting to be prepared', color: 'text-yellow-600' };
+      case 'preparing':
+        return { icon: ChefHat, text: 'Order is being prepared', color: 'text-orange-600' };
+      case 'prepared':
+        return { icon: Clock, text: 'Order prepared, waiting to be ready', color: 'text-blue-600' };
+      case 'ready':
+        return { icon: CheckCircle, text: 'Order ready for pickup', color: 'text-green-600' };
+      default:
+        return null;
     }
   };
 
   const canPickUp = order.order_status === 'assigned';
   const canDeliver = order.order_status === 'picked_up';
   const isDelivered = order.order_status === 'delivered';
+  const preparationInfo = getPreparationStatusInfo();
 
   return (
     <Card>
@@ -73,6 +93,23 @@ const DeliveryStatusUpdater: React.FC<DeliveryStatusUpdaterProps> = ({ order, on
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* Preparation Status */}
+        {preparationInfo && (
+          <div className={`p-3 rounded-lg bg-gray-50 border-l-4 border-gray-300`}>
+            <div className="flex items-center gap-2">
+              <preparationInfo.icon className={`h-5 w-5 ${preparationInfo.color}`} />
+              <span className={`font-medium ${preparationInfo.color}`}>
+                {preparationInfo.text}
+              </span>
+            </div>
+            {order.ready_at && (
+              <p className="text-sm text-gray-600 mt-1">
+                Ready since: {new Date(order.ready_at).toLocaleString()}
+              </p>
+            )}
+          </div>
+        )}
+
         {/* Customer & Order Details */}
         <div className="space-y-2 text-sm bg-gray-50 p-3 rounded">
           <div className="flex items-center gap-2">
