@@ -110,11 +110,30 @@ const OrderTracking = () => {
       }
 
       const typedOrders = ordersData.map(order => ({
-        ...order,
+        id: order.id,
+        order_number: order.order_number || `ORD-${order.id.slice(0, 8)}`,
+        customer_id: order.customer_id || undefined,
+        customer_name: order.customer_name || 'Unknown Customer',
+        customer_phone: order.customer_phone || '',
+        customer_address: order.customer_address || 'No address provided',
+        shop_name: order.shop_name || 'Unknown Shop',
+        shop_address: order.shop_address || undefined,
+        shop_phone: order.shop_phone || undefined,
         product_details: parseProductDetails(order.product_details),
+        total_amount: Number(order.total_amount) || 0,
+        delivery_charge: Number(order.delivery_charge) || 0,
+        commission: Number(order.commission) || 0,
         payment_status: (order.payment_status || 'pending') as 'pending' | 'paid',
         payment_method: (order.payment_method || 'cash') as 'cash' | 'upi' | 'card' | 'other',
-        order_status: (order.order_status || 'pending') as 'pending' | 'assigned' | 'picked_up' | 'delivered' | 'cancelled'
+        order_status: (order.order_status || 'pending') as 'pending' | 'assigned' | 'picked_up' | 'delivered' | 'cancelled',
+        delivery_boy_id: order.delivery_boy_id || undefined,
+        assigned_at: order.assigned_at || undefined,
+        picked_up_at: order.picked_up_at || undefined,
+        delivered_at: order.delivered_at || undefined,
+        special_instructions: order.special_instructions || undefined,
+        created_by: order.created_by || 'Unknown',
+        created_at: order.created_at,
+        updated_at: order.updated_at
       }));
 
       console.log('Processed orders:', typedOrders);
