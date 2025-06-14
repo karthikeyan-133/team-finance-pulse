@@ -77,7 +77,7 @@ const Login: React.FC = () => {
             </Button>
           </CardFooter>
         </form>
-      </CardContent>
+      </Card>
     </div>
   );
 };
