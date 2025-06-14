@@ -3,12 +3,12 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Shield, Truck, Store } from 'lucide-react';
+import { Shield, Truck, Store, MessageCircle } from 'lucide-react';
 
 const Index = () => {
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl w-full space-y-8">
+      <div className="max-w-5xl w-full space-y-8">
         <div className="text-center">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">
             Delivery Management System
@@ -18,7 +18,27 @@ const Index = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {/* Customer Portal */}
+          <Card className="hover:shadow-lg transition-shadow">
+            <CardHeader className="text-center">
+              <div className="mx-auto mb-4 p-3 bg-orange-100 rounded-full w-fit">
+                <MessageCircle className="h-8 w-8 text-orange-600" />
+              </div>
+              <CardTitle>Customer Portal</CardTitle>
+              <CardDescription>
+                Chat-based ordering system
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="text-center">
+              <Link to="/customer-portal">
+                <Button className="w-full" variant="outline">
+                  Start Ordering
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+
           {/* Admin Portal */}
           <Card className="hover:shadow-lg transition-shadow">
             <CardHeader className="text-center">

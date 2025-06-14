@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -21,6 +20,7 @@ import DeliveryBoyDashboard from "./pages/DeliveryBoyDashboard";
 import OrderTracking from "./pages/OrderTracking";
 import ShopOwnerLogin from "./pages/ShopOwnerLogin";
 import ShopOwnerDashboard from "./pages/ShopOwnerDashboard";
+import CustomerPortal from "./pages/CustomerPortal";
 
 // Layout
 import AppLayout from "./components/layout/AppLayout";
@@ -44,6 +44,7 @@ const App = () => {
                 <Routes>
                   <Route path="/" element={<Index />} />
                   <Route path="/login" element={<Login />} />
+                  <Route path="/customer-portal" element={<CustomerPortal />} />
                   
                   {/* Delivery Boy Routes (separate from admin) */}
                   <Route path="/delivery-boy-login" element={<DeliveryBoyLogin />} />
