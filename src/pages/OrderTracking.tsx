@@ -30,6 +30,7 @@ const OrderTracking = () => {
           table: 'orders'
         },
         () => {
+          console.log('Order updated, refetching orders');
           fetchOrders();
         }
       )
@@ -46,6 +47,9 @@ const OrderTracking = () => {
 
   const fetchOrders = async () => {
     try {
+      console.log('Fetching orders...');
+      setIsLoading(true);
+      
       const { data: ordersData, error } = await supabase
         .from('orders')
         .select(`
@@ -54,19 +58,32 @@ const OrderTracking = () => {
         `)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      console.log('Orders query result:', { ordersData, error });
 
-      const typedOrders = (ordersData || []).map(order => ({
+      if (error) {
+        console.error('Error fetching orders:', error);
+        toast.error('Failed to load orders: ' + error.message);
+        return;
+      }
+
+      if (!ordersData) {
+        console.log('No orders data returned');
+        setOrders([]);
+        return;
+      }
+
+      const typedOrders = ordersData.map(order => ({
         ...order,
-        product_details: (order.product_details as unknown) as ProductDetail[],
-        payment_status: order.payment_status as 'pending' | 'paid',
-        payment_method: order.payment_method as 'cash' | 'upi' | 'card' | 'other',
-        order_status: order.order_status as 'pending' | 'assigned' | 'picked_up' | 'delivered' | 'cancelled'
+        product_details: Array.isArray(order.product_details) ? order.product_details as ProductDetail[] : [],
+        payment_status: (order.payment_status || 'pending') as 'pending' | 'paid',
+        payment_method: (order.payment_method || 'cash') as 'cash' | 'upi' | 'card' | 'other',
+        order_status: (order.order_status || 'pending') as 'pending' | 'assigned' | 'picked_up' | 'delivered' | 'cancelled'
       }));
 
+      console.log('Processed orders:', typedOrders);
       setOrders(typedOrders);
     } catch (error) {
-      console.error('Error fetching orders:', error);
+      console.error('Error in fetchOrders:', error);
       toast.error('Failed to load orders');
     } finally {
       setIsLoading(false);
@@ -78,9 +95,9 @@ const OrderTracking = () => {
 
     if (searchTerm) {
       filtered = filtered.filter(order => 
-        order.order_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        order.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        order.shop_name.toLowerCase().includes(searchTerm.toLowerCase())
+        order.order_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        order.customer_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        order.shop_name?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
@@ -101,8 +118,17 @@ const OrderTracking = () => {
     };
   };
 
+  console.log('OrderTracking render - isLoading:', isLoading, 'orders count:', orders.length);
+
   if (isLoading) {
-    return <div className="container mx-auto px-4 py-6">Loading...</div>;
+    return (
+      <div className="container mx-auto px-4 py-6">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-2 text-gray-600">Loading orders...</p>
+        </div>
+      </div>
+    );
   }
 
   const stats = getStatusStats();
@@ -153,7 +179,7 @@ const OrderTracking = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Package className="h-5 w-5" />
-            Orders
+            Orders ({filteredOrders.length})
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -185,7 +211,12 @@ const OrderTracking = () => {
           {/* Orders List */}
           <div className="space-y-4">
             {filteredOrders.length === 0 ? (
-              <p className="text-gray-500 text-center py-6">No orders found</p>
+              <div className="text-center py-8">
+                <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-500">
+                  {orders.length === 0 ? 'No orders found' : 'No orders match your search criteria'}
+                </p>
+              </div>
             ) : (
               filteredOrders.map((order) => (
                 <OrderStatusTracker key={order.id} order={order} />
