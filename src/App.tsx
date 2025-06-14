@@ -20,6 +20,7 @@ import OrderTracking from "./pages/OrderTracking";
 import ShopOwnerLogin from "./pages/ShopOwnerLogin";
 import ShopOwnerDashboard from "./pages/ShopOwnerDashboard";
 import CustomerPortal from "./pages/CustomerPortal";
+import ProductManagement from "./pages/ProductManagement";
 
 // Layout
 import AppLayout from "./components/layout/AppLayout";
@@ -63,6 +64,7 @@ const App = () => {
                     <Route path="order-tracking" element={<OrderTracking />} />
                     <Route path="analytics" element={<AdminAnalytics />} />
                     <Route path="delivery-boy" element={<DeliveryBoy />} />
+                    <Route path="products" element={<ProductManagement />} />
                   </Route>
                   
                   <Route path="*" element={<Navigate to="/" replace />} />
