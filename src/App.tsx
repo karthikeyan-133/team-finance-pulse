@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -24,6 +23,9 @@ import ShopOwnerDashboard from "./pages/ShopOwnerDashboard";
 
 // Layout
 import AppLayout from "./components/layout/AppLayout";
+
+// Components
+import ProtectedRoute from "./components/ProtectedRoute";
 
 // Create a QueryClient instance outside of the component
 const queryClient = new QueryClient();
