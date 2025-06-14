@@ -19,15 +19,28 @@ const ShopOwnerLogin = () => {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!selectedShop) {
+      toast.error('Please select a shop');
+      return;
+    }
+    
+    if (!accessCode) {
+      toast.error('Please enter access code');
+      return;
+    }
+    
     setIsLoading(true);
 
-    // Simple access code validation (in production, this should be more secure)
-    if (accessCode === 'shop123') {
+    // Simple access code validation
+    if (accessCode.trim() === 'shop123') {
       const shop = SHOPS.find(s => s.id === selectedShop);
       if (shop) {
         setShopName(shop.name);
         toast.success(`Welcome to ${shop.name}!`);
         navigate('/shop-dashboard');
+      } else {
+        toast.error('Shop not found');
       }
     } else {
       toast.error('Invalid access code');
@@ -62,7 +75,7 @@ const ShopOwnerLogin = () => {
                 <option value="">Choose a shop...</option>
                 {SHOPS.filter(shop => shop.isActive).map(shop => (
                   <option key={shop.id} value={shop.id}>
-                    {shop.name} {shop.location && `- ${shop.location}`}
+                    {shop.name}
                   </option>
                 ))}
               </select>
