@@ -14,11 +14,11 @@ const AppLayout = () => {
   };
 
   const navigation = [
-    { name: "Delivery Updates", href: "/delivery-update", icon: Package },
-    { name: "Order Tracking", href: "/order-tracking", icon: ClipboardList },
-    { name: "Analytics", href: "/admin-analytics", icon: BarChart3 },
-    { name: "Create Order", href: "/create-order", icon: PlusCircle },
-    { name: "Delivery Management", href: "/delivery-boy", icon: Truck },
+    { name: "Delivery Updates", href: "/admin/delivery-update", icon: Package },
+    { name: "Order Tracking", href: "/admin/order-tracking", icon: ClipboardList },
+    { name: "Analytics", href: "/admin/analytics", icon: BarChart3 },
+    { name: "Create Order", href: "/admin/create-order", icon: PlusCircle },
+    { name: "Delivery Management", href: "/admin/delivery-boy", icon: Truck },
   ];
 
   return (
@@ -28,9 +28,9 @@ const AppLayout = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
-              <h1 className="text-xl font-semibold text-gray-900">
+              <Link to="/" className="text-xl font-semibold text-gray-900 hover:text-blue-600 transition-colors">
                 Delivery Management System
-              </h1>
+              </Link>
             </div>
             
             <nav className="hidden md:flex space-x-8">
