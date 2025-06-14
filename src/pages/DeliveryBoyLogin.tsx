@@ -25,37 +25,47 @@ const DeliveryBoyLogin = () => {
     setIsLoading(true);
 
     try {
-      console.log('Attempting login with phone:', phone);
+      console.log('Attempting login with phone:', phone.trim());
       
+      // First, let's check if there are any delivery boys in the database
+      const { data: allDeliveryBoys, error: countError } = await supabase
+        .from('delivery_boys')
+        .select('*');
+      
+      console.log('All delivery boys in database:', allDeliveryBoys);
+      
+      if (countError) {
+        console.error('Error fetching all delivery boys:', countError);
+      }
+
       // Check if delivery boy exists with this phone number
       const { data, error } = await supabase
         .from('delivery_boys')
         .select('*')
         .eq('phone', phone.trim())
-        .eq('is_active', true)
-        .single();
+        .eq('is_active', true);
 
-      console.log('Database response:', { data, error });
+      console.log('Query result for phone', phone.trim(), ':', { data, error });
 
       if (error) {
         console.error('Database error:', error);
-        if (error.code === 'PGRST116') {
-          toast.error('Phone number not found or account is inactive');
-        } else {
-          toast.error('Login failed. Please try again.');
-        }
+        toast.error('Database error. Please try again.');
         return;
       }
 
-      if (!data) {
-        toast.error('Phone number not found or account is inactive');
+      if (!data || data.length === 0) {
+        toast.error('Phone number not found or account is inactive. Please contact admin.');
+        console.log('Available phone numbers:', allDeliveryBoys?.map(db => db.phone));
         return;
       }
+
+      const deliveryBoy = data[0];
+      console.log('Found delivery boy:', deliveryBoy);
 
       // Store delivery boy data in localStorage for simple auth
-      localStorage.setItem('delivery_boy_session', JSON.stringify(data));
-      setDeliveryBoyData(data);
-      toast.success(`Welcome back, ${data.name}!`);
+      localStorage.setItem('delivery_boy_session', JSON.stringify(deliveryBoy));
+      setDeliveryBoyData(deliveryBoy);
+      toast.success(`Welcome back, ${deliveryBoy.name}!`);
 
     } catch (error) {
       console.error('Login error:', error);
@@ -68,9 +78,12 @@ const DeliveryBoyLogin = () => {
   // Check if already logged in
   React.useEffect(() => {
     const savedSession = localStorage.getItem('delivery_boy_session');
+    console.log('Checking for saved session:', savedSession);
+    
     if (savedSession) {
       try {
         const parsedSession = JSON.parse(savedSession);
+        console.log('Parsed session:', parsedSession);
         setDeliveryBoyData(parsedSession);
       } catch (error) {
         console.error('Error parsing saved session:', error);
@@ -79,7 +92,13 @@ const DeliveryBoyLogin = () => {
     }
   }, []);
 
+  // Debug: Log when deliveryBoyData changes
+  React.useEffect(() => {
+    console.log('DeliveryBoyData changed:', deliveryBoyData);
+  }, [deliveryBoyData]);
+
   if (deliveryBoyData) {
+    console.log('Redirecting to dashboard with data:', deliveryBoyData);
     return <Navigate to="/delivery-boy-dashboard" replace />;
   }
 
@@ -116,6 +135,14 @@ const DeliveryBoyLogin = () => {
             >
               {isLoading ? 'Signing in...' : 'Sign in'}
             </Button>
+            
+            {/* Debug info - remove in production */}
+            <div className="mt-4 p-2 bg-gray-100 rounded text-xs">
+              <p><strong>Debug Info:</strong></p>
+              <p>Phone input: {phone}</p>
+              <p>Is loading: {isLoading.toString()}</p>
+              <p>Has delivery boy data: {!!deliveryBoyData}</p>
+            </div>
           </CardContent>
         </form>
       </Card>

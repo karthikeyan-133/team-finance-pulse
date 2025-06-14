@@ -18,20 +18,35 @@ const DeliveryBoyDashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    console.log('Dashboard useEffect running');
+    
     // Check if delivery boy is logged in
     const savedSession = localStorage.getItem('delivery_boy_session');
+    console.log('Saved session in dashboard:', savedSession);
+    
     if (!savedSession) {
+      console.log('No saved session found, should redirect to login');
+      setIsLoading(false);
       return;
     }
     
-    const deliveryBoyData = JSON.parse(savedSession);
-    setDeliveryBoy(deliveryBoyData);
-    fetchAssignments(deliveryBoyData.id);
-    fetchAcceptedOrders(deliveryBoyData.id);
+    try {
+      const deliveryBoyData = JSON.parse(savedSession);
+      console.log('Parsed delivery boy data:', deliveryBoyData);
+      setDeliveryBoy(deliveryBoyData);
+      fetchAssignments(deliveryBoyData.id);
+      fetchAcceptedOrders(deliveryBoyData.id);
+    } catch (error) {
+      console.error('Error parsing delivery boy session:', error);
+      localStorage.removeItem('delivery_boy_session');
+      setIsLoading(false);
+    }
   }, []);
 
   const fetchAssignments = async (deliveryBoyId: string) => {
     try {
+      console.log('Fetching assignments for delivery boy:', deliveryBoyId);
+      
       const { data: assignmentsData, error } = await supabase
         .from('order_assignments')
         .select(`
@@ -41,6 +56,8 @@ const DeliveryBoyDashboard = () => {
         .eq('delivery_boy_id', deliveryBoyId)
         .eq('status', 'pending')
         .order('assigned_at', { ascending: false });
+
+      console.log('Assignments query result:', { assignmentsData, error });
 
       if (error) throw error;
 
@@ -136,12 +153,24 @@ const DeliveryBoyDashboard = () => {
     toast.info('Logged out successfully');
   };
 
-  if (!deliveryBoy) {
+  console.log('Dashboard render - deliveryBoy:', deliveryBoy, 'isLoading:', isLoading);
+
+  if (!deliveryBoy && !isLoading) {
+    console.log('No delivery boy and not loading, redirecting to login');
     return <Navigate to="/delivery-boy-login" replace />;
   }
 
   if (isLoading) {
-    return <div className="container mx-auto px-4 py-6">Loading...</div>;
+    return (
+      <div className="container mx-auto px-4 py-6">
+        <div className="text-center">Loading dashboard...</div>
+      </div>
+    );
+  }
+
+  if (!deliveryBoy) {
+    console.log('No delivery boy data, should redirect');
+    return <Navigate to="/delivery-boy-login" replace />;
   }
 
   return (
@@ -150,7 +179,7 @@ const DeliveryBoyDashboard = () => {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold">Delivery Dashboard</h1>
-          <p className="text-gray-600">Welcome back, {deliveryBoy.name}!</p>
+          <p className="text-gray-600">Welcome back, {deliveryBoy.name}! (ID: {deliveryBoy.id})</p>
         </div>
         <Button variant="outline" onClick={handleLogout} className="flex items-center gap-2">
           <LogOut className="h-4 w-4" />
