@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Order } from '@/types/orders';
+import { Order, ProductDetail } from '@/types/orders';
 import { toast } from '@/components/ui/sonner';
 
 interface ShopOwnerContextType {
@@ -42,7 +42,22 @@ export const ShopOwnerProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setOrders(data || []);
+      
+      // Transform the data to match Order type
+      const transformedOrders = (data || []).map(order => ({
+        ...order,
+        product_details: (order.product_details as unknown) as ProductDetail[],
+        payment_status: order.payment_status as 'pending' | 'paid',
+        payment_method: order.payment_method as 'cash' | 'upi' | 'card' | 'other',
+        order_status: order.order_status as 'pending' | 'assigned' | 'picked_up' | 'delivered' | 'cancelled',
+        delivery_boy: order.delivery_boys ? {
+          id: order.delivery_boys.id,
+          name: order.delivery_boys.name,
+          phone: order.delivery_boys.phone
+        } : undefined
+      }));
+
+      setOrders(transformedOrders);
     } catch (error) {
       console.error('Error fetching orders:', error);
       toast.error('Failed to fetch orders');

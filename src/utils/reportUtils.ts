@@ -1,5 +1,14 @@
-
 import { Transaction, Customer, Expense } from '../types';
+
+// Format currency helper function
+export const formatCurrency = (amount: number) => {
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount);
+};
 
 // Calculate monthly sales data
 export const calculateMonthlySales = (transactions: Transaction[]) => {

@@ -17,6 +17,11 @@ export interface Order {
   payment_method: 'cash' | 'upi' | 'card' | 'other';
   order_status: 'pending' | 'assigned' | 'picked_up' | 'delivered' | 'cancelled';
   delivery_boy_id?: string;
+  delivery_boy?: {
+    id: string;
+    name: string;
+    phone: string;
+  };
   assigned_at?: string;
   picked_up_at?: string;
   delivered_at?: string;

@@ -175,10 +175,10 @@ const ShopOwnerDashboard = () => {
                       </div>
                     </div>
 
-                    {order.delivery_boys && (
+                    {order.delivery_boy && (
                       <div className="bg-gray-50 p-3 rounded">
-                        <p className="text-sm"><strong>Delivery Boy:</strong> {order.delivery_boys.name}</p>
-                        <p className="text-sm"><strong>Phone:</strong> {order.delivery_boys.phone}</p>
+                        <p className="text-sm"><strong>Delivery Boy:</strong> {order.delivery_boy.name}</p>
+                        <p className="text-sm"><strong>Phone:</strong> {order.delivery_boy.phone}</p>
                       </div>
                     )}
 
