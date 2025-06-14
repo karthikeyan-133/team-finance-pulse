@@ -45,6 +45,43 @@ const OrderTracking = () => {
     filterOrders();
   }, [orders, searchTerm, statusFilter]);
 
+  // Helper function to safely convert Json to ProductDetail[]
+  const parseProductDetails = (productDetails: any): ProductDetail[] => {
+    if (!productDetails) return [];
+    
+    try {
+      // If it's already an array, validate each item
+      if (Array.isArray(productDetails)) {
+        return productDetails.filter((item: any) => 
+          item && 
+          typeof item === 'object' && 
+          typeof item.name === 'string' &&
+          typeof item.quantity === 'number' &&
+          typeof item.price === 'number'
+        ) as ProductDetail[];
+      }
+      
+      // If it's a string, try to parse it
+      if (typeof productDetails === 'string') {
+        const parsed = JSON.parse(productDetails);
+        if (Array.isArray(parsed)) {
+          return parsed.filter((item: any) => 
+            item && 
+            typeof item === 'object' && 
+            typeof item.name === 'string' &&
+            typeof item.quantity === 'number' &&
+            typeof item.price === 'number'
+          ) as ProductDetail[];
+        }
+      }
+      
+      return [];
+    } catch (error) {
+      console.error('Error parsing product details:', error);
+      return [];
+    }
+  };
+
   const fetchOrders = async () => {
     try {
       console.log('Fetching orders...');
@@ -74,7 +111,7 @@ const OrderTracking = () => {
 
       const typedOrders = ordersData.map(order => ({
         ...order,
-        product_details: Array.isArray(order.product_details) ? order.product_details as ProductDetail[] : [],
+        product_details: parseProductDetails(order.product_details),
         payment_status: (order.payment_status || 'pending') as 'pending' | 'paid',
         payment_method: (order.payment_method || 'cash') as 'cash' | 'upi' | 'card' | 'other',
         order_status: (order.order_status || 'pending') as 'pending' | 'assigned' | 'picked_up' | 'delivered' | 'cancelled'
