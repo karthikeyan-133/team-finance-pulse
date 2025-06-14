@@ -1,7 +1,7 @@
 
 import { Outlet, useLocation, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { LogOut, BarChart3, Truck, ClipboardList } from "lucide-react";
+import { LogOut, BarChart3, Truck, ClipboardList, Store, Package } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import AdminNotifications from "@/components/notifications/AdminNotifications";
 
@@ -17,6 +17,8 @@ const AppLayout = () => {
     { name: "Order Tracking", href: "/admin/order-tracking", icon: ClipboardList },
     { name: "Analytics", href: "/admin/analytics", icon: BarChart3 },
     { name: "Delivery Management", href: "/admin/delivery-boy", icon: Truck },
+    { name: "Shop Management", href: "/admin/shops", icon: Store },
+    { name: "Product Management", href: "/admin/products", icon: Package },
   ];
 
   return (
