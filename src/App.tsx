@@ -13,6 +13,7 @@ import React from 'react';
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import AdminAnalytics from "./pages/AdminAnalytics";
+import FinancialAnalytics from "./pages/FinancialAnalytics";
 import DeliveryBoy from "./pages/DeliveryBoy";
 import DeliveryBoyLogin from "./pages/DeliveryBoyLogin";
 import DeliveryBoyDashboard from "./pages/DeliveryBoyDashboard";
@@ -64,6 +65,7 @@ const App = () => {
                     <Route index element={<Navigate to="/admin/order-tracking" replace />} />
                     <Route path="order-tracking" element={<OrderTracking />} />
                     <Route path="analytics" element={<AdminAnalytics />} />
+                    <Route path="financial-analytics" element={<FinancialAnalytics />} />
                     <Route path="delivery-boy" element={<DeliveryBoy />} />
                     <Route path="shops" element={<ShopManagement />} />
                     <Route path="products" element={<ProductManagement />} />
