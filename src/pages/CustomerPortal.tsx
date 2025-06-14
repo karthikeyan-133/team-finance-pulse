@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -50,6 +51,7 @@ const CustomerPortal = () => {
   const [cart, setCart] = useState<OrderItem[]>([]);
   const [showLoginForm, setShowLoginForm] = useState(false);
   const [loginPhone, setLoginPhone] = useState('');
+  const [registrationName, setRegistrationName] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -152,6 +154,7 @@ const CustomerPortal = () => {
     if (currentStep === 'register') {
       // Collecting name
       const name = inputValue.trim();
+      setRegistrationName(name);
       addUserMessage(name);
       setCurrentStep('register_address');
       addBotMessage('Great! Now please provide your delivery address:');
@@ -162,7 +165,7 @@ const CustomerPortal = () => {
       
       try {
         const newCustomer = {
-          name: messages.find(m => m.type === 'user' && currentStep === 'register')?.content || 'Customer',
+          name: registrationName,
           phone: loginPhone,
           address: address,
           is_new: true
@@ -201,6 +204,7 @@ const CustomerPortal = () => {
     setMessages([]);
     setCurrentStep('login');
     setLoginPhone('');
+    setRegistrationName('');
     showLoginMessage();
     toast.info('Logged out successfully');
   };
