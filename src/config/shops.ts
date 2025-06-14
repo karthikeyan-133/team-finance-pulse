@@ -15,14 +15,14 @@ export const SHOPS: Shop[] = [
   },
   {
     id: 'shop-2',
-    name: 'Zyra Express',
-    location: 'Express Branch',
+    name: 'KL 70',
+    location: 'KL Road',
     isActive: true
   },
   {
     id: 'shop-3',
-    name: 'Zyra Premium',
-    location: 'Premium Branch',
+    name: 'AL Cafe',
+    location: 'City Center',
     isActive: true
   }
 ];
