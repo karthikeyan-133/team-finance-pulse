@@ -1,10 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Package, MapPin, Phone, Store, User, Clock, CheckCircle, XCircle, LogOut, Truck } from 'lucide-react';
+import { Package, MapPin, Phone, Store, User, Clock, CheckCircle, XCircle, LogOut, Truck, RefreshCw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { OrderAssignment, ProductDetail, Order } from '@/types/orders';
@@ -59,7 +60,10 @@ const DeliveryBoyDashboard = () => {
 
       console.log('Assignments query result:', { assignmentsData, error });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Assignments query error:', error);
+        throw error;
+      }
 
       // Type cast the assignments data
       const typedAssignments = (assignmentsData || []).map(assignment => ({
@@ -74,6 +78,7 @@ const DeliveryBoyDashboard = () => {
         } : undefined
       }));
 
+      console.log('Processed assignments:', typedAssignments);
       setAssignments(typedAssignments);
     } catch (error) {
       console.error('Error fetching assignments:', error);
@@ -83,6 +88,8 @@ const DeliveryBoyDashboard = () => {
 
   const fetchAcceptedOrders = async (deliveryBoyId: string) => {
     try {
+      console.log('Fetching accepted orders for delivery boy:', deliveryBoyId);
+      
       const { data: ordersData, error } = await supabase
         .from('orders')
         .select('*')
@@ -90,7 +97,12 @@ const DeliveryBoyDashboard = () => {
         .in('order_status', ['assigned', 'picked_up'])
         .order('assigned_at', { ascending: false });
 
-      if (error) throw error;
+      console.log('Accepted orders query result:', { ordersData, error });
+
+      if (error) {
+        console.error('Accepted orders query error:', error);
+        throw error;
+      }
 
       const typedOrders = (ordersData || []).map(order => ({
         ...order,
@@ -100,6 +112,7 @@ const DeliveryBoyDashboard = () => {
         order_status: order.order_status as 'pending' | 'assigned' | 'picked_up' | 'delivered' | 'cancelled'
       }));
 
+      console.log('Processed accepted orders:', typedOrders);
       setAcceptedOrders(typedOrders);
     } catch (error) {
       console.error('Error fetching accepted orders:', error);
@@ -153,6 +166,13 @@ const DeliveryBoyDashboard = () => {
     toast.info('Logged out successfully');
   };
 
+  const handleRefresh = () => {
+    if (deliveryBoy) {
+      fetchAssignments(deliveryBoy.id);
+      fetchAcceptedOrders(deliveryBoy.id);
+    }
+  };
+
   console.log('Dashboard render - deliveryBoy:', deliveryBoy, 'isLoading:', isLoading);
 
   if (!deliveryBoy && !isLoading) {
@@ -181,10 +201,16 @@ const DeliveryBoyDashboard = () => {
           <h1 className="text-2xl font-bold">Delivery Dashboard</h1>
           <p className="text-gray-600">Welcome back, {deliveryBoy.name}! (ID: {deliveryBoy.id})</p>
         </div>
-        <Button variant="outline" onClick={handleLogout} className="flex items-center gap-2">
-          <LogOut className="h-4 w-4" />
-          Logout
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={handleRefresh} className="flex items-center gap-2">
+            <RefreshCw className="h-4 w-4" />
+            Refresh
+          </Button>
+          <Button variant="outline" onClick={handleLogout} className="flex items-center gap-2">
+            <LogOut className="h-4 w-4" />
+            Logout
+          </Button>
+        </div>
       </div>
 
       <Tabs defaultValue="pending" className="space-y-4">

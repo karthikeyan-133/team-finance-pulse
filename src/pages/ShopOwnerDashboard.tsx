@@ -12,6 +12,7 @@ const ShopOwnerDashboard = () => {
   const navigate = useNavigate();
   const {
     shopName,
+    setShopName,
     orders,
     todayOrders,
     totalRevenue,
@@ -22,12 +23,35 @@ const ShopOwnerDashboard = () => {
   } = useShopOwner();
 
   useEffect(() => {
-    if (!shopName) {
+    console.log('ShopOwnerDashboard - checking authentication');
+    
+    const savedSession = localStorage.getItem('shop_owner_session');
+    console.log('Saved shop session:', savedSession);
+    
+    if (!savedSession) {
+      console.log('No shop session found, redirecting to login');
+      navigate('/shop-login');
+      return;
+    }
+
+    try {
+      const shopData = JSON.parse(savedSession);
+      console.log('Parsed shop data:', shopData);
+      
+      if (shopData && shopData.shopName && !shopName) {
+        console.log('Setting shop name from session:', shopData.shopName);
+        setShopName(shopData.shopName);
+      }
+    } catch (error) {
+      console.error('Error parsing shop session:', error);
+      localStorage.removeItem('shop_owner_session');
       navigate('/shop-login');
     }
-  }, [shopName, navigate]);
+  }, [shopName, navigate, setShopName]);
 
   const handleLogout = () => {
+    localStorage.removeItem('shop_owner_session');
+    setShopName('');
     navigate('/shop-login');
   };
 
@@ -42,7 +66,7 @@ const ShopOwnerDashboard = () => {
     }
   };
 
-  if (!shopName) {
+  if (!shopName && !isLoading) {
     return null;
   }
 
@@ -55,7 +79,7 @@ const ShopOwnerDashboard = () => {
             <div className="flex items-center">
               <Package className="h-8 w-8 text-blue-600 mr-3" />
               <div>
-                <h1 className="text-xl font-semibold text-gray-900">{shopName}</h1>
+                <h1 className="text-xl font-semibold text-gray-900">{shopName || 'Loading...'}</h1>
                 <p className="text-sm text-gray-500">Shop Owner Portal</p>
               </div>
             </div>
@@ -134,7 +158,7 @@ const ShopOwnerDashboard = () => {
           <CardHeader>
             <CardTitle>Recent Orders</CardTitle>
             <CardDescription>
-              All orders for your shop
+              All orders for your shop {shopName && `(${orders.length} total)`}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -142,7 +166,8 @@ const ShopOwnerDashboard = () => {
               <div className="text-center py-4">Loading orders...</div>
             ) : orders.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
-                No orders found for this shop
+                No orders found for this shop. 
+                {shopName && <p className="mt-2">Shop: {shopName}</p>}
               </div>
             ) : (
               <div className="space-y-4">

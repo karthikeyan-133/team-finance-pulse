@@ -23,11 +23,33 @@ export const ShopOwnerProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Initialize shop name from localStorage on mount
+  useEffect(() => {
+    const savedShopName = localStorage.getItem('shop_owner_session');
+    if (savedShopName) {
+      try {
+        const shopData = JSON.parse(savedShopName);
+        if (shopData && shopData.shopName) {
+          setShopName(shopData.shopName);
+        }
+      } catch (error) {
+        console.error('Error parsing shop session:', error);
+        localStorage.removeItem('shop_owner_session');
+      }
+    }
+    setIsLoading(false);
+  }, []);
+
   const fetchOrders = async () => {
-    if (!shopName) return;
+    if (!shopName) {
+      setIsLoading(false);
+      return;
+    }
 
     try {
       setIsLoading(true);
+      console.log('Fetching orders for shop:', shopName);
+      
       const { data, error } = await supabase
         .from('orders')
         .select(`
@@ -41,7 +63,12 @@ export const ShopOwnerProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         .eq('shop_name', shopName)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      console.log('Orders query result:', { data, error });
+
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
+      }
       
       // Transform the data to match Order type
       const transformedOrders = (data || []).map(order => ({
@@ -57,6 +84,7 @@ export const ShopOwnerProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         } : undefined
       }));
 
+      console.log('Transformed orders:', transformedOrders);
       setOrders(transformedOrders);
     } catch (error) {
       console.error('Error fetching orders:', error);
@@ -67,7 +95,9 @@ export const ShopOwnerProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   useEffect(() => {
-    fetchOrders();
+    if (shopName) {
+      fetchOrders();
+    }
   }, [shopName]);
 
   // Calculate statistics
