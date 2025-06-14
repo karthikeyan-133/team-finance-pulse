@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,6 +13,29 @@ const DeliveryBoyLogin = () => {
   const [phone, setPhone] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [deliveryBoyData, setDeliveryBoyData] = useState(null);
+  const [isCheckingSession, setIsCheckingSession] = useState(true);
+
+  // Check if already logged in
+  useEffect(() => {
+    const checkSession = () => {
+      const savedSession = localStorage.getItem('delivery_boy_session');
+      console.log('Checking for saved session:', savedSession);
+      
+      if (savedSession) {
+        try {
+          const parsedSession = JSON.parse(savedSession);
+          console.log('Parsed session:', parsedSession);
+          setDeliveryBoyData(parsedSession);
+        } catch (error) {
+          console.error('Error parsing saved session:', error);
+          localStorage.removeItem('delivery_boy_session');
+        }
+      }
+      setIsCheckingSession(false);
+    };
+
+    checkSession();
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,17 +50,6 @@ const DeliveryBoyLogin = () => {
     try {
       console.log('Attempting login with phone:', phone.trim());
       
-      // First, let's check if there are any delivery boys in the database
-      const { data: allDeliveryBoys, error: countError } = await supabase
-        .from('delivery_boys')
-        .select('*');
-      
-      console.log('All delivery boys in database:', allDeliveryBoys);
-      
-      if (countError) {
-        console.error('Error fetching all delivery boys:', countError);
-      }
-
       // Check if delivery boy exists with this phone number
       const { data, error } = await supabase
         .from('delivery_boys')
@@ -55,7 +67,6 @@ const DeliveryBoyLogin = () => {
 
       if (!data || data.length === 0) {
         toast.error('Phone number not found or account is inactive. Please contact admin.');
-        console.log('Available phone numbers:', allDeliveryBoys?.map(db => db.phone));
         return;
       }
 
@@ -75,28 +86,19 @@ const DeliveryBoyLogin = () => {
     }
   };
 
-  // Check if already logged in
-  React.useEffect(() => {
-    const savedSession = localStorage.getItem('delivery_boy_session');
-    console.log('Checking for saved session:', savedSession);
-    
-    if (savedSession) {
-      try {
-        const parsedSession = JSON.parse(savedSession);
-        console.log('Parsed session:', parsedSession);
-        setDeliveryBoyData(parsedSession);
-      } catch (error) {
-        console.error('Error parsing saved session:', error);
-        localStorage.removeItem('delivery_boy_session');
-      }
-    }
-  }, []);
+  // Show loading while checking session
+  if (isCheckingSession) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-2 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
-  // Debug: Log when deliveryBoyData changes
-  React.useEffect(() => {
-    console.log('DeliveryBoyData changed:', deliveryBoyData);
-  }, [deliveryBoyData]);
-
+  // Redirect if already logged in
   if (deliveryBoyData) {
     console.log('Redirecting to dashboard with data:', deliveryBoyData);
     return <Navigate to="/delivery-boy-dashboard" replace />;
@@ -108,7 +110,7 @@ const DeliveryBoyLogin = () => {
         <CardHeader className="space-y-1 text-center">
           <div className="flex items-center justify-center gap-2 mb-2">
             <Truck className="h-8 w-8 text-blue-600" />
-            <CardTitle className="text-3xl font-bold tracking-tight">Delivery Boy Portal</CardTitle>
+            <CardTitle className="text-2xl font-bold tracking-tight">Delivery Boy Portal</CardTitle>
           </div>
           <CardDescription>
             Enter your phone number to access your delivery assignments
@@ -126,6 +128,7 @@ const DeliveryBoyLogin = () => {
                 onChange={(e) => setPhone(e.target.value)}
                 required
                 disabled={isLoading}
+                className="w-full"
               />
             </div>
             <Button 
@@ -133,16 +136,15 @@ const DeliveryBoyLogin = () => {
               className="w-full"
               disabled={isLoading || !phone.trim()}
             >
-              {isLoading ? 'Signing in...' : 'Sign in'}
+              {isLoading ? (
+                <div className="flex items-center gap-2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  Signing in...
+                </div>
+              ) : (
+                'Sign in'
+              )}
             </Button>
-            
-            {/* Debug info - remove in production */}
-            <div className="mt-4 p-2 bg-gray-100 rounded text-xs">
-              <p><strong>Debug Info:</strong></p>
-              <p>Phone input: {phone}</p>
-              <p>Is loading: {isLoading.toString()}</p>
-              <p>Has delivery boy data: {!!deliveryBoyData}</p>
-            </div>
           </CardContent>
         </form>
       </Card>
