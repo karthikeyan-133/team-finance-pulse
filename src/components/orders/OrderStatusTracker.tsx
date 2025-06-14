@@ -2,7 +2,7 @@
 import React from 'react';
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CheckCircle, Clock, Package, Truck, MapPin } from 'lucide-react';
+import { CheckCircle, Clock, Package, Truck, MapPin, Calendar } from 'lucide-react';
 
 interface OrderStatusTrackerProps {
   order: {
@@ -16,6 +16,7 @@ interface OrderStatusTrackerProps {
     customer_address: string;
     shop_name: string;
     total_amount: number;
+    deliveryBoyName?: string;
   };
   showTitle?: boolean;
 }
@@ -43,6 +44,18 @@ const OrderStatusTracker: React.FC<OrderStatusTrackerProps> = ({ order, showTitl
     }
   };
 
+  const formatDateTime = (dateTimeStr?: string) => {
+    if (!dateTimeStr) return 'Pending';
+    
+    try {
+      const date = new Date(dateTimeStr);
+      return date.toLocaleString();
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return 'Invalid date';
+    }
+  };
+
   const statusSteps = [
     { status: 'assigned', label: 'Order Assigned', timestamp: order.assigned_at },
     { status: 'picked_up', label: 'Picked Up', timestamp: order.picked_up_at },
@@ -59,6 +72,7 @@ const OrderStatusTracker: React.FC<OrderStatusTrackerProps> = ({ order, showTitl
   };
 
   const currentStepIndex = getCurrentStepIndex();
+  const isCancelled = order.order_status === 'cancelled';
 
   return (
     <Card>
@@ -85,40 +99,53 @@ const OrderStatusTracker: React.FC<OrderStatusTrackerProps> = ({ order, showTitl
           <div>
             <p><strong>Shop:</strong> {order.shop_name}</p>
             <p><strong>Amount:</strong> ₹{order.total_amount}</p>
+            {order.deliveryBoyName && order.deliveryBoyName !== 'Not Assigned' && (
+              <p><strong>Delivery Agent:</strong> {order.deliveryBoyName}</p>
+            )}
           </div>
         </div>
 
         {/* Status Timeline */}
         <div className="space-y-3">
           <h4 className="font-medium text-sm">Order Progress</h4>
-          {statusSteps.map((step, index) => {
-            const isCompleted = index <= currentStepIndex;
-            const isCurrent = index === currentStepIndex;
-            
-            return (
-              <div key={step.status} className="flex items-center gap-3">
-                <div className={`flex-shrink-0 w-8 h-8 rounded-full border-2 flex items-center justify-center ${
-                  isCompleted 
-                    ? 'border-green-500 bg-green-50' 
-                    : isCurrent 
-                    ? 'border-blue-500 bg-blue-50' 
-                    : 'border-gray-300 bg-gray-50'
-                }`}>
-                  {getStatusIcon(step.status, isCompleted)}
-                </div>
-                <div className="flex-1">
-                  <p className={`text-sm font-medium ${isCompleted ? 'text-green-700' : 'text-gray-600'}`}>
-                    {step.label}
-                  </p>
-                  {step.timestamp && (
-                    <p className="text-xs text-gray-500">
-                      {new Date(step.timestamp).toLocaleString()}
+          
+          {isCancelled ? (
+            <div className="bg-red-50 p-3 rounded text-red-700 text-sm">
+              This order has been cancelled
+            </div>
+          ) : (
+            statusSteps.map((step, index) => {
+              const isCompleted = index <= currentStepIndex;
+              const isCurrent = index === currentStepIndex;
+              
+              return (
+                <div key={step.status} className="flex items-center gap-3">
+                  <div className={`flex-shrink-0 w-8 h-8 rounded-full border-2 flex items-center justify-center ${
+                    isCompleted 
+                      ? 'border-green-500 bg-green-50' 
+                      : isCurrent 
+                      ? 'border-blue-500 bg-blue-50' 
+                      : 'border-gray-300 bg-gray-50'
+                  }`}>
+                    {getStatusIcon(step.status, isCompleted)}
+                  </div>
+                  <div className="flex-1">
+                    <p className={`text-sm font-medium ${isCompleted ? 'text-green-700' : 'text-gray-600'}`}>
+                      {step.label}
                     </p>
-                  )}
+                    <div className="flex items-center gap-1 text-xs text-gray-500">
+                      <Calendar className="h-3 w-3" />
+                      {step.timestamp ? (
+                        <span>{formatDateTime(step.timestamp)}</span>
+                      ) : (
+                        <span>Not yet</span>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })
+          )}
         </div>
       </CardContent>
     </Card>

@@ -20,7 +20,7 @@ const OrderTracking = () => {
   useEffect(() => {
     fetchOrders();
     
-    // Set up real-time subscription
+    // Set up real-time subscription with improved event handling
     const channel = supabase
       .channel('order-status-updates')
       .on('postgres_changes', 
@@ -29,9 +29,24 @@ const OrderTracking = () => {
           schema: 'public', 
           table: 'orders'
         },
-        () => {
-          console.log('Order updated, refetching orders');
-          fetchOrders();
+        (payload) => {
+          console.log('Order updated, payload:', payload);
+          // Handle the updated order data
+          const updatedOrder = payload.new;
+          if (updatedOrder) {
+            console.log('Status changed to:', updatedOrder.order_status);
+            // Refresh orders to show the latest status
+            fetchOrders();
+            
+            // Show toast notification for status updates
+            if (updatedOrder.order_status === 'assigned') {
+              toast.info(`Order #${updatedOrder.order_number} has been assigned to a delivery person`);
+            } else if (updatedOrder.order_status === 'picked_up') {
+              toast.info(`Order #${updatedOrder.order_number} has been picked up`);
+            } else if (updatedOrder.order_status === 'delivered') {
+              toast.success(`Order #${updatedOrder.order_number} has been delivered successfully`);
+            }
+          }
         }
       )
       .subscribe();
@@ -133,7 +148,9 @@ const OrderTracking = () => {
         special_instructions: order.special_instructions || undefined,
         created_by: order.created_by || 'Unknown',
         created_at: order.created_at,
-        updated_at: order.updated_at
+        updated_at: order.updated_at,
+        // Add delivery boy name from the join query if available
+        deliveryBoyName: order.delivery_boys?.name || 'Not Assigned'
       }));
 
       console.log('Processed orders:', typedOrders);
