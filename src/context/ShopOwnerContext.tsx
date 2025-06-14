@@ -21,7 +21,7 @@ const ShopOwnerContext = createContext<ShopOwnerContextType | undefined>(undefin
 export const ShopOwnerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [shopName, setShopName] = useState<string>('');
   const [orders, setOrders] = useState<Order[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
 
   // Initialize shop name from localStorage on mount
   useEffect(() => {
@@ -29,6 +29,7 @@ export const ShopOwnerProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     if (savedShopName) {
       try {
         const shopData = JSON.parse(savedShopName);
+        console.log('Initializing shop context with session data:', shopData);
         if (shopData && shopData.shopName) {
           setShopName(shopData.shopName);
         }
@@ -37,11 +38,11 @@ export const ShopOwnerProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         localStorage.removeItem('shop_owner_session');
       }
     }
-    setIsLoading(false);
   }, []);
 
   const fetchOrders = async () => {
     if (!shopName) {
+      console.log('No shop name provided, skipping order fetch');
       setIsLoading(false);
       return;
     }
@@ -67,7 +68,8 @@ export const ShopOwnerProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
       if (error) {
         console.error('Supabase error:', error);
-        throw error;
+        toast.error('Failed to fetch orders: ' + error.message);
+        return;
       }
       
       // Transform the data to match Order type
@@ -96,7 +98,11 @@ export const ShopOwnerProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   useEffect(() => {
     if (shopName) {
+      console.log('Shop name changed, fetching orders for:', shopName);
       fetchOrders();
+    } else {
+      console.log('No shop name, clearing orders');
+      setOrders([]);
     }
   }, [shopName]);
 
@@ -120,6 +126,7 @@ export const ShopOwnerProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   ).length;
 
   const refreshOrders = () => {
+    console.log('Manual refresh triggered');
     fetchOrders();
   };
 

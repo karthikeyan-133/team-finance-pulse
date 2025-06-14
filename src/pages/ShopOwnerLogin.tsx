@@ -36,6 +36,16 @@ const ShopOwnerLogin = () => {
     if (accessCode.trim() === 'shop123') {
       const shop = SHOPS.find(s => s.id === selectedShop);
       if (shop) {
+        // Store the session data properly
+        const sessionData = {
+          shopName: shop.name,
+          shopId: shop.id,
+          timestamp: new Date().toISOString()
+        };
+        
+        localStorage.setItem('shop_owner_session', JSON.stringify(sessionData));
+        console.log('Shop session stored:', sessionData);
+        
         setShopName(shop.name);
         toast.success(`Welcome to ${shop.name}!`);
         navigate('/shop-dashboard');

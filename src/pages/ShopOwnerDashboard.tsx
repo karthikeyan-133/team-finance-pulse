@@ -38,16 +38,20 @@ const ShopOwnerDashboard = () => {
       const shopData = JSON.parse(savedSession);
       console.log('Parsed shop data:', shopData);
       
-      if (shopData && shopData.shopName && !shopName) {
+      if (shopData && shopData.shopName) {
         console.log('Setting shop name from session:', shopData.shopName);
         setShopName(shopData.shopName);
+      } else {
+        console.log('Invalid shop session data, redirecting to login');
+        localStorage.removeItem('shop_owner_session');
+        navigate('/shop-login');
       }
     } catch (error) {
       console.error('Error parsing shop session:', error);
       localStorage.removeItem('shop_owner_session');
       navigate('/shop-login');
     }
-  }, [shopName, navigate, setShopName]);
+  }, [navigate, setShopName]);
 
   const handleLogout = () => {
     localStorage.removeItem('shop_owner_session');
@@ -66,7 +70,20 @@ const ShopOwnerDashboard = () => {
     }
   };
 
-  if (!shopName && !isLoading) {
+  // Show loading state while checking authentication
+  if (isLoading || (!shopName && localStorage.getItem('shop_owner_session'))) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-2 text-gray-600">Loading shop dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render anything if no shop name and no session (will redirect)
+  if (!shopName && !localStorage.getItem('shop_owner_session')) {
     return null;
   }
 
@@ -84,7 +101,7 @@ const ShopOwnerDashboard = () => {
               </div>
             </div>
             <div className="flex items-center space-x-4">
-              <Button onClick={refreshOrders} variant="outline" size="sm">
+              <Button onClick={refreshOrders} variant="outline" size="sm" disabled={!shopName}>
                 <RefreshCw className="w-4 h-4 mr-1" />
                 Refresh
               </Button>
@@ -162,12 +179,14 @@ const ShopOwnerDashboard = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {isLoading ? (
+            {!shopName ? (
+              <div className="text-center py-4">Setting up shop...</div>
+            ) : isLoading ? (
               <div className="text-center py-4">Loading orders...</div>
             ) : orders.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
                 No orders found for this shop. 
-                {shopName && <p className="mt-2">Shop: {shopName}</p>}
+                <p className="mt-2">Shop: {shopName}</p>
               </div>
             ) : (
               <div className="space-y-4">
