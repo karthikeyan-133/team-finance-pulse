@@ -1,7 +1,7 @@
 
 import { Outlet, useLocation, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { LogOut, Package, BarChart3, PlusCircle, Truck, ClipboardList } from "lucide-react";
+import { LogOut, BarChart3, Truck, ClipboardList } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import AdminNotifications from "@/components/notifications/AdminNotifications";
 
@@ -14,10 +14,8 @@ const AppLayout = () => {
   };
 
   const navigation = [
-    { name: "Delivery Updates", href: "/admin/delivery-update", icon: Package },
     { name: "Order Tracking", href: "/admin/order-tracking", icon: ClipboardList },
     { name: "Analytics", href: "/admin/analytics", icon: BarChart3 },
-    { name: "Create Order", href: "/admin/create-order", icon: PlusCircle },
     { name: "Delivery Management", href: "/admin/delivery-boy", icon: Truck },
   ];
 

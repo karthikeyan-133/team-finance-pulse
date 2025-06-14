@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -11,9 +12,7 @@ import React from 'react';
 // Pages
 import Index from "./pages/Index";
 import Login from "./pages/Login";
-import DeliveryUpdate from "./pages/DeliveryUpdate";
 import AdminAnalytics from "./pages/AdminAnalytics";
-import CreateOrder from "./pages/CreateOrder";
 import DeliveryBoy from "./pages/DeliveryBoy";
 import DeliveryBoyLogin from "./pages/DeliveryBoyLogin";
 import DeliveryBoyDashboard from "./pages/DeliveryBoyDashboard";
@@ -60,11 +59,9 @@ const App = () => {
                       <AppLayout />
                     </ProtectedRoute>
                   }>
-                    <Route index element={<Navigate to="/admin/delivery-update" replace />} />
-                    <Route path="delivery-update" element={<DeliveryUpdate />} />
+                    <Route index element={<Navigate to="/admin/order-tracking" replace />} />
                     <Route path="order-tracking" element={<OrderTracking />} />
                     <Route path="analytics" element={<AdminAnalytics />} />
-                    <Route path="create-order" element={<CreateOrder />} />
                     <Route path="delivery-boy" element={<DeliveryBoy />} />
                   </Route>
                   
