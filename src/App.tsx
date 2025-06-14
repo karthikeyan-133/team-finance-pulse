@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -6,7 +7,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { DataProvider } from "./context/DataContext";
 import { ShopOwnerProvider } from "./context/ShopOwnerContext";
-import React from 'react'; // Standard React import
+import React from 'react';
 
 // Pages
 import Index from "./pages/Index";
@@ -52,12 +53,13 @@ const App = () => {
                   <Route path="/shop-login" element={<ShopOwnerLogin />} />
                   <Route path="/shop-dashboard" element={<ShopOwnerDashboard />} />
                   
-                  {/* Admin Routes - Now properly protected */}
+                  {/* Admin Routes - Protected */}
                   <Route path="/admin" element={
                     <ProtectedRoute>
                       <AppLayout />
                     </ProtectedRoute>
                   }>
+                    <Route index element={<Navigate to="/admin/delivery-update" replace />} />
                     <Route path="delivery-update" element={<DeliveryUpdate />} />
                     <Route path="order-tracking" element={<OrderTracking />} />
                     <Route path="analytics" element={<AdminAnalytics />} />

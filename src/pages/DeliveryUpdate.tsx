@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,15 +9,10 @@ import { useData } from '@/context/DataContext';
 import { MapPin, Truck, User, Phone, IndianRupee, Store } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from '@/components/ui/sonner';
-import { Navigate } from 'react-router-dom';
 
 const DeliveryUpdate = () => {
   const { addTransaction, addCustomer, customers, getCustomerById } = useData();
   const { user } = useAuth();
-
-  if (user?.role === 'admin') {
-    return <Navigate to="/admin-analytics" replace />;
-  }
 
   const [deliveryMode, setDeliveryMode] = useState<'single' | 'multi'>('single');
   const [isSubmitting, setIsSubmitting] = useState(false);
