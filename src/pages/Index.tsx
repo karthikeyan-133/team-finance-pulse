@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -8,10 +7,6 @@ import { Plus, Users, Truck, BarChart, TrendingUp, Settings, Store, User, Packag
 
 const Index = () => {
   const { user, login, logout } = useAuth();
-
-  const handleQuickLogin = () => {
-    login('admin', 'Admin User');
-  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -39,7 +34,7 @@ const Index = () => {
                 </Button>
               </div>
             ) : (
-              <Button onClick={handleQuickLogin}>
+              <Button onClick={() => login('admin', 'Admin User', 'admin@example.com')}>
                 Quick Login (Admin)
               </Button>
             )}
