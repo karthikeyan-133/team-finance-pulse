@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -28,7 +29,7 @@ const FinancialAnalytics = () => {
       return data.map(order => ({
         ...order,
         product_details: Array.isArray(order.product_details) 
-          ? order.product_details as ProductDetail[]
+          ? (order.product_details as unknown as ProductDetail[])
           : []
       })) as Order[];
     }
