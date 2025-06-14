@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -25,10 +26,18 @@ interface OrderItem {
   image?: string;
 }
 
+const CATEGORIES = [
+  { name: 'Food', emoji: '🍽️' },
+  { name: 'Grocery', emoji: '🛒' },
+  { name: 'Vegetables', emoji: '🥬' },
+  { name: 'Meat', emoji: '🥩' }
+];
+
 const CustomerPortal = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [currentStep, setCurrentStep] = useState('welcome');
+  const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedShop, setSelectedShop] = useState('');
   const [customerInfo, setCustomerInfo] = useState({
     name: '',
@@ -48,7 +57,7 @@ const CustomerPortal = () => {
 
   useEffect(() => {
     // Welcome message
-    addBotMessage('Hello! Welcome to our delivery service! 👋\n\nI\'m here to help you place an order. Let\'s start by choosing a shop.', SHOPS.map(shop => shop.name));
+    addBotMessage('Hello! Welcome to our delivery service! 👋\n\nI\'m here to help you place an order. Let\'s start by choosing a category.', CATEGORIES.map(cat => `${cat.emoji} ${cat.name}`));
   }, []);
 
   const addBotMessage = (content: string, options?: string[], products?: any[]) => {
@@ -73,46 +82,159 @@ const CustomerPortal = () => {
     setMessages(prev => [...prev, newMessage]);
   };
 
+  const handleCategorySelection = (categoryOption: string) => {
+    // Extract category name from emoji option
+    const categoryName = categoryOption.split(' ').slice(1).join(' ');
+    setSelectedCategory(categoryName);
+    addUserMessage(categoryOption);
+    setCurrentStep('shop_selection');
+    
+    setTimeout(() => {
+      addBotMessage(
+        `Great choice! You've selected ${categoryName}. Now please choose a shop:`,
+        SHOPS.map(shop => shop.name)
+      );
+    }, 500);
+  };
+
   const handleShopSelection = (shopName: string) => {
     setSelectedShop(shopName);
     addUserMessage(shopName);
     setCurrentStep('products');
     
-    // Mock products for the selected shop
-    const mockProducts = [
-      {
-        id: 1,
-        name: 'Chicken Biryani',
-        price: 250,
-        description: 'Delicious aromatic basmati rice cooked with tender chicken and spices',
-        image: '/api/placeholder/300/200'
-      },
-      {
-        id: 2,
-        name: 'Butter Chicken',
-        price: 280,
-        description: 'Creamy tomato-based curry with tender chicken pieces',
-        image: '/api/placeholder/300/200'
-      },
-      {
-        id: 3,
-        name: 'Paneer Butter Masala',
-        price: 220,
-        description: 'Rich and creamy paneer curry with butter and spices',
-        image: '/api/placeholder/300/200'
-      },
-      {
-        id: 4,
-        name: 'Chicken Fried Rice',
-        price: 180,
-        description: 'Wok-tossed rice with chicken and vegetables',
-        image: '/api/placeholder/300/200'
-      }
-    ];
+    // Mock products for the selected shop and category
+    const getMockProducts = () => {
+      const baseProducts = {
+        'Food': [
+          {
+            id: 1,
+            name: 'Chicken Biryani',
+            price: 250,
+            description: 'Delicious aromatic basmati rice cooked with tender chicken and spices',
+            image: '/api/placeholder/300/200'
+          },
+          {
+            id: 2,
+            name: 'Butter Chicken',
+            price: 280,
+            description: 'Creamy tomato-based curry with tender chicken pieces',
+            image: '/api/placeholder/300/200'
+          },
+          {
+            id: 3,
+            name: 'Paneer Butter Masala',
+            price: 220,
+            description: 'Rich and creamy paneer curry with butter and spices',
+            image: '/api/placeholder/300/200'
+          },
+          {
+            id: 4,
+            name: 'Chicken Fried Rice',
+            price: 180,
+            description: 'Wok-tossed rice with chicken and vegetables',
+            image: '/api/placeholder/300/200'
+          }
+        ],
+        'Grocery': [
+          {
+            id: 5,
+            name: 'Basmati Rice (1kg)',
+            price: 120,
+            description: 'Premium quality basmati rice',
+            image: '/api/placeholder/300/200'
+          },
+          {
+            id: 6,
+            name: 'Cooking Oil (1L)',
+            price: 150,
+            description: 'Refined sunflower oil',
+            image: '/api/placeholder/300/200'
+          },
+          {
+            id: 7,
+            name: 'Wheat Flour (1kg)',
+            price: 45,
+            description: 'Fine quality wheat flour',
+            image: '/api/placeholder/300/200'
+          },
+          {
+            id: 8,
+            name: 'Sugar (1kg)',
+            price: 50,
+            description: 'Crystal white sugar',
+            image: '/api/placeholder/300/200'
+          }
+        ],
+        'Vegetables': [
+          {
+            id: 9,
+            name: 'Fresh Tomatoes (1kg)',
+            price: 40,
+            description: 'Fresh red tomatoes',
+            image: '/api/placeholder/300/200'
+          },
+          {
+            id: 10,
+            name: 'Onions (1kg)',
+            price: 35,
+            description: 'Fresh red onions',
+            image: '/api/placeholder/300/200'
+          },
+          {
+            id: 11,
+            name: 'Potatoes (1kg)',
+            price: 30,
+            description: 'Fresh potatoes',
+            image: '/api/placeholder/300/200'
+          },
+          {
+            id: 12,
+            name: 'Green Chilies (250g)',
+            price: 20,
+            description: 'Fresh green chilies',
+            image: '/api/placeholder/300/200'
+          }
+        ],
+        'Meat': [
+          {
+            id: 13,
+            name: 'Chicken Breast (1kg)',
+            price: 300,
+            description: 'Fresh chicken breast',
+            image: '/api/placeholder/300/200'
+          },
+          {
+            id: 14,
+            name: 'Mutton (1kg)',
+            price: 650,
+            description: 'Fresh mutton pieces',
+            image: '/api/placeholder/300/200'
+          },
+          {
+            id: 15,
+            name: 'Fish Fillet (500g)',
+            price: 200,
+            description: 'Fresh fish fillet',
+            image: '/api/placeholder/300/200'
+          },
+          {
+            id: 16,
+            name: 'Prawns (500g)',
+            price: 350,
+            description: 'Fresh prawns',
+            image: '/api/placeholder/300/200'
+          }
+        ]
+      };
+      
+      return baseProducts[selectedCategory] || baseProducts['Food'];
+    };
+
+    const mockProducts = getMockProducts();
 
     setTimeout(() => {
       addBotMessage(
-        `Great choice! Here are the available items from ${shopName}. You can add items to your cart by clicking on them:`,
+        `Perfect! Here are the available ${selectedCategory.toLowerCase()} items from ${shopName}. You can add items to your cart by clicking on them:`,
         undefined,
         mockProducts
       );
@@ -170,6 +292,7 @@ const CustomerPortal = () => {
       const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
       addBotMessage(
         `Perfect! Here's your order summary:\n\n` +
+        `📁 Category: ${selectedCategory}\n` +
         `📍 Shop: ${selectedShop}\n` +
         `👤 Name: ${updatedCustomerInfo.name}\n` +
         `📞 Phone: ${updatedCustomerInfo.phone}\n` +
@@ -206,7 +329,7 @@ const CustomerPortal = () => {
           name: item.name,
           quantity: item.quantity,
           price: item.price,
-          description: `${item.name} from ${selectedShop}`
+          description: `${item.name} from ${selectedShop} (${selectedCategory})`
         })),
         total_amount: total,
         delivery_charge: 0,
@@ -214,7 +337,7 @@ const CustomerPortal = () => {
         payment_status: 'pending',
         payment_method: 'cash',
         order_status: 'pending',
-        special_instructions: '',
+        special_instructions: `Category: ${selectedCategory}`,
         created_by: 'Customer Portal'
       };
       
@@ -261,6 +384,11 @@ const CustomerPortal = () => {
         <div className="flex items-center gap-3">
           <MessageCircle className="h-8 w-8 text-blue-600" />
           <h1 className="text-xl font-semibold">Order Assistant</h1>
+          {selectedCategory && (
+            <span className="text-sm text-gray-600 bg-gray-100 px-2 py-1 rounded">
+              {selectedCategory}
+            </span>
+          )}
         </div>
         {cart.length > 0 && (
           <div className="flex items-center gap-2 bg-blue-100 px-3 py-1 rounded-full">
@@ -279,7 +407,8 @@ const CustomerPortal = () => {
             key={message.id}
             message={message}
             onOptionClick={message.type === 'bot' && message.options ? (
-              currentStep === 'welcome' ? handleShopSelection : 
+              currentStep === 'welcome' ? handleCategorySelection :
+              currentStep === 'shop_selection' ? handleShopSelection : 
               message.options.includes('Confirm Order') ? (option) => {
                 if (option === 'Confirm Order') {
                   handleConfirmOrder();
