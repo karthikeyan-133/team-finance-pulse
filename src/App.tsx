@@ -50,8 +50,12 @@ const App = () => {
                   <Route path="/shop-login" element={<ShopOwnerLogin />} />
                   <Route path="/shop-dashboard" element={<ShopOwnerDashboard />} />
                   
-                  {/* Admin Routes */}
-                  <Route path="/admin" element={<AppLayout />}>
+                  {/* Admin Routes - Now properly protected */}
+                  <Route path="/admin" element={
+                    <ProtectedRoute>
+                      <AppLayout />
+                    </ProtectedRoute>
+                  }>
                     <Route path="delivery-update" element={<DeliveryUpdate />} />
                     <Route path="order-tracking" element={<OrderTracking />} />
                     <Route path="analytics" element={<AdminAnalytics />} />

@@ -26,7 +26,8 @@ const Login: React.FC = () => {
       
       if (success) {
         console.log('Login successful, redirecting to admin panel');
-        navigate('/admin/delivery-update');
+        // Use replace to avoid back button issues
+        navigate('/admin/delivery-update', { replace: true });
       } else {
         setLoginError('Login failed. Please check your credentials.');
       }
