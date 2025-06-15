@@ -147,12 +147,15 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, []);
 
   const setLanguage = (newLanguage: Language) => {
+    console.log('Setting language to:', newLanguage);
     setLanguageState(newLanguage);
     localStorage.setItem('customer_language', newLanguage);
   };
 
   const t = (key: string): string => {
-    return translations[language][key] || translations.english[key] || key;
+    const translation = translations[language]?.[key] || translations.english[key] || key;
+    console.log(`Translation for ${key} in ${language}:`, translation);
+    return translation;
   };
 
   return (

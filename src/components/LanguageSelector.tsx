@@ -21,6 +21,14 @@ const LanguageSelector = () => {
 
   const currentLanguage = languages.find(lang => lang.code === language);
 
+  const handleLanguageChange = (langCode: Language) => {
+    console.log('Language selector clicked:', langCode);
+    setLanguage(langCode);
+  };
+
+  console.log('Current language in selector:', language);
+  console.log('Current language object:', currentLanguage);
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -30,11 +38,11 @@ const LanguageSelector = () => {
           <span className="sm:hidden">{currentLanguage?.flag}</span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="bg-white border shadow-lg">
+      <DropdownMenuContent align="end" className="bg-white border shadow-lg z-50">
         {languages.map((lang) => (
           <DropdownMenuItem
             key={lang.code}
-            onClick={() => setLanguage(lang.code)}
+            onClick={() => handleLanguageChange(lang.code)}
             className={`flex items-center gap-2 cursor-pointer hover:bg-gray-100 ${
               language === lang.code ? 'bg-blue-50' : ''
             }`}
