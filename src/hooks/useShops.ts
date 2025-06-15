@@ -11,7 +11,8 @@ interface Shop {
   is_active: boolean;
 }
 
-export const useShops = (category?: string) => {
+// add fetchKey param
+export const useShops = (category?: string, fetchKey: number = 0) => {
   const [shops, setShops] = useState<Shop[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -29,7 +30,6 @@ export const useShops = (category?: string) => {
         if (category) {
           query = query.eq('category', category);
         }
-
         const { data, error } = await query;
 
         if (error) {
@@ -37,7 +37,6 @@ export const useShops = (category?: string) => {
           setError(error.message);
           return;
         }
-
         setShops(data || []);
       } catch (err) {
         console.error('Error fetching shops:', err);
@@ -48,7 +47,7 @@ export const useShops = (category?: string) => {
     };
 
     fetchShops();
-  }, [category]);
+  }, [category, fetchKey]); // now refetches when fetchKey changes
 
   return { shops, loading, error };
 };

@@ -13,7 +13,8 @@ interface Product {
   is_available: boolean;
 }
 
-export const useProducts = (shopId?: string, category?: string) => {
+// add fetchKey param for external re-fetch
+export const useProducts = (shopId?: string, category?: string, fetchKey: number = 0) => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -54,7 +55,7 @@ export const useProducts = (shopId?: string, category?: string) => {
     };
 
     fetchProducts();
-  }, [shopId, category]);
+  }, [shopId, category, fetchKey]); // refetches when fetchKey changes
 
   return { products, loading, error };
 };

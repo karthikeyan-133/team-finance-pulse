@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -21,13 +20,13 @@ interface Shop {
 }
 
 const ShopManagement = () => {
-  const { shops, loading, error } = useShopsBase();
+  const { shops, loading, error } = useShopsBase(undefined, fetchKey);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingShop, setEditingShop] = useState<Shop | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [fetchKey, setFetchKey] = useState(0);
 
-  // Directly fetch shops from backend, not using a local shops state
   const refreshShops = useCallback(async (reason?: string) => {
     console.log("REFRESH_SHOPS called", { reason });
     setRefreshing(true);
@@ -37,10 +36,10 @@ const ShopManagement = () => {
       setRefreshing(false);
       return;
     }
-    // Normally we'd use a setter, but we're showing the effect via useShopsBase()
     setRefreshing(false);
-    toast.success("Shop list refreshed");
+    toast.success("Shop list refreshed [" + reason + "]");
     console.log("Refreshed shops result:", { data });
+    setFetchKey((k) => k + 1);
   }, []);
 
   useEffect(() => {
@@ -147,7 +146,9 @@ const ShopManagement = () => {
       {editingShop && (
         <Dialog open={!!editingShop} onOpenChange={async (open) => {
             if (!open) setEditingShop(null);
-            if (!open) await refreshShops('Shop edited');
+            if (!open) {
+              await refreshShops('Shop edited');
+            }
           }}>
           <DialogContent className="max-w-2xl">
             <DialogHeader>

@@ -32,7 +32,8 @@ interface Shop {
 }
 
 const ProductManagement = () => {
-  const { products, loading: productsLoading, error: productsError } = useProductsBase();
+  const [fetchKey, setFetchKey] = useState(0);
+  const { products, loading: productsLoading, error: productsError } = useProductsBase(undefined, undefined, fetchKey); // pass fetchKey
   const { shops, loading: shopsLoading } = useShopsBase();
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedShop, setSelectedShop] = useState<string>('all');
@@ -50,8 +51,9 @@ const ProductManagement = () => {
       toast.error('Failed to fetch products');
       return;
     }
-    toast.success("Product list refreshed");
+    toast.success("Product list refreshed [" + reason + "]");
     console.log("Refreshed products result:", { data });
+    setFetchKey((k) => k + 1); // force hook to refetch
   }, []);
 
   const refreshShops = useCallback(async (reason?: string) => {
