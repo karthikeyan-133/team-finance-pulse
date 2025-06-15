@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -20,6 +19,9 @@ const ShopOwnerLogin = () => {
 
   // Fetch active shops from Supabase dynamically
   const { shops, loading, error } = useShops();
+
+  // Log fetched shops for debugging
+  console.log("Shops fetched for login page:", shops);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();

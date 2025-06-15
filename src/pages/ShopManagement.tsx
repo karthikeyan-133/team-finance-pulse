@@ -225,15 +225,23 @@ const ShopForm = ({ shop, onSuccess }: any) => {
     try {
       let result;
       if (shop) {
+        // Log update attempt
+        console.log("Updating shop:", shop.id, formData);
         result = await supabase
           .from('shops')
           .update(formData)
-          .eq('id', shop.id);
+          .eq('id', shop.id)
+          .select('*');
       } else {
+        // Log insert attempt
+        console.log("Inserting new shop:", formData);
         result = await supabase
           .from('shops')
-          .insert([formData]);
+          .insert([formData])
+          .select('*');
       }
+      // Log API result for debugging
+      console.log("Supabase shop upsert result:", result);
 
       if (result.error) {
         toast.error(`Failed to ${shop ? 'update' : 'create'} shop`);
