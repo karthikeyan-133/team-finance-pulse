@@ -54,6 +54,32 @@ const ShopManagement = () => {
     fetchShops();
   }, [refreshVersion]);
 
+  // Supabase real-time subscription for shops
+  useEffect(() => {
+    // Listen for inserts, updates, and deletes on the shops table
+    const channel = supabase
+      .channel('public:shops')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'shops',
+        }, 
+        (payload) => {
+          console.log('[ShopManagement][Realtime] Shop table changed:', payload);
+          // Refetch shops on any change
+          setRefreshVersion((v) => v + 1);
+        }
+      )
+      .subscribe();
+
+    // Cleanup subscription on unmount
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
   const filteredShops = shops.filter(shop => selectedCategory === 'all' || shop.category === selectedCategory);
 
   // Explicit refresh (cause fetchShops + UI force update)
