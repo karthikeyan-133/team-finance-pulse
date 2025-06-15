@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -17,7 +16,7 @@ interface Shop {
   phone?: string;
   category: string;
   is_active: boolean;
-  updated_at?: string;
+  updated_at?: string; // <-- now included, matches Supabase schema
 }
 
 const ShopManagement = () => {
