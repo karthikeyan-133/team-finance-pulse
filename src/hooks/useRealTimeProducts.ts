@@ -14,6 +14,15 @@ interface Product {
   updated_at: string;
 }
 
+// Helper to safely normalize product fields
+function normalizeProduct(product: any): Product {
+  return {
+    ...product,
+    category: typeof product.category === 'string' ? product.category : '',
+    is_available: typeof product.is_available === 'boolean' ? product.is_available : !!product.is_available,
+  };
+}
+
 export const useRealTimeProducts = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -29,7 +38,11 @@ export const useRealTimeProducts = () => {
           .select('*')
           .order('name');
         if (error) throw error;
-        if (!cancelled) setProducts((data || []).sort((a, b) => a.name.localeCompare(b.name)));
+        if (!cancelled) setProducts(
+          (data || [])
+            .map(normalizeProduct)
+            .sort((a, b) => a.name.localeCompare(b.name))
+        );
       } catch (e: any) {
         if (!cancelled) setError(e.message);
       } finally {
@@ -44,10 +57,10 @@ export const useRealTimeProducts = () => {
         let updated;
         switch (eventType) {
           case 'INSERT':
-            updated = [newRecord, ...prevProducts.filter(p => p.id !== newRecord.id)];
+            updated = [normalizeProduct(newRecord), ...prevProducts.filter(p => p.id !== newRecord.id)];
             break;
           case 'UPDATE':
-            updated = prevProducts.map(p => p.id === newRecord.id ? newRecord : p);
+            updated = prevProducts.map(p => p.id === newRecord.id ? normalizeProduct(newRecord) : p);
             break;
           case 'DELETE':
             updated = prevProducts.filter(p => p.id !== oldRecord.id);
@@ -83,7 +96,11 @@ export const useRealTimeProducts = () => {
         .select('*')
         .order('name');
       if (error) throw error;
-      setProducts((data || []).sort((a, b) => a.name.localeCompare(b.name)));
+      setProducts(
+        (data || [])
+          .map(normalizeProduct)
+          .sort((a, b) => a.name.localeCompare(b.name))
+      );
     } catch (e: any) {
       setError(e.message);
     } finally {
