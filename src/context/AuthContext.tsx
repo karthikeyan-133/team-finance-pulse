@@ -10,6 +10,9 @@ interface AuthContextType {
   isLoading: boolean;
 }
 
+// Mock users with their credentials
+// To add new users, add them to this array
+// To change passwords, modify the userCredentials object below
 const mockUsers: User[] = [
   {
     id: '1',
@@ -32,7 +35,25 @@ const mockUsers: User[] = [
     role: 'team_member',
     avatar: '/placeholder.svg',
   },
+  // Add new users here - example:
+  // {
+  //   id: '4',
+  //   name: 'Your Name',
+  //   email: 'your-email@example.com',
+  //   role: 'admin',
+  //   avatar: '/placeholder.svg',
+  // },
 ];
+
+// User credentials mapping
+// To change passwords, modify the values below
+const userCredentials: Record<string, string> = {
+  'admin@example.com': 'password',
+  'manager@example.com': 'password', 
+  'team@example.com': 'password',
+  // Add new user credentials here - example:
+  // 'your-email@example.com': 'your-secure-password',
+};
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -68,9 +89,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await new Promise(resolve => setTimeout(resolve, 800));
       
       const user = mockUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
-      console.log('AuthContext: Found user:', user);
+      const expectedPassword = userCredentials[email.toLowerCase()];
       
-      if (user && password === 'password') {
+      console.log('AuthContext: Found user:', user);
+      console.log('AuthContext: Expected password exists:', !!expectedPassword);
+      
+      if (user && expectedPassword && password === expectedPassword) {
         console.log('AuthContext: Login successful for:', user.name);
         setUser(user);
         localStorage.setItem('delivery_user', JSON.stringify(user));
