@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Store } from 'lucide-react';
 import { useShopOwner } from '@/context/ShopOwnerContext';
 import { toast } from '@/components/ui/sonner';
-import { SHOPS } from '@/config/shops';
+import { useShops } from '@/hooks/useShops';
 
 const ShopOwnerLogin = () => {
   const [selectedShop, setSelectedShop] = useState('');
@@ -17,6 +17,9 @@ const ShopOwnerLogin = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { setShopName } = useShopOwner();
   const navigate = useNavigate();
+
+  // Fetch active shops from Supabase dynamically
+  const { shops, loading, error } = useShops();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,7 +38,7 @@ const ShopOwnerLogin = () => {
 
     // Simple demo validation - any shop with "shop123" code
     if (accessCode === 'shop123') {
-      const shop = SHOPS.find(s => s.id === selectedShop);
+      const shop = shops.find(s => s.id === selectedShop);
       if (shop) {
         const sessionData = {
           shopName: shop.name,
@@ -85,19 +88,31 @@ const ShopOwnerLogin = () => {
             </p>
           </div>
 
+          {error && (
+            <div className="mb-4 text-center text-red-300">
+              <p>Unable to load shops. Please try again.</p>
+            </div>
+          )}
           <form onSubmit={handleLogin} className="space-y-6">
             <div className="space-y-2">
               <Label htmlFor="shop" className="text-white/90">Select Your Business</Label>
-              <Select value={selectedShop} onValueChange={setSelectedShop} required>
+              <Select
+                value={selectedShop}
+                onValueChange={setSelectedShop}
+                required
+                disabled={loading}
+              >
                 <SelectTrigger className="backdrop-blur-sm bg-white/10 border border-white/20 text-white">
-                  <SelectValue placeholder="Choose your store..." />
+                  <SelectValue placeholder={loading ? "Loading stores..." : "Choose your store..."} />
                 </SelectTrigger>
                 <SelectContent className="backdrop-blur-xl bg-gray-900/90 border border-white/20">
-                  {SHOPS.filter(shop => shop.isActive).map(shop => (
-                    <SelectItem key={shop.id} value={shop.id} className="text-white hover:bg-white/10">
-                      {shop.name}
-                    </SelectItem>
-                  ))}
+                  {shops
+                    .filter(shop => shop.is_active)
+                    .map(shop => (
+                      <SelectItem key={shop.id} value={shop.id} className="text-white hover:bg-white/10">
+                        {shop.name}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             </div>
@@ -121,9 +136,9 @@ const ShopOwnerLogin = () => {
             <Button 
               type="submit" 
               className="w-full bg-green-500/30 hover:bg-green-500/40 text-white border border-green-300/40 backdrop-blur-sm transition-all duration-300 shadow-lg" 
-              disabled={isLoading}
+              disabled={isLoading || loading}
             >
-              {isLoading ? 'Signing in...' : 'Access Dashboard'}
+              {isLoading ? 'Signing in...' : loading ? "Loading..." : 'Access Dashboard'}
             </Button>
           </form>
         </div>
