@@ -42,6 +42,34 @@ export const useRealTimeProducts = () => {
   useEffect(() => {
     fetchProducts();
 
+    const handleRealtimeUpdate = (payload: any) => {
+      console.log('[useRealTimeProducts] Real-time update:', payload);
+      const { eventType, new: newRecord, old: oldRecord } = payload;
+
+      setProducts(currentProducts => {
+        let newProducts;
+        switch (eventType) {
+          case 'INSERT':
+            newProducts = [newRecord, ...currentProducts];
+            break;
+          
+          case 'UPDATE':
+            newProducts = currentProducts.map(product =>
+              product.id === newRecord.id ? newRecord : product
+            );
+            break;
+
+          case 'DELETE':
+            newProducts = currentProducts.filter(product => product.id !== oldRecord.id);
+            break;
+            
+          default:
+            return currentProducts;
+        }
+        return newProducts.sort((a, b) => a.name.localeCompare(b.name));
+      });
+    };
+
     // Set up real-time subscription
     const channel = supabase
       .channel('products-changes')
@@ -52,10 +80,7 @@ export const useRealTimeProducts = () => {
           schema: 'public',
           table: 'products',
         },
-        (payload) => {
-          console.log('[useRealTimeProducts] Real-time update:', payload);
-          fetchProducts(); // Refetch on any change
-        }
+        handleRealtimeUpdate
       )
       .subscribe();
 

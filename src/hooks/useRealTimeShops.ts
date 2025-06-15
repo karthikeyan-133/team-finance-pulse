@@ -41,6 +41,39 @@ export const useRealTimeShops = () => {
   useEffect(() => {
     fetchShops();
 
+    const handleRealtimeUpdate = (payload: any) => {
+      console.log('[useRealTimeShops] Real-time update:', payload);
+      const { eventType, new: newRecord, old: oldRecord } = payload;
+
+      setShops(currentShops => {
+        let newShops;
+        switch (eventType) {
+          case 'INSERT':
+            newShops = newRecord.is_active ? [newRecord, ...currentShops] : currentShops;
+            break;
+          
+          case 'UPDATE':
+            const shopExists = currentShops.some(shop => shop.id === newRecord.id);
+            if (newRecord.is_active) {
+              newShops = shopExists 
+                ? currentShops.map(shop => shop.id === newRecord.id ? newRecord : shop)
+                : [newRecord, ...currentShops];
+            } else {
+              newShops = currentShops.filter(shop => shop.id !== newRecord.id);
+            }
+            break;
+
+          case 'DELETE':
+            newShops = currentShops.filter(shop => shop.id !== oldRecord.id);
+            break;
+            
+          default:
+            return currentShops;
+        }
+        return newShops.sort((a, b) => a.name.localeCompare(b.name));
+      });
+    };
+
     // Set up real-time subscription
     const channel = supabase
       .channel('shops-changes')
@@ -51,10 +84,7 @@ export const useRealTimeShops = () => {
           schema: 'public',
           table: 'shops',
         },
-        (payload) => {
-          console.log('[useRealTimeShops] Real-time update:', payload);
-          fetchShops(); // Refetch on any change
-        }
+        handleRealtimeUpdate
       )
       .subscribe();
 
