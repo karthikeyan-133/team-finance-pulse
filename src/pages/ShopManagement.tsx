@@ -84,10 +84,10 @@ const ShopManagement = () => {
     setRefreshVersion(v => v + 1);
   };
 
-  // Provide immediate refresh after save, then close dialog/editing
-  const handleFormSuccess = async (closeCallback: () => void) => {
-    await fetchShops();
+  // Simplified: On success, just close the dialog/editing, do NOT refetch directly.
+  const handleFormSuccess = (closeCallback: () => void) => {
     closeCallback();
+    // No direct fetch!
   };
 
   if (loading) {
