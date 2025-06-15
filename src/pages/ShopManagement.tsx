@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useShops as useShopsBase } from '@/hooks/useShops';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Plus, Store } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -18,6 +17,7 @@ interface Shop {
   phone?: string;
   category: string;
   is_active: boolean;
+  updated_at?: string;
 }
 
 const ShopManagement = () => {
@@ -28,14 +28,16 @@ const ShopManagement = () => {
   const [editingShop, setEditingShop] = useState<Shop | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
-  // Improved: Just bump fetchKey, don't fetch again here directly!
+  // Use only fetchKey to trigger re-query. Always clear edit state FIRST.
   const refreshShops = useCallback(async (reason?: string) => {
     setRefreshing(true);
-    setFetchKey((k) => k + 1); // this re-triggers useShopsBase
+    setEditingShop(null);
+    setIsAddDialogOpen(false);
+    setFetchKey((k) => k + 1);
     setRefreshing(false);
     toast.success("Shop list refreshed [" + (reason || "") + "]");
   }, []);
-
+  
   useEffect(() => {
     refreshShops('On page mount');
     // eslint-disable-next-line
@@ -43,11 +45,15 @@ const ShopManagement = () => {
 
   const categories = ['Food', 'Grocery', 'Vegetables', 'Meat'];
 
-  const filteredShops = (shops || []).filter(shop => {
-    return selectedCategory === 'all' || shop.category === selectedCategory;
-  });
+  // Defensive: always sort filtered shops for stable key order
+  const filteredShops = React.useMemo(() => {
+    const list = (shops || []).filter(shop => {
+      return selectedCategory === 'all' || shop.category === selectedCategory;
+    });
+    return list.sort((a, b) => (a.name > b.name ? 1 : -1));
+  }, [shops, selectedCategory]);
 
-  // Debug: log output every render
+  // Extra debug
   console.log("ShopManagement UI render:", { shops, filteredShops, fetchKey });
 
   if ((loading || refreshing) && !shops?.length) {
@@ -78,7 +84,10 @@ const ShopManagement = () => {
           <h1 className="text-3xl font-bold text-gray-900">Shop Management</h1>
           <p className="text-gray-600">Manage your shops and their information</p>
         </div>
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <Dialog open={isAddDialogOpen} onOpenChange={(open) => {
+            setIsAddDialogOpen(open);
+            if (!open) refreshShops('Shop add dialog closed');
+          }}>
           <DialogTrigger asChild>
             <Button>
               <Plus className="h-4 w-4 mr-2" />
@@ -94,8 +103,8 @@ const ShopManagement = () => {
             </DialogHeader>
             <ShopForm 
               onSuccess={async () => {
-                await refreshShops('Shop added');
                 setIsAddDialogOpen(false);
+                await refreshShops('Shop added');
               }}
             />
           </DialogContent>
@@ -119,13 +128,13 @@ const ShopManagement = () => {
         </div>
       </div>
 
-      {/* Add key to force rerender on shop data change */}
+      {/* Add stable+unique key to force rerender on shop data change */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" key={fetchKey}>
         {filteredShops.map(shop => (
           <ShopCard 
-            key={shop.id} 
+            key={`${shop.id}-${shop.updated_at ?? ''}`}
             shop={shop} 
-            onEdit={(shop) => setEditingShop(shop)}
+            onEdit={() => setEditingShop(shop)}
             onDeleteSuccess={async () => {
               await refreshShops('Shop deleted');
             }}
@@ -143,8 +152,8 @@ const ShopManagement = () => {
 
       {editingShop && (
         <Dialog open={!!editingShop} onOpenChange={async (open) => {
-            if (!open) setEditingShop(null);
             if (!open) {
+              setEditingShop(null);
               await refreshShops('Shop edited');
             }
           }}>
