@@ -1,29 +1,61 @@
 
-import React, { useState } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useShops } from '@/hooks/useShops';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Plus, Edit, Trash2, Store } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
+interface Shop {
+  id: string;
+  name: string;
+  address?: string;
+  phone?: string;
+  category: string;
+  is_active: boolean;
+}
+
+const categories = ['Food', 'Grocery', 'Vegetables', 'Meat'];
+
 const ShopManagement = () => {
-  const { shops, loading, error } = useShops();
+  const [shops, setShops] = useState<Shop[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [editingShop, setEditingShop] = useState<any>(null);
+  const [editingShop, setEditingShop] = useState<Shop | null>(null);
 
-  const categories = ['Food', 'Grocery', 'Vegetables', 'Meat'];
+  const fetchShops = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      let query = supabase.from('shops').select('*').eq('is_active', true).order('name');
+      const { data, error } = await query;
+      if (error) throw error;
+      setShops(data || []);
+    } catch (err: any) {
+      setError('Failed to fetch shops');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-  const filteredShops = shops.filter(shop => {
-    const categoryMatch = selectedCategory === 'all' || shop.category === selectedCategory;
-    return categoryMatch;
-  });
+  useEffect(() => {
+    fetchShops();
+  }, [fetchShops]);
+
+  // Filtering
+  const filteredShops = shops.filter(shop => selectedCategory === 'all' || shop.category === selectedCategory);
+
+  // After add/edit/delete shop, refresh list
+  const handleRefresh = () => {
+    fetchShops();
+  };
 
   if (loading) {
     return (
@@ -70,7 +102,7 @@ const ShopManagement = () => {
             <ShopForm 
               onSuccess={() => {
                 setIsAddDialogOpen(false);
-                window.location.reload();
+                handleRefresh();
               }}
             />
           </DialogContent>
@@ -102,6 +134,7 @@ const ShopManagement = () => {
             key={shop.id} 
             shop={shop} 
             onEdit={setEditingShop}
+            onDelete={handleRefresh}
           />
         ))}
       </div>
@@ -128,7 +161,7 @@ const ShopManagement = () => {
               shop={editingShop}
               onSuccess={() => {
                 setEditingShop(null);
-                window.location.reload();
+                handleRefresh();
               }}
             />
           </DialogContent>
@@ -138,7 +171,7 @@ const ShopManagement = () => {
   );
 };
 
-const ShopCard = ({ shop, onEdit }: any) => {
+const ShopCard = ({ shop, onEdit, onDelete }: { shop: Shop, onEdit: (shop: Shop) => void, onDelete: () => void }) => {
   const handleDelete = async () => {
     if (window.confirm('Are you sure you want to delete this shop?')) {
       try {
@@ -153,7 +186,7 @@ const ShopCard = ({ shop, onEdit }: any) => {
         }
 
         toast.success('Shop deleted successfully');
-        window.location.reload();
+        onDelete();
       } catch (error) {
         toast.error('Error deleting shop');
       }
@@ -208,7 +241,7 @@ const ShopCard = ({ shop, onEdit }: any) => {
   );
 };
 
-const ShopForm = ({ shop, onSuccess }: any) => {
+const ShopForm = ({ shop, onSuccess }: { shop?: Shop, onSuccess: () => void }) => {
   const [formData, setFormData] = useState({
     name: shop?.name || '',
     address: shop?.address || '',
@@ -216,8 +249,6 @@ const ShopForm = ({ shop, onSuccess }: any) => {
     category: shop?.category || '',
     is_active: shop?.is_active ?? true
   });
-
-  const categories = ['Food', 'Grocery', 'Vegetables', 'Meat'];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
