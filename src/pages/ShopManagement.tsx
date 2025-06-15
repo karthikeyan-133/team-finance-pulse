@@ -1,31 +1,54 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useShops } from '@/hooks/useShops';
+import { useShops as useShopsBase } from '@/hooks/useShops';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Plus, Edit, Trash2, Store } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 const ShopManagement = () => {
-  const { shops, loading, error } = useShops();
+  // We use local state for shops and refetch manually
+  const { shops: initialShops, loading, error } = useShopsBase();
+  const [shops, setShops] = useState(initialShops);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingShop, setEditingShop] = useState<any>(null);
 
+  // We provide a manual refresh function in addition to the default hook fetching
+  const refreshShops = useCallback(async () => {
+    // We fetch ALL shops to allow management, not just active ones
+    const { data, error } = await supabase.from('shops').select('*').order('name');
+    if (error) {
+      toast.error('Failed to fetch shops');
+      return;
+    }
+    setShops(data || []);
+  }, []);
+
+  useEffect(() => {
+    setShops(initialShops);
+  }, [initialShops]);
+
+  useEffect(() => {
+    // Always refresh on mount for the latest
+    refreshShops();
+    // eslint-disable-next-line
+  }, []);
+
   const categories = ['Food', 'Grocery', 'Vegetables', 'Meat'];
 
-  const filteredShops = shops.filter(shop => {
+  const filteredShops = (shops || []).filter(shop => {
     const categoryMatch = selectedCategory === 'all' || shop.category === selectedCategory;
     return categoryMatch;
   });
 
-  if (loading) {
+  if (loading && !shops) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -70,7 +93,7 @@ const ShopManagement = () => {
             <ShopForm 
               onSuccess={() => {
                 setIsAddDialogOpen(false);
-                window.location.reload();
+                refreshShops();
               }}
             />
           </DialogContent>
@@ -102,6 +125,7 @@ const ShopManagement = () => {
             key={shop.id} 
             shop={shop} 
             onEdit={setEditingShop}
+            onDeleteSuccess={refreshShops}
           />
         ))}
       </div>
@@ -128,7 +152,7 @@ const ShopManagement = () => {
               shop={editingShop}
               onSuccess={() => {
                 setEditingShop(null);
-                window.location.reload();
+                refreshShops();
               }}
             />
           </DialogContent>
@@ -138,7 +162,7 @@ const ShopManagement = () => {
   );
 };
 
-const ShopCard = ({ shop, onEdit }: any) => {
+const ShopCard = ({ shop, onEdit, onDeleteSuccess }: any) => {
   const handleDelete = async () => {
     if (window.confirm('Are you sure you want to delete this shop?')) {
       try {
@@ -153,7 +177,7 @@ const ShopCard = ({ shop, onEdit }: any) => {
         }
 
         toast.success('Shop deleted successfully');
-        window.location.reload();
+        if (typeof onDeleteSuccess === "function") onDeleteSuccess();
       } catch (error) {
         toast.error('Error deleting shop');
       }
@@ -225,7 +249,6 @@ const ShopForm = ({ shop, onSuccess }: any) => {
     try {
       let result;
       if (shop) {
-        // Log update attempt
         console.log("Updating shop:", shop.id, formData);
         result = await supabase
           .from('shops')
@@ -233,14 +256,12 @@ const ShopForm = ({ shop, onSuccess }: any) => {
           .eq('id', shop.id)
           .select('*');
       } else {
-        // Log insert attempt
         console.log("Inserting new shop:", formData);
         result = await supabase
           .from('shops')
           .insert([formData])
           .select('*');
       }
-      // Log API result for debugging
       console.log("Supabase shop upsert result:", result);
 
       if (result.error) {
@@ -249,7 +270,8 @@ const ShopForm = ({ shop, onSuccess }: any) => {
       }
 
       toast.success(`Shop ${shop ? 'updated' : 'created'} successfully`);
-      onSuccess();
+      if (typeof onSuccess === "function") onSuccess();
+
     } catch (error) {
       toast.error('Error saving shop');
     }
