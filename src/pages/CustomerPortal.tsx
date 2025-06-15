@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -36,10 +35,10 @@ interface CustomerData {
 }
 
 const CATEGORIES = [
-  { name: 'Food', emoji: '🍽️', key: 'Food' },
-  { name: 'Grocery', emoji: '🛒', key: 'Grocery' },
-  { name: 'Vegetables', emoji: '🥬', key: 'Vegetables' },
-  { name: 'Meat', emoji: '🥩', key: 'Meat' }
+  { name: 'Food', emoji: '🍽️', key: 'food' },
+  { name: 'Grocery', emoji: '🛒', key: 'grocery' },
+  { name: 'Vegetables', emoji: '🥬', key: 'vegetables' },
+  { name: 'Meat', emoji: '🥩', key: 'meat' }
 ];
 
 const CustomerPortal = () => {
