@@ -1,11 +1,10 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, RefreshCw, DollarSign, Store } from 'lucide-react';
+import { Search, RefreshCw, DollarSign, Store, Edit, Check } from 'lucide-react';
 import { useShopPayments } from '@/hooks/useShopPayments';
 import { formatCurrency } from '@/utils/reportUtils';
 import ShopPaymentCard from '@/components/payments/ShopPaymentCard';
@@ -70,6 +69,29 @@ const ShopPaymentManagement = () => {
     }
     return true; // 'all'
   }).sort((a, b) => b.pendingAmount - a.pendingAmount);
+
+  // Function to mark all pending payments for a shop as paid
+  const markShopPaymentsAsPaid = async (shopName: string) => {
+    const shopPendingPayments = payments.filter(
+      p => p.shop_name === shopName && p.payment_status === 'pending'
+    );
+    
+    for (const payment of shopPendingPayments) {
+      await markAsPaid(payment.id, 'Admin');
+    }
+  };
+
+  // Function to mark all paid payments for a shop as pending
+  const markShopPaymentsAsPending = async (shopName: string) => {
+    const shopPaidPayments = payments.filter(
+      p => p.shop_name === shopName && p.payment_status === 'paid'
+    );
+    
+    for (const payment of shopPaidPayments) {
+      // We need to add a function to mark as pending in the hook
+      await markAsPending(payment.id);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -270,6 +292,31 @@ const ShopPaymentManagement = () => {
                       <span className="font-bold">
                         {formatCurrency(shop.totalAmount)}
                       </span>
+                    </div>
+                    
+                    {/* Action Buttons */}
+                    <div className="flex gap-2 mt-4">
+                      {shop.pendingAmount > 0 && (
+                        <Button
+                          size="sm"
+                          onClick={() => markShopPaymentsAsPaid(shop.shopName)}
+                          className="bg-green-600 hover:bg-green-700 flex-1"
+                        >
+                          <Check className="w-3 h-3 mr-1" />
+                          Mark Pending as Paid
+                        </Button>
+                      )}
+                      {shop.paidAmount > 0 && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => markShopPaymentsAsPending(shop.shopName)}
+                          className="flex-1"
+                        >
+                          <Edit className="w-3 h-3 mr-1" />
+                          Mark Paid as Pending
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </CardContent>

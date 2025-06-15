@@ -1,5 +1,4 @@
 
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/sonner';
@@ -111,6 +110,29 @@ export const useShopPayments = (shopName?: string) => {
     }
   };
 
+  const markAsPending = async (paymentId: string) => {
+    try {
+      const { error } = await supabase
+        .from('shop_payments')
+        .update({
+          payment_status: 'pending',
+          paid_by: null,
+          paid_at: null,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', paymentId);
+
+      if (error) throw error;
+
+      toast.success('Payment marked as pending successfully');
+      await fetchPayments();
+      await fetchSummaries();
+    } catch (error) {
+      console.error('Error marking payment as pending:', error);
+      toast.error('Failed to update payment status');
+    }
+  };
+
   const updatePaymentAmount = async (paymentId: string, newAmount: number) => {
     try {
       const { error } = await supabase
@@ -154,6 +176,7 @@ export const useShopPayments = (shopName?: string) => {
     summaries,
     isLoading,
     markAsPaid,
+    markAsPending,
     updatePaymentAmount,
     getTotalPendingAmount,
     getTotalPaidAmount,
@@ -163,4 +186,3 @@ export const useShopPayments = (shopName?: string) => {
     }
   };
 };
-
