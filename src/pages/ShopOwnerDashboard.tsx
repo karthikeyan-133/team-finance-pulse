@@ -1,348 +1,260 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { LogOut, Package, TrendingUp, Clock, CheckCircle, RefreshCw, ChefHat, DollarSign, CreditCard } from 'lucide-react';
+
+import React, { useState } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { RefreshCw, Package, DollarSign, Clock, CheckCircle, Plus } from 'lucide-react';
 import { useShopOwner } from '@/context/ShopOwnerContext';
-import { useShopPayments } from '@/hooks/useShopPayments';
 import { formatCurrency } from '@/utils/reportUtils';
-import OrderPreparationManager from '@/components/orders/OrderPreparationManager';
-import ShopPaymentCard from '@/components/payments/ShopPaymentCard';
-import DailyPaymentSummary from '@/components/payments/DailyPaymentSummary';
+import ShopOwnerOrderForm from '@/components/forms/ShopOwnerOrderForm';
 
 const ShopOwnerDashboard = () => {
-  const navigate = useNavigate();
-  const {
-    shopName,
-    setShopName,
-    orders,
-    todayOrders,
-    totalRevenue,
-    pendingOrders,
-    deliveredOrders,
-    isLoading,
-    refreshOrders
+  const [activeTab, setActiveTab] = useState('overview');
+  const { 
+    shopName, 
+    orders, 
+    todayOrders, 
+    totalRevenue, 
+    pendingOrders, 
+    deliveredOrders, 
+    isLoading, 
+    refreshOrders 
   } = useShopOwner();
-
-  const {
-    payments,
-    summaries,
-    isLoading: paymentsLoading,
-    getTotalPendingAmount,
-    getTotalPaidAmount,
-    refreshData: refreshPayments
-  } = useShopPayments(shopName);
-
-  useEffect(() => {
-    console.log('ShopOwnerDashboard - checking authentication');
-    
-    const savedSession = localStorage.getItem('shop_owner_session');
-    console.log('Saved shop session:', savedSession);
-    
-    if (!savedSession) {
-      console.log('No shop session found, redirecting to login');
-      navigate('/shop-login');
-      return;
-    }
-
-    try {
-      const shopData = JSON.parse(savedSession);
-      console.log('Parsed shop data:', shopData);
-      
-      if (shopData && shopData.shopName) {
-        console.log('Setting shop name from session:', shopData.shopName);
-        setShopName(shopData.shopName);
-      } else {
-        console.log('Invalid shop session data, redirecting to login');
-        localStorage.removeItem('shop_owner_session');
-        navigate('/shop-login');
-      }
-    } catch (error) {
-      console.error('Error parsing shop session:', error);
-      localStorage.removeItem('shop_owner_session');
-      navigate('/shop-login');
-    }
-  }, [navigate, setShopName]);
-
-  const handleLogout = () => {
-    localStorage.removeItem('shop_owner_session');
-    setShopName('');
-    navigate('/shop-login');
-  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'preparing': return 'bg-orange-100 text-orange-800';
-      case 'prepared': return 'bg-blue-100 text-blue-800';
-      case 'ready': return 'bg-green-100 text-green-800';
-      case 'assigned': return 'bg-purple-100 text-purple-800';
-      case 'picked_up': return 'bg-indigo-100 text-indigo-800';
-      case 'delivered': return 'bg-emerald-100 text-emerald-800';
+      case 'assigned': return 'bg-blue-100 text-blue-800';
+      case 'picked_up': return 'bg-orange-100 text-orange-800';
+      case 'delivered': return 'bg-green-100 text-green-800';
       case 'cancelled': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
 
-  const preparingOrders = orders.filter(order => 
-    ['pending', 'preparing', 'prepared'].includes(order.order_status)
-  );
+  const handleOrderCreated = () => {
+    setActiveTab('orders'); // Switch to orders tab after creating
+    refreshOrders(); // Refresh the orders list
+  };
 
-  const readyAndActiveOrders = orders.filter(order => 
-    ['ready', 'assigned', 'picked_up'].includes(order.order_status)
-  );
-
-  const pendingPayments = payments.filter(payment => payment.payment_status === 'pending');
-
-  // Show loading state while checking authentication
-  if (isLoading || (!shopName && localStorage.getItem('shop_owner_session'))) {
+  if (!shopName) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="container mx-auto px-4 py-6">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-2 text-gray-600">Loading shop dashboard...</p>
+          <h1 className="text-2xl font-bold mb-4">Shop Owner Dashboard</h1>
+          <p className="text-gray-600">Please log in to access your shop dashboard.</p>
         </div>
       </div>
     );
   }
 
-  // Don't render anything if no shop name and no session (will redirect)
-  if (!shopName && !localStorage.getItem('shop_owner_session')) {
-    return null;
-  }
-
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center">
-              <Package className="h-8 w-8 text-blue-600 mr-3" />
-              <div>
-                <h1 className="text-xl font-semibold text-gray-900">{shopName || 'Loading...'}</h1>
-                <p className="text-sm text-gray-500">Shop Owner Portal</p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Button onClick={() => { refreshOrders(); refreshPayments(); }} variant="outline" size="sm" disabled={!shopName}>
-                <RefreshCw className="w-4 h-4 mr-1" />
-                Refresh
-              </Button>
-              <Button onClick={handleLogout} variant="outline" size="sm">
-                <LogOut className="w-4 h-4 mr-1" />
-                Logout
-              </Button>
-            </div>
-          </div>
+    <div className="container mx-auto px-4 py-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">Welcome, {shopName}</h1>
+          <p className="text-gray-600">Manage your shop orders and track performance</p>
         </div>
-      </header>
+        <Button onClick={refreshOrders} disabled={isLoading}>
+          <RefreshCw className="w-4 h-4 mr-2" />
+          Refresh
+        </Button>
+      </div>
 
-      <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6 mb-8">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Today's Orders</CardTitle>
-              <Package className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{todayOrders.length}</div>
-              <p className="text-xs text-muted-foreground">
-                Orders received today
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Preparing</CardTitle>
-              <ChefHat className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{preparingOrders.length}</div>
-              <p className="text-xs text-muted-foreground">
-                Orders to prepare
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{formatCurrency(totalRevenue)}</div>
-              <p className="text-xs text-muted-foreground">
-                From delivered orders
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Pending Orders</CardTitle>
-              <Clock className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{pendingOrders}</div>
-              <p className="text-xs text-muted-foreground">
-                Awaiting delivery
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Pending Payments</CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-red-600">{formatCurrency(getTotalPendingAmount())}</div>
-              <p className="text-xs text-muted-foreground">
-                {pendingPayments.length} pending payment{pendingPayments.length !== 1 ? 's' : ''}
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Paid Amount</CardTitle>
-              <CreditCard className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">{formatCurrency(getTotalPaidAmount())}</div>
-              <p className="text-xs text-muted-foreground">
-                Total received
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Main Content Tabs */}
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card>
-          <CardHeader>
-            <CardTitle>Dashboard</CardTitle>
-            <CardDescription>
-              Manage your orders and track payments
-            </CardDescription>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Today's Orders</CardTitle>
+            <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            {!shopName ? (
-              <div className="text-center py-4">Setting up shop...</div>
-            ) : isLoading ? (
-              <div className="text-center py-4">Loading data...</div>
-            ) : (
-              <Tabs defaultValue="orders" className="w-full">
-                <TabsList className="grid w-full grid-cols-4">
-                  <TabsTrigger value="orders">
-                    Orders ({preparingOrders.length})
-                  </TabsTrigger>
-                  <TabsTrigger value="active">
-                    Active ({readyAndActiveOrders.length})
-                  </TabsTrigger>
-                  <TabsTrigger value="payments">
-                    Payments ({pendingPayments.length})
-                  </TabsTrigger>
-                  <TabsTrigger value="daily-summary">
-                    Daily Summary
-                  </TabsTrigger>
-                </TabsList>
+            <div className="text-2xl font-bold">{todayOrders.length}</div>
+            <p className="text-xs text-muted-foreground">
+              Orders received today
+            </p>
+          </CardContent>
+        </Card>
 
-                <TabsContent value="orders" className="space-y-4">
-                  {preparingOrders.length === 0 ? (
-                    <div className="text-center py-8 text-gray-500">
-                      No orders to prepare at the moment
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                      {preparingOrders.map((order) => (
-                        <OrderPreparationManager 
-                          key={order.id} 
-                          order={order} 
-                          onStatusUpdate={refreshOrders}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </TabsContent>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Pending Orders</CardTitle>
+            <Clock className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-yellow-600">{pendingOrders}</div>
+            <p className="text-xs text-muted-foreground">
+              Awaiting processing
+            </p>
+          </CardContent>
+        </Card>
 
-                <TabsContent value="active" className="space-y-4">
-                  {readyAndActiveOrders.length === 0 ? (
-                    <div className="text-center py-8 text-gray-500">
-                      No active orders for delivery
-                    </div>
-                  ) : (
-                    readyAndActiveOrders.map((order) => (
-                      <div key={order.id} className="border rounded-lg p-4 space-y-3">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <h3 className="font-medium">Order #{order.order_number}</h3>
-                            <p className="text-sm text-gray-600">{order.customer_name}</p>
-                            <p className="text-sm text-gray-500">{order.customer_phone}</p>
-                          </div>
-                          <div className="text-right">
-                            <Badge className={getStatusColor(order.order_status)}>
-                              {order.order_status.replace('_', ' ').toUpperCase()}
-                            </Badge>
-                            <p className="text-lg font-semibold mt-1">
-                              {formatCurrency(order.total_amount)}
-                            </p>
-                          </div>
-                        </div>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Delivered Orders</CardTitle>
+            <CheckCircle className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">{deliveredOrders}</div>
+            <p className="text-xs text-muted-foreground">
+              Successfully completed
+            </p>
+          </CardContent>
+        </Card>
 
-                        {order.delivery_boy && (
-                          <div className="bg-gray-50 p-3 rounded">
-                            <p className="text-sm"><strong>Delivery Boy:</strong> {order.delivery_boy.name}</p>
-                            <p className="text-sm"><strong>Phone:</strong> {order.delivery_boy.phone}</p>
-                          </div>
-                        )}
-
-                        <div className="text-xs text-gray-500">
-                          Ready since: {order.ready_at ? new Date(order.ready_at).toLocaleString() : 'N/A'}
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </TabsContent>
-
-                <TabsContent value="payments" className="space-y-4">
-                  {paymentsLoading ? (
-                    <div className="text-center py-8">Loading payment data...</div>
-                  ) : pendingPayments.length === 0 ? (
-                    <div className="text-center py-8 text-gray-500">
-                      No pending payments
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {pendingPayments.map((payment) => (
-                        <ShopPaymentCard
-                          key={payment.id}
-                          payment={payment}
-                          onMarkAsPaid={() => {}}
-                          onUpdateAmount={() => {}}
-                          isAdmin={false}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </TabsContent>
-
-                <TabsContent value="daily-summary" className="space-y-4">
-                  {paymentsLoading ? (
-                    <div className="text-center py-8">Loading payment summary...</div>
-                  ) : (
-                    <DailyPaymentSummary summaries={summaries} shopName={shopName} />
-                  )}
-                </TabsContent>
-              </Tabs>
-            )}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-blue-600">
+              {formatCurrency(totalRevenue)}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              From delivered orders
+            </p>
           </CardContent>
         </Card>
       </div>
+
+      {/* Main Content */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="create-order">
+            <Plus className="w-4 h-4 mr-2" />
+            Create Order
+          </TabsTrigger>
+          <TabsTrigger value="orders">Orders ({orders.length})</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="overview" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Recent Orders</CardTitle>
+              <CardDescription>
+                Your latest order activity
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <div className="text-center py-4">Loading orders...</div>
+              ) : orders.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <Package className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                  <p>No orders found</p>
+                  <p className="text-sm">Start by creating your first order</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {orders.slice(0, 5).map((order) => (
+                    <div key={order.id} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div>
+                        <div className="font-medium">{order.order_number}</div>
+                        <div className="text-sm text-gray-600">{order.customer_name}</div>
+                        <div className="text-sm text-gray-500">
+                          {new Date(order.created_at).toLocaleDateString()}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-medium">{formatCurrency(order.total_amount)}</div>
+                        <Badge className={getStatusColor(order.order_status)}>
+                          {order.order_status}
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="create-order" className="space-y-4">
+          <ShopOwnerOrderForm onSuccess={handleOrderCreated} />
+        </TabsContent>
+
+        <TabsContent value="orders" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>All Orders</CardTitle>
+              <CardDescription>
+                Complete list of your orders
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <div className="text-center py-4">Loading orders...</div>
+              ) : orders.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <Package className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                  <p>No orders found</p>
+                  <p className="text-sm">Start by creating your first order</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {orders.map((order) => (
+                    <Card key={order.id}>
+                      <CardContent className="pt-4">
+                        <div className="flex items-center justify-between mb-4">
+                          <div>
+                            <div className="font-medium text-lg">{order.order_number}</div>
+                            <div className="text-sm text-gray-600">
+                              Created: {new Date(order.created_at).toLocaleString()}
+                            </div>
+                          </div>
+                          <Badge className={getStatusColor(order.order_status)}>
+                            {order.order_status}
+                          </Badge>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <h4 className="font-medium mb-2">Customer Details</h4>
+                            <p className="text-sm">{order.customer_name}</p>
+                            <p className="text-sm text-gray-600">{order.customer_phone}</p>
+                            <p className="text-sm text-gray-600">{order.customer_address}</p>
+                          </div>
+                          
+                          <div>
+                            <h4 className="font-medium mb-2">Order Details</h4>
+                            <p className="text-sm">Amount: {formatCurrency(order.total_amount)}</p>
+                            <p className="text-sm">Delivery: {formatCurrency(order.delivery_charge)}</p>
+                            <p className="text-sm">Payment: {order.payment_method}</p>
+                          </div>
+                        </div>
+
+                        {order.product_details && order.product_details.length > 0 && (
+                          <div className="mt-4">
+                            <h4 className="font-medium mb-2">Products</h4>
+                            <div className="space-y-2">
+                              {order.product_details.map((product, index) => (
+                                <div key={index} className="flex justify-between text-sm">
+                                  <span>{product.name} x {product.quantity}</span>
+                                  <span>{formatCurrency(product.price * product.quantity)}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {order.special_instructions && (
+                          <div className="mt-4">
+                            <h4 className="font-medium mb-2">Special Instructions</h4>
+                            <p className="text-sm text-gray-600">{order.special_instructions}</p>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

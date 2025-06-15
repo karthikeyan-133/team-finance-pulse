@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Order, ProductDetail } from '@/types/orders';
@@ -14,6 +13,7 @@ interface ShopOwnerContextType {
   deliveredOrders: number;
   isLoading: boolean;
   refreshOrders: () => void;
+  createOrder: (orderData: Omit<Order, 'id' | 'created_at' | 'updated_at' | 'order_number'>) => Promise<string>;
 }
 
 const ShopOwnerContext = createContext<ShopOwnerContextType | undefined>(undefined);
@@ -130,6 +130,56 @@ export const ShopOwnerProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     fetchOrders();
   };
 
+  const createOrder = async (orderData: Omit<Order, 'id' | 'created_at' | 'updated_at' | 'order_number'>): Promise<string> => {
+    try {
+      console.log('Creating order for shop:', shopName);
+      
+      // Generate order number
+      const timestamp = Date.now();
+      const orderNumber = `ORD-${shopName.substring(0, 3).toUpperCase()}-${timestamp}`;
+      
+      const { data, error } = await supabase
+        .from('orders')
+        .insert([{
+          order_number: orderNumber,
+          customer_name: orderData.customer_name,
+          customer_phone: orderData.customer_phone,
+          customer_address: orderData.customer_address,
+          shop_name: shopName, // Use the current shop's name
+          shop_address: orderData.shop_address,
+          shop_phone: orderData.shop_phone,
+          product_details: orderData.product_details,
+          total_amount: orderData.total_amount,
+          delivery_charge: orderData.delivery_charge || 0,
+          commission: orderData.commission || 0,
+          payment_status: orderData.payment_status || 'pending',
+          payment_method: orderData.payment_method || 'cash',
+          order_status: 'pending', // Always start as pending for admin assignment
+          special_instructions: orderData.special_instructions,
+          created_by: `Shop Owner - ${shopName}`
+        }])
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error creating order:', error);
+        throw error;
+      }
+
+      console.log('Order created successfully:', data);
+      toast.success(`Order ${orderNumber} created successfully and sent to admin for assignment`);
+      
+      // Refresh orders to show the new order
+      await fetchOrders();
+      
+      return data.id;
+    } catch (error) {
+      console.error('Failed to create order:', error);
+      toast.error('Failed to create order');
+      throw error;
+    }
+  };
+
   return (
     <ShopOwnerContext.Provider
       value={{
@@ -141,7 +191,8 @@ export const ShopOwnerProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         pendingOrders,
         deliveredOrders,
         isLoading,
-        refreshOrders
+        refreshOrders,
+        createOrder
       }}
     >
       {children}
