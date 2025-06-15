@@ -19,85 +19,76 @@ export const useRealTimeDeliveryBoys = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchDeliveryBoys = async () => {
+  useEffect(() => {
+    let cancelled = false;
+    const fetchDeliveryBoys = async () => {
+      try {
+        setLoading(true);
+        const { data, error } = await supabase
+          .from('delivery_boys')
+          .select('*')
+          .order('name');
+        if (error) throw error;
+        if (!cancelled) setDeliveryBoys((data || []).filter(b => b.is_active).sort((a, b) => a.name.localeCompare(b.name)));
+      } catch (e: any) {
+        if (!cancelled) setError(e.message);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    fetchDeliveryBoys();
+
+    const handleRealtimeUpdate = (payload: any) => {
+      const { eventType, new: newRecord, old: oldRecord } = payload;
+      setDeliveryBoys((prev) => {
+        let updated;
+        switch (eventType) {
+          case 'INSERT':
+            updated = [newRecord, ...prev.filter(b => b.id !== newRecord.id)];
+            break;
+          case 'UPDATE':
+            updated = prev.map(b => b.id === newRecord.id ? newRecord : b);
+            break;
+          case 'DELETE':
+            updated = prev.filter(b => b.id !== oldRecord.id);
+            break;
+          default:
+            updated = prev;
+        }
+        return updated.filter(b => b.is_active).sort((a, b) => a.name.localeCompare(b.name));
+      });
+    };
+
+    const channel = supabase
+      .channel('delivery-boys-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'delivery_boys' },
+        handleRealtimeUpdate
+      )
+      .subscribe();
+
+    return () => {
+      cancelled = true;
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  const refetch = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
       const { data, error } = await supabase
         .from('delivery_boys')
         .select('*')
-        .eq('is_active', true)
         .order('name');
-
       if (error) throw error;
-      
-      // Transform the data to handle vehicle_type properly
-      const transformedData = (data || []).map(boy => ({
-        ...boy,
-        vehicle_type: boy.vehicle_type as 'bike' | 'bicycle' | 'car' | 'scooter' | null
-      }));
-      
-      setDeliveryBoys(transformedData);
-      console.log('[useRealTimeDeliveryBoys] Fetched delivery boys:', transformedData?.length);
-    } catch (err: any) {
-      console.error('[useRealTimeDeliveryBoys] Error:', err);
-      setError(err.message);
+      setDeliveryBoys((data || []).filter(b => b.is_active).sort((a, b) => a.name.localeCompare(b.name)));
+    } catch (e: any) {
+      setError(e.message);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchDeliveryBoys();
-    const transformBoy = (boy: any): DeliveryBoy => ({
-      ...boy,
-      vehicle_type: boy.vehicle_type as 'bike' | 'bicycle' | 'car' | 'scooter' | null
-    });
-    const handleRealtimeUpdate = (payload: any) => {
-      const { eventType, new: newRecordUntyped, old: oldRecord } = payload;
-      setDeliveryBoys(currentBoys => {
-        let newBoys;
-        switch (eventType) {
-          case 'INSERT': {
-            const newRecord = transformBoy(newRecordUntyped);
-            newBoys = newRecord.is_active ? [newRecord, ...currentBoys] : currentBoys;
-            break;
-          }
-          case 'UPDATE': {
-            const updatedRecord = transformBoy(newRecordUntyped);
-            const boyExists = currentBoys.some(boy => boy.id === updatedRecord.id);
-            if (updatedRecord.is_active) {
-              newBoys = boyExists 
-                ? currentBoys.map(boy => boy.id === updatedRecord.id ? updatedRecord : boy)
-                : [updatedRecord, ...currentBoys];
-            } else {
-              newBoys = currentBoys.filter(boy => boy.id !== updatedRecord.id);
-            }
-            break;
-          }
-          case 'DELETE':
-            newBoys = currentBoys.filter(boy => boy.id !== oldRecord.id);
-            break;
-          default:
-            return currentBoys;
-        }
-        return newBoys.sort((a, b) => a.name.localeCompare(b.name));
-      });
-    };
-    const channel = supabase
-      .channel('delivery-boys-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'delivery_boys',
-        },
-        handleRealtimeUpdate
-      )
-      .subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
-  return { deliveryBoys, loading, error, refetch: fetchDeliveryBoys };
+  return { deliveryBoys, loading, error, refetch };
 };

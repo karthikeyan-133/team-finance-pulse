@@ -13,7 +13,7 @@ import { ProductCard } from '@/components/products/ProductCard';
 const categories = ['Food', 'Grocery', 'Vegetables', 'Meat'];
 
 const ProductManagement = () => {
-  const { products, loading: productsLoading, error: productsError, refetch } = useRealTimeProducts();
+  const { products, loading: productsLoading, error: productsError } = useRealTimeProducts();
   const { shops, loading: shopsLoading } = useRealTimeShops();
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedShop, setSelectedShop] = useState<string>('all');
@@ -29,9 +29,7 @@ const ProductManagement = () => {
   const handleFormSuccess = () => {
     setIsAddDialogOpen(false);
     setEditingProduct(null);
-    setTimeout(() => {
-      refetch();
-    }, 300);
+    // UI updates via real-time event!
   };
 
   if (productsLoading || shopsLoading) {

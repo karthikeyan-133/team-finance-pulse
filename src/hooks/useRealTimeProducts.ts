@@ -19,64 +19,77 @@ export const useRealTimeProducts = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchProducts = async () => {
+  useEffect(() => {
+    let cancelled = false;
+    const fetchProducts = async () => {
+      try {
+        setLoading(true);
+        const { data, error } = await supabase
+          .from('products')
+          .select('*')
+          .order('name');
+        if (error) throw error;
+        if (!cancelled) setProducts((data || []).sort((a, b) => a.name.localeCompare(b.name)));
+      } catch (e: any) {
+        if (!cancelled) setError(e.message);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    fetchProducts();
+
+    const handleRealtimeUpdate = (payload: any) => {
+      const { eventType, new: newRecord, old: oldRecord } = payload;
+      setProducts((prevProducts) => {
+        let updated;
+        switch (eventType) {
+          case 'INSERT':
+            updated = [newRecord, ...prevProducts.filter(p => p.id !== newRecord.id)];
+            break;
+          case 'UPDATE':
+            updated = prevProducts.map(p => p.id === newRecord.id ? newRecord : p);
+            break;
+          case 'DELETE':
+            updated = prevProducts.filter(p => p.id !== oldRecord.id);
+            break;
+          default:
+            updated = prevProducts;
+        }
+        return updated.sort((a, b) => a.name.localeCompare(b.name));
+      });
+    };
+
+    const channel = supabase
+      .channel('products-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'products' },
+        handleRealtimeUpdate
+      )
+      .subscribe();
+
+    return () => {
+      cancelled = true;
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  // Refetch helper (rarely needed, but available)
+  const refetch = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
       const { data, error } = await supabase
         .from('products')
         .select('*')
         .order('name');
-
       if (error) throw error;
-      setProducts(data || []);
-      console.log('[useRealTimeProducts] Fetched products:', data?.length);
-    } catch (err: any) {
-      console.error('[useRealTimeProducts] Error:', err);
-      setError(err.message);
+      setProducts((data || []).sort((a, b) => a.name.localeCompare(b.name)));
+    } catch (e: any) {
+      setError(e.message);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchProducts();
-    const handleRealtimeUpdate = (payload: any) => {
-      const { eventType, new: newRecord, old: oldRecord } = payload;
-      setProducts(currentProducts => {
-        let newProducts;
-        switch (eventType) {
-          case 'INSERT':
-            newProducts = [newRecord, ...currentProducts];
-            break;
-          case 'UPDATE':
-            newProducts = currentProducts.map(product =>
-              product.id === newRecord.id ? newRecord : product
-            );
-            break;
-          case 'DELETE':
-            newProducts = currentProducts.filter(product => product.id !== oldRecord.id);
-            break;
-          default:
-            return currentProducts;
-        }
-        return newProducts.sort((a, b) => a.name.localeCompare(b.name));
-      });
-    };
-    const channel = supabase
-      .channel('products-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'products',
-        },
-        handleRealtimeUpdate
-      )
-      .subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
-  return { products, loading, error, refetch: fetchProducts };
+  return { products, loading, error, refetch };
 };

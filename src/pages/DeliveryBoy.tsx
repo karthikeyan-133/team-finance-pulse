@@ -16,7 +16,7 @@ import { DeliveryBoyCard } from '@/components/delivery/DeliveryBoyCard';
 import { Order, ProductDetail } from '@/types/orders';
 
 const DeliveryBoyPage = () => {
-  const { deliveryBoys, loading: deliveryBoysLoading, refetch } = useRealTimeDeliveryBoys();
+  const { deliveryBoys, loading: deliveryBoysLoading } = useRealTimeDeliveryBoys();
   const [pendingOrders, setPendingOrders] = useState<Order[]>([]);
   const [selectedDeliveryBoy, setSelectedDeliveryBoy] = useState<string>('');
   const [selectedOrder, setSelectedOrder] = useState<string>('');
@@ -179,9 +179,7 @@ const DeliveryBoyPage = () => {
   const handleFormSuccess = () => {
     setIsAddDialogOpen(false);
     setEditingDeliveryBoy(null);
-    setTimeout(() => {
-      refetch();
-    }, 300);
+    // UI updates instantly due to real-time events
   };
 
   if (deliveryBoysLoading || ordersLoading) {

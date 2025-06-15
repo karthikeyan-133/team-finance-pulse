@@ -17,70 +17,80 @@ export const useRealTimeShops = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchShops = async () => {
+  // Always fetch the initial data once
+  useEffect(() => {
+    let cancelled = false;
+    const fetchShops = async () => {
+      try {
+        setLoading(true);
+        const { data, error } = await supabase
+          .from('shops')
+          .select('*')
+          .order('name');
+        if (error) throw error;
+        if (!cancelled) {
+          setShops((data || []).sort((a, b) => a.name.localeCompare(b.name)));
+        }
+      } catch (e: any) {
+        if (!cancelled) setError(e.message);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    fetchShops();
+
+    const handleRealtimeUpdate = (payload: any) => {
+      const { eventType, new: newRecord, old: oldRecord } = payload;
+      setShops((prevShops) => {
+        let updated;
+        switch (eventType) {
+          case 'INSERT':
+            updated = [newRecord, ...prevShops.filter(s => s.id !== newRecord.id)];
+            break;
+          case 'UPDATE':
+            updated = prevShops.map(s => s.id === newRecord.id ? newRecord : s);
+            break;
+          case 'DELETE':
+            updated = prevShops.filter(s => s.id !== oldRecord.id);
+            break;
+          default:
+            updated = prevShops;
+        }
+        return updated.filter(s => s.is_active).sort((a, b) => a.name.localeCompare(b.name));
+      });
+    };
+
+    const channel = supabase
+      .channel('shops-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'shops' },
+        handleRealtimeUpdate
+      )
+      .subscribe();
+
+    return () => {
+      cancelled = true;
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  // Refetch helper in case it's needed
+  const refetch = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
       const { data, error } = await supabase
         .from('shops')
         .select('*')
-        .eq('is_active', true)
         .order('name');
-
       if (error) throw error;
-      setShops(data || []);
-      console.log('[useRealTimeShops] Fetched shops:', data?.length);
-    } catch (err: any) {
-      console.error('[useRealTimeShops] Error:', err);
-      setError(err.message);
+      setShops((data || []).filter(s => s.is_active).sort((a, b) => a.name.localeCompare(b.name)));
+    } catch (e: any) {
+      setError(e.message);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchShops();
-    const handleRealtimeUpdate = (payload: any) => {
-      const { eventType, new: newRecord, old: oldRecord } = payload;
-      setShops(currentShops => {
-        let newShops;
-        switch (eventType) {
-          case 'INSERT':
-            newShops = newRecord.is_active ? [newRecord, ...currentShops] : currentShops;
-            break;
-          case 'UPDATE':
-            if (newRecord.is_active) {
-              const exists = currentShops.some(s => s.id === newRecord.id);
-              newShops = exists
-                ? currentShops.map(s => s.id === newRecord.id ? newRecord : s)
-                : [newRecord, ...currentShops];
-            } else {
-              newShops = currentShops.filter(s => s.id !== newRecord.id);
-            }
-            break;
-          case 'DELETE':
-            newShops = currentShops.filter(s => s.id !== oldRecord.id);
-            break;
-          default:
-            return currentShops;
-        }
-        return newShops.sort((a, b) => a.name.localeCompare(b.name));
-      });
-    };
-    const channel = supabase
-      .channel('shops-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'shops',
-        },
-        handleRealtimeUpdate
-      )
-      .subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
-  return { shops, loading, error, refetch: fetchShops };
+  return { shops, loading, error, refetch };
 };

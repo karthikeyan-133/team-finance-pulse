@@ -12,7 +12,7 @@ import { ShopCard } from '@/components/shops/ShopCard';
 const categories = ['Food', 'Grocery', 'Vegetables', 'Meat'];
 
 const ShopManagement = () => {
-  const { shops, loading, error, refetch } = useRealTimeShops();
+  const { shops, loading, error } = useRealTimeShops();
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingShop, setEditingShop] = useState<any>(null);
@@ -21,13 +21,10 @@ const ShopManagement = () => {
     selectedCategory === 'all' || shop.category === selectedCategory
   );
 
-  // Refetch data immediately after add/edit dialog close, for extra reliability
   const handleFormSuccess = () => {
     setIsAddDialogOpen(false);
     setEditingShop(null);
-    setTimeout(() => {
-      refetch();
-    }, 300);
+    // UI will update instantly via real-time updates now!
   };
 
   if (loading) {
