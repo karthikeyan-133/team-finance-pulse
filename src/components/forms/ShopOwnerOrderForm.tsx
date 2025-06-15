@@ -40,7 +40,7 @@ interface ShopOwnerOrderFormProps {
 const ShopOwnerOrderForm: React.FC<ShopOwnerOrderFormProps> = ({ onSuccess }) => {
   const { createOrder, shopName } = useShopOwner();
   
-  const { register, handleSubmit, control, watch, setValue, formState: { errors, isSubmitting } } = useForm<OrderFormData>({
+  const { register, handleSubmit, control, watch, setValue, formState: { errors, isSubmitting }, reset } = useForm<OrderFormData>({
     resolver: zodResolver(orderSchema),
     defaultValues: {
       product_details: [{ name: '', quantity: 1, price: 0, description: '' }],
@@ -60,17 +60,25 @@ const ShopOwnerOrderForm: React.FC<ShopOwnerOrderFormProps> = ({ onSuccess }) =>
 
   // Calculate total amount
   const totalAmount = productDetails.reduce((sum, product) => {
-    return sum + (product.quantity * product.price);
+    return sum + ((product.quantity || 0) * (product.price || 0));
   }, 0) + deliveryCharge;
 
   const onSubmit = async (data: OrderFormData) => {
     try {
+      // Ensure all required fields are present in product details
+      const validatedProducts = data.product_details.map(product => ({
+        name: product.name || '',
+        quantity: product.quantity || 1,
+        price: product.price || 0,
+        description: product.description || ''
+      }));
+
       await createOrder({
         customer_name: data.customer_name,
         customer_phone: data.customer_phone,
         customer_address: data.customer_address,
         shop_name: shopName,
-        product_details: data.product_details,
+        product_details: validatedProducts,
         total_amount: totalAmount,
         delivery_charge: data.delivery_charge || 0,
         commission: data.commission || 0,
@@ -81,6 +89,8 @@ const ShopOwnerOrderForm: React.FC<ShopOwnerOrderFormProps> = ({ onSuccess }) =>
         created_by: `Shop Owner - ${shopName}`
       });
       
+      // Reset form after successful submission
+      reset();
       onSuccess?.();
     } catch (error) {
       console.error('Failed to create order:', error);

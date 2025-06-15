@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Order, ProductDetail } from '@/types/orders';
@@ -138,26 +139,29 @@ export const ShopOwnerProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       const timestamp = Date.now();
       const orderNumber = `ORD-${shopName.substring(0, 3).toUpperCase()}-${timestamp}`;
       
+      // Convert ProductDetail[] to Json format for Supabase
+      const productDetailsJson = JSON.parse(JSON.stringify(orderData.product_details));
+      
       const { data, error } = await supabase
         .from('orders')
-        .insert([{
+        .insert({
           order_number: orderNumber,
           customer_name: orderData.customer_name,
           customer_phone: orderData.customer_phone,
           customer_address: orderData.customer_address,
           shop_name: shopName, // Use the current shop's name
-          shop_address: orderData.shop_address,
-          shop_phone: orderData.shop_phone,
-          product_details: orderData.product_details,
+          shop_address: orderData.shop_address || '',
+          shop_phone: orderData.shop_phone || '',
+          product_details: productDetailsJson,
           total_amount: orderData.total_amount,
           delivery_charge: orderData.delivery_charge || 0,
           commission: orderData.commission || 0,
           payment_status: orderData.payment_status || 'pending',
           payment_method: orderData.payment_method || 'cash',
           order_status: 'pending', // Always start as pending for admin assignment
-          special_instructions: orderData.special_instructions,
+          special_instructions: orderData.special_instructions || '',
           created_by: `Shop Owner - ${shopName}`
-        }])
+        })
         .select()
         .single();
 
