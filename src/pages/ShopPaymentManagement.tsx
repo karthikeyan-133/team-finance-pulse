@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -21,6 +22,7 @@ const ShopPaymentManagement = () => {
     summaries,
     isLoading,
     markAsPaid,
+    markAsPending,
     updatePaymentAmount,
     getTotalPendingAmount,
     getTotalPaidAmount,
@@ -88,7 +90,6 @@ const ShopPaymentManagement = () => {
     );
     
     for (const payment of shopPaidPayments) {
-      // We need to add a function to mark as pending in the hook
       await markAsPending(payment.id);
     }
   };
