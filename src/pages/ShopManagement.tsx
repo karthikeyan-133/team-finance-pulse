@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -70,7 +69,7 @@ const ShopManagement = () => {
 
   return (
     <div className="container mx-auto py-6 px-4">
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex justify-between items-center mb-6 border-2 border-dashed border-blue-500">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Shop Management</h1>
           <p className="text-gray-600">Manage your shops and their information</p>
@@ -80,7 +79,8 @@ const ShopManagement = () => {
             if (!open) refreshShops('Shop add dialog closed');
           }}>
           <DialogTrigger asChild>
-            <Button>
+            <Button className="border-2 border-green-500">
+              <span className="text-xs text-green-700 font-bold mr-1">[DEBUG ADD]</span>
               <Plus className="h-4 w-4 mr-2" />
               Add Shop
             </Button>
@@ -102,7 +102,7 @@ const ShopManagement = () => {
         </Dialog>
       </div>
 
-      <div className="flex gap-4 mb-6">
+      <div className="flex gap-4 mb-6 border-dashed border-2 border-yellow-500">
         <div>
           <Label htmlFor="category-filter">Filter by Category</Label>
           <Select value={selectedCategory} onValueChange={setSelectedCategory}>
@@ -119,18 +119,21 @@ const ShopManagement = () => {
         </div>
       </div>
 
-      {/* Show ShopCards, ensure handlers exist */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" key={fetchKey}>
-        {filteredShops.map(shop => (
-          <ShopCard 
-            key={`${shop.id}-${shop.updated_at ?? ''}`}
-            shop={shop}
-            onEdit={() => setEditingShop(shop)}
-            onDeleteSuccess={async () => {
-              await refreshShops('Shop deleted');
-            }}
-          />
-        ))}
+      <div className="border-4 border-purple-500 rounded-lg p-2">
+        <p className="text-md font-semibold mb-2 text-purple-600">[DEBUG] Shop Card Grid, count={filteredShops.length}</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" key={fetchKey}>
+          {filteredShops.map(shop => (
+            <ShopCard 
+              key={`${shop.id}-${shop.updated_at ?? ''}`}
+              shop={shop}
+              onEdit={() => setEditingShop(shop)}
+              onDeleteSuccess={async () => {
+                await refreshShops('Shop deleted');
+              }}
+              debug
+            />
+          ))}
+        </div>
       </div>
 
       {filteredShops.length === 0 && (
@@ -141,7 +144,6 @@ const ShopManagement = () => {
         </div>
       )}
 
-      {/* Edit dialog, ensure open/close and handlers are correct */}
       {editingShop && (
         <Dialog open={!!editingShop} onOpenChange={async (open) => {
             if (!open) {
