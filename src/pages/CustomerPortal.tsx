@@ -9,6 +9,8 @@ import { toast } from '@/components/ui/sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useShops } from '@/hooks/useShops';
 import { useProducts } from '@/hooks/useProducts';
+import { useLanguage } from '@/context/LanguageContext';
+import LanguageSelector from '@/components/LanguageSelector';
 
 interface Message {
   id: string;
@@ -35,13 +37,15 @@ interface CustomerData {
 }
 
 const CATEGORIES = [
-  { name: 'Food', emoji: '🍽️' },
-  { name: 'Grocery', emoji: '🛒' },
-  { name: 'Vegetables', emoji: '🥬' },
-  { name: 'Meat', emoji: '🥩' }
+  { name: 'Food', emoji: '🍽️', key: 'food' },
+  { name: 'Grocery', emoji: '🛒', key: 'grocery' },
+  { name: 'Vegetables', emoji: '🥬', key: 'vegetables' },
+  { name: 'Meat', emoji: '🥩', key: 'meat' }
 ];
 
 const CustomerPortal = () => {
+  const { t } = useLanguage();
+  
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [currentStep, setCurrentStep] = useState('login');
@@ -75,7 +79,7 @@ const CustomerPortal = () => {
         const customerData = JSON.parse(savedCustomer);
         setCustomer(customerData);
         setCurrentStep('welcome');
-        addBotMessage(`Welcome back, ${customerData.name}! 👋\n\nI'm here to help you place an order. Let's start by choosing a category.`, CATEGORIES.map(cat => `${cat.emoji} ${cat.name}`));
+        addBotMessage(`${t('welcomeBack')}, ${customerData.name}! 👋\n\n${t('chooseCategory')}`, CATEGORIES.map(cat => `${cat.emoji} ${t(cat.key)}`));
       } catch (error) {
         console.error('Error parsing saved customer data:', error);
         localStorage.removeItem('customer_data');
@@ -87,7 +91,7 @@ const CustomerPortal = () => {
   }, []);
 
   const showLoginMessage = () => {
-    addBotMessage('Hello! Welcome to our delivery service! 👋\n\nTo place an order, please log in with your phone number. If you\'re a new customer, we\'ll create an account for you.', ['Login / Register']);
+    addBotMessage(`${t('welcome')}\n\n${t('loginMessage')}`, [t('loginRegister')]);
   };
 
   const addBotMessage = (content: string, options?: string[], products?: any[]) => {
@@ -139,13 +143,13 @@ const CustomerPortal = () => {
         setShowLoginForm(false);
         setCurrentStep('welcome');
         addUserMessage(`Logged in with ${loginPhone}`);
-        addBotMessage(`Welcome back, ${existingCustomer.name}! 👋\n\nI'm here to help you place an order. Let's start by choosing a category.`, CATEGORIES.map(cat => `${cat.emoji} ${cat.name}`));
-        toast.success(`Welcome back, ${existingCustomer.name}!`);
+        addBotMessage(`${t('welcomeBack')}, ${existingCustomer.name}! 👋\n\n${t('chooseCategory')}`, CATEGORIES.map(cat => `${cat.emoji} ${t(cat.key)}`));
+        toast.success(`${t('welcomeBack')}, ${existingCustomer.name}!`);
       } else {
         // New customer - need to collect details
         setCurrentStep('register');
         addUserMessage(`Register with ${loginPhone}`);
-        addBotMessage('Welcome! I see you\'re a new customer. Let me collect some details to complete your registration.\n\nWhat\'s your name?');
+        addBotMessage(t('name'));
       }
     } catch (error) {
       console.error('Login error:', error);
@@ -162,7 +166,7 @@ const CustomerPortal = () => {
       setRegistrationName(name);
       addUserMessage(name);
       setCurrentStep('register_address');
-      addBotMessage('Great! Now please provide your delivery address:');
+      addBotMessage(t('address'));
     } else if (currentStep === 'register_address') {
       // Collecting address and creating customer
       const address = inputValue.trim();
@@ -191,7 +195,7 @@ const CustomerPortal = () => {
         setCustomer(createdCustomer);
         localStorage.setItem('customer_data', JSON.stringify(createdCustomer));
         setCurrentStep('welcome');
-        addBotMessage(`Perfect! Your account has been created, ${createdCustomer.name}! 🎉\n\nNow let's start by choosing a category.`, CATEGORIES.map(cat => `${cat.emoji} ${cat.name}`));
+        addBotMessage(`${t('registrationSuccess')}, ${createdCustomer.name}! 🎉\n\n${t('chooseCategory')}`, CATEGORIES.map(cat => `${cat.emoji} ${t(cat.key)}`));
         toast.success('Registration successful!');
       } catch (error) {
         console.error('Registration error:', error);
@@ -219,20 +223,22 @@ const CustomerPortal = () => {
 
   const handleCategorySelection = (categoryOption: string) => {
     // Extract category name from emoji option
-    const categoryName = categoryOption.split(' ').slice(1).join(' ');
-    setSelectedCategory(categoryName);
+    const categoryData = CATEGORIES.find(cat => categoryOption.includes(t(cat.key)));
+    if (!categoryData) return;
+    
+    setSelectedCategory(categoryData.name);
     addUserMessage(categoryOption);
     setCurrentStep('shop_selection');
     
     setTimeout(() => {
       if (shopsLoading) {
-        addBotMessage(`Great choice! You've selected ${categoryName}. Loading shops...`);
+        addBotMessage(`${t('chooseShop').replace('Great choice!', t('chooseShop').split('!')[0])} ${categoryData.name}. ${t('loadingShops')}`);
       } else if (shops.length === 0) {
-        addBotMessage(`Sorry, no shops are currently available for ${categoryName}. Please try another category.`, CATEGORIES.map(cat => `${cat.emoji} ${cat.name}`));
+        addBotMessage(`${t('noShops')} ${categoryData.name}. Please try another category.`, CATEGORIES.map(cat => `${cat.emoji} ${t(cat.key)}`));
         setCurrentStep('welcome');
       } else {
         addBotMessage(
-          `Great choice! You've selected ${categoryName}. Now please choose a shop:`,
+          `${t('chooseShop')}`,
           shops.map(shop => shop.name)
         );
       }
@@ -250,9 +256,9 @@ const CustomerPortal = () => {
     
     setTimeout(() => {
       if (productsLoading) {
-        addBotMessage(`Loading products from ${shopName}...`);
+        addBotMessage(`${t('loadingProducts')} ${shopName}...`);
       } else if (products.length === 0) {
-        addBotMessage(`Sorry, no products are currently available from ${shopName}. Please try another shop.`, shops.map(shop => shop.name));
+        addBotMessage(`${t('noProducts')} ${shopName}. Please try another shop.`, shops.map(shop => shop.name));
         setCurrentStep('shop_selection');
       } else {
         addBotMessage(
@@ -278,12 +284,12 @@ const CustomerPortal = () => {
     toast.success(`${product.name} added to cart!`);
     
     setTimeout(() => {
-      addBotMessage('Item added to cart! You can continue shopping or proceed to checkout when ready.', ['Continue Shopping', 'Proceed to Checkout']);
+      addBotMessage(t('addedToCart'), [t('continueShopping'), t('proceedToCheckout')]);
     }, 500);
   };
 
   const handleOptionClick = (option: string) => {
-    if (option === 'Login / Register') {
+    if (option === t('loginRegister')) {
       setShowLoginForm(true);
       addUserMessage(option);
       return;
@@ -291,24 +297,24 @@ const CustomerPortal = () => {
 
     addUserMessage(option);
     
-    if (option === 'Proceed to Checkout' && cart.length > 0) {
+    if (option === t('proceedToCheckout') && cart.length > 0) {
       setCurrentStep('confirm');
       const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
       addBotMessage(
-        `Perfect! Here's your order summary:\n\n` +
-        `📁 Category: ${selectedCategory}\n` +
-        `📍 Shop: ${selectedShop}\n` +
-        `👤 Name: ${customer?.name}\n` +
+        `${t('orderSummary')}\n\n` +
+        `📁 ${t('category')}: ${selectedCategory}\n` +
+        `📍 ${t('shop')}: ${selectedShop}\n` +
+        `👤 ${t('name')}: ${customer?.name}\n` +
         `📞 Phone: ${customer?.phone}\n` +
         `🏠 Address: ${customer?.address}\n\n` +
-        `🛒 Items:\n${cart.map(item => `• ${item.name} (₹${item.price}) × ${item.quantity}`).join('\n')}\n\n` +
-        `💰 Total: ₹${total}\n\n` +
-        `Would you like to confirm this order?`,
-        ['Confirm Order', 'Edit Order']
+        `🛒 ${t('items')}:\n${cart.map(item => `• ${item.name} (₹${item.price}) × ${item.quantity}`).join('\n')}\n\n` +
+        `💰 ${t('total')}: ₹${total}\n\n` +
+        `${t('confirmOrder')}`,
+        [t('confirmOrderBtn'), t('editOrder')]
       );
-    } else if (option === 'Continue Shopping') {
+    } else if (option === t('continueShopping')) {
       addBotMessage('Great! Feel free to add more items to your cart.');
-    } else if (option === 'Confirm Order') {
+    } else if (option === t('confirmOrderBtn')) {
       handleConfirmOrder();
     }
   };
@@ -362,14 +368,14 @@ const CustomerPortal = () => {
       
       console.log('Order created successfully:', orderResult);
       
-      addBotMessage('🎉 Order placed successfully!\n\nYour order has been automatically sent to our admin panel and will be processed shortly. You will receive updates on your order status. Thank you for choosing our service!');
+      addBotMessage(t('orderSuccess') + '\n\n' + t('orderMessage'));
       toast.success('Order placed and sent to admin panel!');
       setCurrentStep('completed');
       setCart([]);
       
     } catch (error) {
       console.error('Error placing order:', error);
-      addBotMessage('🎉 Order placed successfully!\n\nYour order has been automatically sent to our admin panel and will be processed shortly. You will receive updates on your order status. Thank you for choosing our service!');
+      addBotMessage(t('orderSuccess') + '\n\n' + t('orderMessage'));
       toast.success('Order placed and sent to admin panel!');
       setCurrentStep('completed');
       setCart([]);
@@ -390,7 +396,7 @@ const CustomerPortal = () => {
       <div className="bg-white shadow-sm border-b p-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <MessageCircle className="h-8 w-8 text-blue-600" />
-          <h1 className="text-xl font-semibold">Order Assistant</h1>
+          <h1 className="text-xl font-semibold">{t('orderAssistant')}</h1>
           {selectedCategory && (
             <span className="text-sm text-gray-600 bg-gray-100 px-2 py-1 rounded">
               {selectedCategory}
@@ -401,6 +407,7 @@ const CustomerPortal = () => {
           )}
         </div>
         <div className="flex items-center gap-4">
+          <LanguageSelector />
           {cart.length > 0 && (
             <div className="flex items-center gap-2 bg-blue-100 px-3 py-1 rounded-full">
               <ShoppingCart className="h-4 w-4 text-blue-600" />
@@ -431,13 +438,13 @@ const CustomerPortal = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <Card className="w-full max-w-md mx-4">
             <CardContent className="p-6">
-              <h2 className="text-xl font-semibold mb-4">Login / Register</h2>
+              <h2 className="text-xl font-semibold mb-4">{t('loginRegister')}</h2>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium mb-2">Phone Number</label>
+                  <label className="block text-sm font-medium mb-2">{t('phoneNumber')}</label>
                   <Input
                     type="tel"
-                    placeholder="Enter your phone number"
+                    placeholder={t('enterPhone')}
                     value={loginPhone}
                     onChange={(e) => setLoginPhone(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && handleLogin()}
@@ -445,10 +452,10 @@ const CustomerPortal = () => {
                 </div>
                 <div className="flex gap-2">
                   <Button onClick={handleLogin} className="flex-1">
-                    Continue
+                    {t('continue')}
                   </Button>
                   <Button variant="outline" onClick={() => setShowLoginForm(false)}>
-                    Cancel
+                    {t('cancel')}
                   </Button>
                 </div>
               </div>

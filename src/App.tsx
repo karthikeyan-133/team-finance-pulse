@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { DataProvider } from "./context/DataContext";
 import { ShopOwnerProvider } from "./context/ShopOwnerContext";
+import { LanguageProvider } from "./context/LanguageContext";
 import React from 'react';
 
 // Pages
@@ -47,7 +48,11 @@ const App = () => {
                 <Routes>
                   <Route path="/" element={<Index />} />
                   <Route path="/login" element={<Login />} />
-                  <Route path="/customer-portal" element={<CustomerPortal />} />
+                  <Route path="/customer-portal" element={
+                    <LanguageProvider>
+                      <CustomerPortal />
+                    </LanguageProvider>
+                  } />
                   
                   {/* Delivery Boy Routes (separate from admin) */}
                   <Route path="/delivery-boy-login" element={<DeliveryBoyLogin />} />
@@ -67,6 +72,7 @@ const App = () => {
                     <Route path="order-tracking" element={<OrderTracking />} />
                     <Route path="analytics" element={<AdminAnalytics />} />
                     <Route path="financial-analytics" element={<FinancialAnalytics />} />
+                    <Route path="daily-analytics" element={<DailyOrderAnalytics />} />
                     <Route path="delivery-boy" element={<DeliveryBoy />} />
                     <Route path="shops" element={<ShopManagement />} />
                     <Route path="products" element={<ProductManagement />} />
