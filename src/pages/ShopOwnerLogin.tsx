@@ -6,17 +6,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Store, Eye, EyeOff } from 'lucide-react';
+import { Store } from 'lucide-react';
 import { useShopOwner } from '@/context/ShopOwnerContext';
 import { toast } from '@/components/ui/sonner';
 import { SHOPS } from '@/config/shops';
-import { validateShopOwnerCredentials, DEMO_SHOP_OWNERS } from '@/config/demoShopOwners';
 
 const ShopOwnerLogin = () => {
   const [selectedShop, setSelectedShop] = useState('');
   const [accessCode, setAccessCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [showDemoAccounts, setShowDemoAccounts] = useState(false);
   const { setShopName } = useShopOwner();
   const navigate = useNavigate();
 
@@ -35,9 +33,8 @@ const ShopOwnerLogin = () => {
     
     setIsLoading(true);
 
-    const validCredentials = validateShopOwnerCredentials(selectedShop, accessCode);
-    
-    if (validCredentials) {
+    // Simple demo validation - any shop with "shop123" code
+    if (accessCode === 'shop123') {
       const shop = SHOPS.find(s => s.id === selectedShop);
       if (shop) {
         const sessionData = {
@@ -56,15 +53,10 @@ const ShopOwnerLogin = () => {
         toast.error('Shop not found');
       }
     } else {
-      toast.error('Invalid shop selection or access code');
+      toast.error('Invalid access code. Use "shop123" for demo access.');
     }
 
     setIsLoading(false);
-  };
-
-  const handleDemoLogin = (demoOwner: any) => {
-    setSelectedShop(demoOwner.shopId);
-    setAccessCode(demoOwner.accessCode);
   };
 
   return (
@@ -121,6 +113,9 @@ const ShopOwnerLogin = () => {
                 required
                 className="backdrop-blur-sm bg-white/10 border border-white/20 text-white placeholder:text-white/50 focus:border-white/40 focus:bg-white/20"
               />
+              <p className="text-xs text-white/60 mt-1">
+                Demo access code: <span className="font-mono text-white/80">shop123</span>
+              </p>
             </div>
             
             <Button 
@@ -131,43 +126,6 @@ const ShopOwnerLogin = () => {
               {isLoading ? 'Signing in...' : 'Access Dashboard'}
             </Button>
           </form>
-          
-          {/* Demo Accounts Section */}
-          <div className="mt-6 pt-4 border-t border-white/20">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-sm font-medium text-white/90">Demo Accounts</span>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowDemoAccounts(!showDemoAccounts)}
-                className="p-1 text-white/80 hover:text-white hover:bg-white/10"
-              >
-                {showDemoAccounts ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </Button>
-            </div>
-            
-            {showDemoAccounts && (
-              <div className="space-y-2">
-                {DEMO_SHOP_OWNERS.map((demoOwner, index) => (
-                  <div 
-                    key={index}
-                    className="p-3 backdrop-blur-sm bg-white/5 border border-white/10 rounded-lg cursor-pointer hover:bg-white/10 transition-all duration-200"
-                    onClick={() => handleDemoLogin(demoOwner)}
-                  >
-                    <div className="text-xs font-medium text-white/90">{demoOwner.shopName}</div>
-                    <div className="text-xs text-white/70">
-                      ID: <span className="font-mono">{demoOwner.shopId}</span> | 
-                      Code: <span className="font-mono ml-1">{demoOwner.accessCode}</span>
-                    </div>
-                  </div>
-                ))}
-                <p className="text-xs text-white/60 mt-2">
-                  Click any demo account to auto-fill credentials
-                </p>
-              </div>
-            )}
-          </div>
         </div>
       </div>
     </div>
