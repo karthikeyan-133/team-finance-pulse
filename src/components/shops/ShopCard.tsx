@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,6 +12,7 @@ interface Shop {
   phone?: string;
   category: string;
   is_active: boolean;
+  updated_at?: string;
 }
 
 interface ShopCardProps {
