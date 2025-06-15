@@ -1,15 +1,6 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-
-interface Shop {
-  id: string;
-  name: string;
-  address?: string;
-  phone?: string;
-  category: string;
-  is_active: boolean;
-}
+import type { Shop } from '@/types/Shop';
 
 // add fetchKey param
 export const useShops = (category?: string, fetchKey: number = 0) => {
