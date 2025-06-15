@@ -7,43 +7,31 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Truck, Package, MapPin, Phone, Store, User, Plus, AlertTriangle } from 'lucide-react';
+import { Truck, Package, User, Plus, AlertTriangle } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Order, DeliveryBoy, ProductDetail } from '@/types/orders';
-import AddDeliveryBoyForm from '@/components/forms/AddDeliveryBoyForm';
+import { useRealTimeDeliveryBoys } from '@/hooks/useRealTimeDeliveryBoys';
+import { DeliveryBoyForm } from '@/components/delivery/DeliveryBoyForm';
+import { DeliveryBoyCard } from '@/components/delivery/DeliveryBoyCard';
+import { Order, ProductDetail } from '@/types/orders';
 
 const DeliveryBoyPage = () => {
-  const [deliveryBoys, setDeliveryBoys] = useState<DeliveryBoy[]>([]);
+  const { deliveryBoys, loading: deliveryBoysLoading } = useRealTimeDeliveryBoys();
   const [pendingOrders, setPendingOrders] = useState<Order[]>([]);
   const [selectedDeliveryBoy, setSelectedDeliveryBoy] = useState<string>('');
   const [selectedOrder, setSelectedOrder] = useState<string>('');
   const [assignmentNotes, setAssignmentNotes] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
+  const [ordersLoading, setOrdersLoading] = useState(true);
   const [isAssigning, setIsAssigning] = useState(false);
+  const [editingDeliveryBoy, setEditingDeliveryBoy] = useState<any>(null);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
+  const fetchPendingOrders = async () => {
     try {
-      setIsLoading(true);
-      console.log('Fetching delivery boys and orders...');
+      setOrdersLoading(true);
+      console.log('[DeliveryBoy] Fetching pending orders...');
       
-      // Fetch active delivery boys
-      const { data: deliveryBoysData, error: deliveryBoysError } = await supabase
-        .from('delivery_boys')
-        .select('*')
-        .eq('is_active', true)
-        .order('name');
-
-      if (deliveryBoysError) {
-        console.error('Error fetching delivery boys:', deliveryBoysError);
-        throw deliveryBoysError;
-      }
-
-      // Fetch truly pending orders (not assigned to anyone)
       const { data: ordersData, error: ordersError } = await supabase
         .from('orders')
         .select('*')
@@ -52,17 +40,9 @@ const DeliveryBoyPage = () => {
         .order('created_at', { ascending: false });
 
       if (ordersError) {
-        console.error('Error fetching orders:', ordersError);
+        console.error('[DeliveryBoy] Error fetching orders:', ordersError);
         throw ordersError;
       }
-
-      console.log('Fetched data:', { deliveryBoysData, ordersData });
-
-      // Type cast and convert Json to ProductDetail[]
-      const typedDeliveryBoys = (deliveryBoysData || []).map(boy => ({
-        ...boy,
-        vehicle_type: boy.vehicle_type as 'bike' | 'bicycle' | 'car' | 'scooter' | null
-      }));
 
       const typedOrders = (ordersData || []).map(order => ({
         ...order,
@@ -72,51 +52,40 @@ const DeliveryBoyPage = () => {
         order_status: order.order_status as 'pending' | 'assigned' | 'picked_up' | 'delivered' | 'cancelled'
       }));
 
-      setDeliveryBoys(typedDeliveryBoys);
       setPendingOrders(typedOrders);
-      
-      console.log('Set state with:', { 
-        deliveryBoysCount: typedDeliveryBoys.length, 
-        ordersCount: typedOrders.length 
-      });
-    } catch (error) {
-      console.error('Error fetching data:', error);
-      toast.error('Failed to load data: ' + (error as Error).message);
+      console.log('[DeliveryBoy] Fetched pending orders:', typedOrders.length);
+    } catch (error: any) {
+      console.error('[DeliveryBoy] Error fetching orders:', error);
+      toast.error('Failed to load orders: ' + error.message);
     } finally {
-      setIsLoading(false);
+      setOrdersLoading(false);
     }
   };
 
-  const checkExistingAssignment = async (orderId: string, deliveryBoyId: string) => {
-    const { data, error } = await supabase
-      .from('order_assignments')
-      .select('id, status')
-      .eq('order_id', orderId)
-      .eq('delivery_boy_id', deliveryBoyId)
-      .maybeSingle();
+  useEffect(() => {
+    fetchPendingOrders();
 
-    if (error) {
-      console.error('Error checking existing assignment:', error);
-      throw error;
-    }
+    // Set up real-time subscription for orders
+    const channel = supabase
+      .channel('orders-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'orders',
+        },
+        (payload) => {
+          console.log('[DeliveryBoy] Orders real-time update:', payload);
+          fetchPendingOrders();
+        }
+      )
+      .subscribe();
 
-    return data;
-  };
-
-  const checkOrderStatus = async (orderId: string) => {
-    const { data, error } = await supabase
-      .from('orders')
-      .select('order_status, delivery_boy_id, order_number')
-      .eq('id', orderId)
-      .single();
-
-    if (error) {
-      console.error('Error checking order status:', error);
-      throw error;
-    }
-
-    return data;
-  };
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   const assignOrder = async () => {
     if (!selectedDeliveryBoy || !selectedOrder) {
@@ -126,38 +95,30 @@ const DeliveryBoyPage = () => {
 
     try {
       setIsAssigning(true);
-      console.log('Starting order assignment:', { 
+      console.log('[DeliveryBoy] Assigning order:', { 
         orderId: selectedOrder, 
         deliveryBoyId: selectedDeliveryBoy 
       });
 
-      // First, check if order is still available for assignment
-      const orderStatus = await checkOrderStatus(selectedOrder);
-      
-      if (orderStatus.order_status !== 'pending') {
-        toast.error(`Order ${orderStatus.order_number} is no longer pending (Status: ${orderStatus.order_status})`);
-        await fetchData(); // Refresh data
+      // Check if order is still available
+      const { data: orderCheck, error: checkError } = await supabase
+        .from('orders')
+        .select('order_status, delivery_boy_id, order_number')
+        .eq('id', selectedOrder)
+        .single();
+
+      if (checkError) {
+        console.error('[DeliveryBoy] Error checking order:', checkError);
+        throw checkError;
+      }
+
+      if (orderCheck.order_status !== 'pending' || orderCheck.delivery_boy_id) {
+        toast.error(`Order ${orderCheck.order_number} is no longer available for assignment`);
+        fetchPendingOrders();
         return;
       }
 
-      if (orderStatus.delivery_boy_id) {
-        toast.error(`Order ${orderStatus.order_number} is already assigned to another delivery boy`);
-        await fetchData(); // Refresh data
-        return;
-      }
-
-      // Check if this specific assignment already exists
-      const existingAssignment = await checkExistingAssignment(selectedOrder, selectedDeliveryBoy);
-      
-      if (existingAssignment) {
-        toast.error(`This order is already assigned to the selected delivery boy (Status: ${existingAssignment.status})`);
-        return;
-      }
-
-      // Proceed with assignment using a transaction-like approach
-      console.log('Creating new assignment...');
-
-      // First, update the order to mark it as assigned
+      // Update order
       const { error: orderUpdateError } = await supabase
         .from('orders')
         .update({ 
@@ -165,16 +126,14 @@ const DeliveryBoyPage = () => {
           delivery_boy_id: selectedDeliveryBoy,
           assigned_at: new Date().toISOString()
         })
-        .eq('id', selectedOrder)
-        .eq('order_status', 'pending') // Only update if still pending
-        .is('delivery_boy_id', null); // Only update if not already assigned
+        .eq('id', selectedOrder);
 
       if (orderUpdateError) {
-        console.error('Error updating order:', orderUpdateError);
+        console.error('[DeliveryBoy] Error updating order:', orderUpdateError);
         throw orderUpdateError;
       }
 
-      // Then create the assignment record
+      // Create assignment record
       const { error: assignmentError } = await supabase
         .from('order_assignments')
         .insert([{
@@ -185,9 +144,9 @@ const DeliveryBoyPage = () => {
         }]);
 
       if (assignmentError) {
-        console.error('Error creating assignment:', assignmentError);
+        console.error('[DeliveryBoy] Error creating assignment:', assignmentError);
         
-        // Rollback the order update
+        // Rollback order update
         await supabase
           .from('orders')
           .update({ 
@@ -200,8 +159,8 @@ const DeliveryBoyPage = () => {
         throw assignmentError;
       }
 
-      console.log('Order assigned successfully');
-      toast.success('Order assigned successfully! Delivery boy will be notified.');
+      console.log('[DeliveryBoy] Order assigned successfully');
+      toast.success('Order assigned successfully!');
       
       // Reset form
       setSelectedDeliveryBoy('');
@@ -209,23 +168,21 @@ const DeliveryBoyPage = () => {
       setAssignmentNotes('');
       
       // Refresh data
-      await fetchData();
-    } catch (error) {
-      console.error('Error assigning order:', error);
-      
-      // Check if it's the duplicate key error
-      if (error.message?.includes('duplicate key value violates unique constraint')) {
-        toast.error('This order is already assigned to this delivery boy. Please refresh the page.');
-        await fetchData(); // Refresh data to show current state
-      } else {
-        toast.error('Failed to assign order: ' + (error as Error).message);
-      }
+      fetchPendingOrders();
+    } catch (error: any) {
+      console.error('[DeliveryBoy] Error assigning order:', error);
+      toast.error('Failed to assign order: ' + error.message);
     } finally {
       setIsAssigning(false);
     }
   };
 
-  if (isLoading) {
+  const handleFormSuccess = () => {
+    setIsAddDialogOpen(false);
+    setEditingDeliveryBoy(null);
+  };
+
+  if (deliveryBoysLoading || ordersLoading) {
     return (
       <div className="container mx-auto px-4 py-6">
         <div className="text-center">
@@ -241,6 +198,9 @@ const DeliveryBoyPage = () => {
       <div className="mb-6">
         <h1 className="text-2xl font-bold">Delivery Management</h1>
         <p className="text-gray-600">Manage delivery boys and assign orders</p>
+        <p className="text-sm text-gray-500 mt-1">
+          Delivery Boys: {deliveryBoys.length} | Pending Orders: {pendingOrders.length}
+        </p>
         <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
           <p className="text-sm text-blue-800">
             <strong>Note:</strong> Delivery boys can access their assignments at{' '}
@@ -259,7 +219,6 @@ const DeliveryBoyPage = () => {
         </TabsList>
 
         <TabsContent value="assignments" className="space-y-4">
-          {/* Assign New Order */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -291,7 +250,6 @@ const DeliveryBoyPage = () => {
                 </div>
               ) : (
                 <>
-                  {/* Warning message about duplicate assignments */}
                   <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
                     <div className="flex items-center gap-2 text-amber-800">
                       <AlertTriangle className="h-4 w-4" />
@@ -365,51 +323,84 @@ const DeliveryBoyPage = () => {
         </TabsContent>
 
         <TabsContent value="delivery-boys" className="space-y-4">
-          {/* Available Delivery Boys */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <User className="h-5 w-5" />
-                Available Delivery Boys
-              </CardTitle>
-              <CardDescription>
-                Manage your delivery team members
-              </CardDescription>
+              <div className="flex justify-between items-center">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <User className="h-5 w-5" />
+                    Delivery Boys ({deliveryBoys.length})
+                  </CardTitle>
+                  <CardDescription>
+                    Manage your delivery team members
+                  </CardDescription>
+                </div>
+                <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Delivery Boy
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-2xl">
+                    <DialogHeader>
+                      <DialogTitle>Add New Delivery Boy</DialogTitle>
+                      <DialogDescription>
+                        Register a new delivery boy to your team
+                      </DialogDescription>
+                    </DialogHeader>
+                    <DeliveryBoyForm 
+                      onSuccess={handleFormSuccess}
+                      onCancel={() => setIsAddDialogOpen(false)}
+                    />
+                  </DialogContent>
+                </Dialog>
+              </div>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {deliveryBoys.map((boy) => (
-                  <div key={boy.id} className="border rounded-lg p-4">
-                    <div className="space-y-2">
-                      <div className="font-medium">{boy.name}</div>
-                      <div className="text-sm text-gray-600">{boy.phone}</div>
-                      {boy.email && (
-                        <div className="text-sm text-gray-600">{boy.email}</div>
-                      )}
-                      <div className="flex items-center gap-2">
-                        <Badge variant="secondary">{boy.vehicle_type || 'N/A'}</Badge>
-                        {boy.vehicle_number && (
-                          <span className="text-xs text-gray-500">{boy.vehicle_number}</span>
-                        )}
-                      </div>
-                      {boy.current_location && (
-                        <div className="flex items-center gap-1 text-xs text-gray-500">
-                          <MapPin className="h-3 w-3" />
-                          <span>{boy.current_location}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                  <DeliveryBoyCard 
+                    key={boy.id} 
+                    deliveryBoy={boy} 
+                    onEdit={setEditingDeliveryBoy}
+                  />
                 ))}
               </div>
+              {deliveryBoys.length === 0 && (
+                <div className="text-center py-8 text-gray-500">
+                  <User className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                  <p>No delivery boys found</p>
+                  <p className="text-sm">Add your first delivery boy to get started</p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
 
         <TabsContent value="add-delivery-boy" className="space-y-4">
-          <AddDeliveryBoyForm />
+          <DeliveryBoyForm onSuccess={handleFormSuccess} />
         </TabsContent>
       </Tabs>
+
+      {/* Edit Dialog */}
+      {editingDeliveryBoy && (
+        <Dialog open={!!editingDeliveryBoy} onOpenChange={() => setEditingDeliveryBoy(null)}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Edit Delivery Boy</DialogTitle>
+              <DialogDescription>
+                Update delivery boy information
+              </DialogDescription>
+            </DialogHeader>
+            <DeliveryBoyForm 
+              deliveryBoy={editingDeliveryBoy}
+              onSuccess={handleFormSuccess}
+              onCancel={() => setEditingDeliveryBoy(null)}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 };
