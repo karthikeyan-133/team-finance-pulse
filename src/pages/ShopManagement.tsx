@@ -1,28 +1,33 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useShops as useShopsBase } from '@/hooks/useShops';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Plus, Edit, Trash2, Store } from 'lucide-react';
+import { Plus, Store } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import ShopCard from '@/components/shops/ShopCard';
+import ShopForm from '@/components/shops/ShopForm';
+
+interface Shop {
+  id: string;
+  name: string;
+  address?: string;
+  phone?: string;
+  category: string;
+  is_active: boolean;
+}
 
 const ShopManagement = () => {
-  // We use local state for shops and refetch manually
   const { shops: initialShops, loading, error } = useShopsBase();
-  const [shops, setShops] = useState(initialShops);
+  const [shops, setShops] = useState<Shop[]>(initialShops || []);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [editingShop, setEditingShop] = useState<any>(null);
+  const [editingShop, setEditingShop] = useState<Shop | null>(null);
 
-  // We provide a manual refresh function in addition to the default hook fetching
   const refreshShops = useCallback(async () => {
-    // We fetch ALL shops to allow management, not just active ones
     const { data, error } = await supabase.from('shops').select('*').order('name');
     if (error) {
       toast.error('Failed to fetch shops');
@@ -32,11 +37,10 @@ const ShopManagement = () => {
   }, []);
 
   useEffect(() => {
-    setShops(initialShops);
+    setShops(initialShops || []);
   }, [initialShops]);
 
   useEffect(() => {
-    // Always refresh on mount for the latest
     refreshShops();
     // eslint-disable-next-line
   }, []);
@@ -44,11 +48,10 @@ const ShopManagement = () => {
   const categories = ['Food', 'Grocery', 'Vegetables', 'Meat'];
 
   const filteredShops = (shops || []).filter(shop => {
-    const categoryMatch = selectedCategory === 'all' || shop.category === selectedCategory;
-    return categoryMatch;
+    return selectedCategory === 'all' || shop.category === selectedCategory;
   });
 
-  if (loading && !shops) {
+  if (loading && !shops?.length) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -100,7 +103,6 @@ const ShopManagement = () => {
         </Dialog>
       </div>
 
-      {/* Filters */}
       <div className="flex gap-4 mb-6">
         <div>
           <Label htmlFor="category-filter">Filter by Category</Label>
@@ -118,7 +120,6 @@ const ShopManagement = () => {
         </div>
       </div>
 
-      {/* Shops Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {filteredShops.map(shop => (
           <ShopCard 
@@ -138,7 +139,6 @@ const ShopManagement = () => {
         </div>
       )}
 
-      {/* Edit Dialog */}
       {editingShop && (
         <Dialog open={!!editingShop} onOpenChange={() => setEditingShop(null)}>
           <DialogContent className="max-w-2xl">
@@ -159,186 +159,6 @@ const ShopManagement = () => {
         </Dialog>
       )}
     </div>
-  );
-};
-
-const ShopCard = ({ shop, onEdit, onDeleteSuccess }: any) => {
-  const handleDelete = async () => {
-    if (window.confirm('Are you sure you want to delete this shop?')) {
-      try {
-        const { error } = await supabase
-          .from('shops')
-          .delete()
-          .eq('id', shop.id);
-
-        if (error) {
-          toast.error('Failed to delete shop');
-          return;
-        }
-
-        toast.success('Shop deleted successfully');
-        if (typeof onDeleteSuccess === "function") onDeleteSuccess();
-      } catch (error) {
-        toast.error('Error deleting shop');
-      }
-    }
-  };
-
-  return (
-    <Card className="overflow-hidden">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-lg line-clamp-1">{shop.name}</CardTitle>
-        <CardDescription className="line-clamp-2">
-          {shop.address || 'No address provided'}
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-2">
-          <div className="text-sm text-gray-500">
-            <p>Category: {shop.category || 'Not specified'}</p>
-            {shop.phone && <p>Phone: {shop.phone}</p>}
-          </div>
-          <div className="flex items-center justify-between">
-            <span className={`px-2 py-1 rounded-full text-xs ${
-              shop.is_active 
-                ? 'bg-green-100 text-green-800' 
-                : 'bg-red-100 text-red-800'
-            }`}>
-              {shop.is_active ? 'Active' : 'Inactive'}
-            </span>
-          </div>
-          <div className="flex gap-2 pt-2">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => onEdit(shop)}
-              className="flex-1"
-            >
-              <Edit className="h-3 w-3 mr-1" />
-              Edit
-            </Button>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={handleDelete}
-              className="text-red-600 hover:text-red-700"
-            >
-              <Trash2 className="h-3 w-3" />
-            </Button>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-};
-
-const ShopForm = ({ shop, onSuccess }: any) => {
-  const [formData, setFormData] = useState({
-    name: shop?.name || '',
-    address: shop?.address || '',
-    phone: shop?.phone || '',
-    category: shop?.category || '',
-    is_active: shop?.is_active ?? true
-  });
-
-  const categories = ['Food', 'Grocery', 'Vegetables', 'Meat'];
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    try {
-      let result;
-      if (shop) {
-        console.log("Updating shop:", shop.id, formData);
-        result = await supabase
-          .from('shops')
-          .update(formData)
-          .eq('id', shop.id)
-          .select('*');
-      } else {
-        console.log("Inserting new shop:", formData);
-        result = await supabase
-          .from('shops')
-          .insert([formData])
-          .select('*');
-      }
-      console.log("Supabase shop upsert result:", result);
-
-      if (result.error) {
-        toast.error(`Failed to ${shop ? 'update' : 'create'} shop`);
-        return;
-      }
-
-      toast.success(`Shop ${shop ? 'updated' : 'created'} successfully`);
-      if (typeof onSuccess === "function") onSuccess();
-
-    } catch (error) {
-      toast.error('Error saving shop');
-    }
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <Label htmlFor="name">Shop Name</Label>
-          <Input
-            id="name"
-            value={formData.name}
-            onChange={(e) => setFormData({...formData, name: e.target.value})}
-            required
-          />
-        </div>
-        <div>
-          <Label htmlFor="phone">Phone Number</Label>
-          <Input
-            id="phone"
-            value={formData.phone}
-            onChange={(e) => setFormData({...formData, phone: e.target.value})}
-          />
-        </div>
-      </div>
-
-      <div>
-        <Label htmlFor="address">Address</Label>
-        <Textarea
-          id="address"
-          value={formData.address}
-          onChange={(e) => setFormData({...formData, address: e.target.value})}
-          rows={3}
-        />
-      </div>
-
-      <div>
-        <Label htmlFor="category">Category</Label>
-        <Select value={formData.category} onValueChange={(value) => setFormData({...formData, category: value})}>
-          <SelectTrigger>
-            <SelectValue placeholder="Select category" />
-          </SelectTrigger>
-          <SelectContent>
-            {categories.map(category => (
-              <SelectItem key={category} value={category}>{category}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div className="flex items-center space-x-2">
-        <input
-          type="checkbox"
-          id="is_active"
-          checked={formData.is_active}
-          onChange={(e) => setFormData({...formData, is_active: e.target.checked})}
-        />
-        <Label htmlFor="is_active">Shop is active</Label>
-      </div>
-
-      <div className="flex gap-2 pt-4">
-        <Button type="submit" className="flex-1">
-          {shop ? 'Update Shop' : 'Add Shop'}
-        </Button>
-      </div>
-    </form>
   );
 };
 
