@@ -97,6 +97,10 @@ const ProductManagement = () => {
     );
   }
 
+  // Debug - ensure lists not empty on UI
+  console.log("ProductManagement: products =", products);
+  console.log("ProductManagement: shops =", shops);
+
   return (
     <div className="container mx-auto py-6 px-4">
       <div className="flex justify-between items-center mb-6">

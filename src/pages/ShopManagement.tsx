@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -35,7 +36,6 @@ const ShopManagement = () => {
 
   const categories = ['Food', 'Grocery', 'Vegetables', 'Meat'];
 
-  // Defensive: always sort filtered shops for stable key order
   const filteredShops = React.useMemo(() => {
     const list = (shops || []).filter(shop => {
       return selectedCategory === 'all' || shop.category === selectedCategory;
@@ -43,8 +43,9 @@ const ShopManagement = () => {
     return list.sort((a, b) => (a.name > b.name ? 1 : -1));
   }, [shops, selectedCategory]);
 
-  // Extra debug
-  console.log("ShopManagement UI render:", { shops, filteredShops, fetchKey });
+  // Debug: log values to ensure UI renders
+  console.log("ShopManagement: shops =", shops);
+  console.log("ShopManagement: filteredShops =", filteredShops);
 
   if ((loading || refreshing) && !shops?.length) {
     return (
@@ -118,12 +119,12 @@ const ShopManagement = () => {
         </div>
       </div>
 
-      {/* Add stable+unique key to force rerender on shop data change */}
+      {/* Show ShopCards, ensure handlers exist */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" key={fetchKey}>
         {filteredShops.map(shop => (
           <ShopCard 
             key={`${shop.id}-${shop.updated_at ?? ''}`}
-            shop={shop} 
+            shop={shop}
             onEdit={() => setEditingShop(shop)}
             onDeleteSuccess={async () => {
               await refreshShops('Shop deleted');
@@ -140,6 +141,7 @@ const ShopManagement = () => {
         </div>
       )}
 
+      {/* Edit dialog, ensure open/close and handlers are correct */}
       {editingShop && (
         <Dialog open={!!editingShop} onOpenChange={async (open) => {
             if (!open) {
