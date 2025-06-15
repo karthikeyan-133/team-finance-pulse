@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -35,10 +36,10 @@ interface CustomerData {
 }
 
 const CATEGORIES = [
-  { name: 'Food', emoji: '🍽️', key: 'food' },
-  { name: 'Grocery', emoji: '🛒', key: 'grocery' },
-  { name: 'Vegetables', emoji: '🥬', key: 'vegetables' },
-  { name: 'Meat', emoji: '🥩', key: 'meat' }
+  { name: 'Food', emoji: '🍽️', key: 'Food' },
+  { name: 'Grocery', emoji: '🛒', key: 'Grocery' },
+  { name: 'Vegetables', emoji: '🥬', key: 'Vegetables' },
+  { name: 'Meat', emoji: '🥩', key: 'Meat' }
 ];
 
 const CustomerPortal = () => {
@@ -56,6 +57,7 @@ const CustomerPortal = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Fetch shops and products based on current selection
+  // Use the category key for filtering shops
   const { shops, loading: shopsLoading } = useShops(selectedCategory);
   const { products, loading: productsLoading } = useProducts(selectedShopId, selectedCategory);
 
@@ -222,19 +224,21 @@ const CustomerPortal = () => {
     const categoryData = CATEGORIES.find(cat => categoryOption.includes(cat.name));
     if (!categoryData) return;
     
-    setSelectedCategory(categoryData.name);
+    console.log('Selected category:', categoryData.key);
+    setSelectedCategory(categoryData.key);
     addUserMessage(categoryOption);
     setCurrentStep('shop_selection');
     
     setTimeout(() => {
       if (shopsLoading) {
-        addBotMessage(`Great choice! Now please choose a shop: ${categoryData.name}. Loading shops...`);
+        addBotMessage(`Great choice! Loading ${categoryData.name} shops...`);
       } else if (shops.length === 0) {
-        addBotMessage(`Sorry, no shops are currently available for ${categoryData.name}. Please try another category.`, CATEGORIES.map(cat => `${cat.emoji} ${cat.name}`));
+        addBotMessage(`Sorry, no ${categoryData.name} shops are currently available. Please try another category.`, CATEGORIES.map(cat => `${cat.emoji} ${cat.name}`));
         setCurrentStep('welcome');
+        setSelectedCategory('');
       } else {
         addBotMessage(
-          `Great choice! Now please choose a shop:`,
+          `Great choice! Here are the available ${categoryData.name} shops:`,
           shops.map(shop => shop.name)
         );
       }
@@ -252,7 +256,7 @@ const CustomerPortal = () => {
     
     setTimeout(() => {
       if (productsLoading) {
-        addBotMessage(`Loading products ${shopName}...`);
+        addBotMessage(`Loading products from ${shopName}...`);
       } else if (products.length === 0) {
         addBotMessage(`Sorry, no products are currently available from ${shopName}. Please try another shop.`, shops.map(shop => shop.name));
         setCurrentStep('shop_selection');
