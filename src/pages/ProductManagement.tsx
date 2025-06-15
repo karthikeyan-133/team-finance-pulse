@@ -32,44 +32,39 @@ interface Shop {
 }
 
 const ProductManagement = () => {
-  const { products: initialProducts, loading: productsLoading, error: productsError } = useProductsBase();
-  const { shops: initialShops, loading: shopsLoading } = useShopsBase();
-  const [products, setProducts] = useState<Product[]>(initialProducts || []);
-  const [shops, setShops] = useState<Shop[]>(initialShops || []);
+  const { products, loading: productsLoading, error: productsError } = useProductsBase();
+  const { shops, loading: shopsLoading } = useShopsBase();
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedShop, setSelectedShop] = useState<string>('all');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
+  // Real-time refresh as single state source
   const refreshProducts = useCallback(async (reason?: string) => {
     console.log("REFRESH_PRODUCTS called", { reason });
+    setRefreshing(true);
     const { data, error } = await supabase.from('products').select('*').order('name');
-    console.log("Refreshing products result:", { data, error });
+    setRefreshing(false);
     if (error) {
       toast.error('Failed to fetch products');
       return;
     }
-    setProducts(data || []);
+    toast.success("Product list refreshed");
+    console.log("Refreshed products result:", { data });
   }, []);
 
   const refreshShops = useCallback(async (reason?: string) => {
     console.log("REFRESH_SHOPS called", { reason });
     const { data, error } = await supabase.from('shops').select('*').order('name');
-    console.log("Refreshing shops result:", { data, error });
     if (error) {
       toast.error('Failed to fetch shops');
       return;
     }
-    setShops(data || []);
+    console.log("Refreshed shops result:", { data });
   }, []);
 
-  useEffect(() => { setProducts(initialProducts || []); }, [initialProducts]);
-  useEffect(() => { setShops(initialShops || []); }, [initialShops]);
-  useEffect(() => {
-    refreshProducts('On page mount');
-    refreshShops('On page mount');
-    // eslint-disable-next-line
-  }, []);
+  useEffect(() => { refreshProducts('On page mount'); refreshShops('On page mount'); }, []);
 
   const categories = ['Food', 'Grocery', 'Vegetables', 'Meat'];
 
@@ -79,7 +74,7 @@ const ProductManagement = () => {
     return categoryMatch && shopMatch;
   });
 
-  if (productsLoading || shopsLoading) {
+  if ((productsLoading || shopsLoading || refreshing) && (!products?.length || !shops?.length)) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -122,9 +117,9 @@ const ProductManagement = () => {
               </DialogDescription>
             </DialogHeader>
             <ProductForm 
-              onSuccess={() => {
+              onSuccess={async () => {
+                await refreshProducts('Product added');
                 setIsAddDialogOpen(false);
-                refreshProducts('Product added');
               }}
               shops={shops}
             />
@@ -170,8 +165,8 @@ const ProductManagement = () => {
             product={product} 
             shops={shops}
             onEdit={setEditingProduct}
-            onDeleteSuccess={()=>{
-              refreshProducts('Product deleted');
+            onDeleteSuccess={async () => {
+              await refreshProducts('Product deleted');
             }}
           />
         ))}
@@ -186,8 +181,9 @@ const ProductManagement = () => {
       )}
 
       {editingProduct && (
-        <Dialog open={!!editingProduct} onOpenChange={(open) => {
+        <Dialog open={!!editingProduct} onOpenChange={async (open) => {
             if (!open) setEditingProduct(null);
+            if (!open) await refreshProducts('Product edited');
         }}>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
@@ -198,9 +194,9 @@ const ProductManagement = () => {
             </DialogHeader>
             <ProductForm 
               product={editingProduct}
-              onSuccess={() => {
+              onSuccess={async () => {
                 setEditingProduct(null);
-                refreshProducts('Product edited');
+                await refreshProducts('Product edited');
               }}
               shops={shops}
             />

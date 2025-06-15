@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -20,26 +21,27 @@ interface Shop {
 }
 
 const ShopManagement = () => {
-  const { shops: initialShops, loading, error } = useShopsBase();
-  const [shops, setShops] = useState<Shop[]>(initialShops || []);
+  const { shops, loading, error } = useShopsBase();
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingShop, setEditingShop] = useState<Shop | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
+  // Directly fetch shops from backend, not using a local shops state
   const refreshShops = useCallback(async (reason?: string) => {
     console.log("REFRESH_SHOPS called", { reason });
+    setRefreshing(true);
     const { data, error } = await supabase.from('shops').select('*').order('name');
-    console.log("Refreshing shops result:", { data, error });
     if (error) {
       toast.error('Failed to fetch shops');
+      setRefreshing(false);
       return;
     }
-    setShops(data || []);
+    // Normally we'd use a setter, but we're showing the effect via useShopsBase()
+    setRefreshing(false);
+    toast.success("Shop list refreshed");
+    console.log("Refreshed shops result:", { data });
   }, []);
-
-  useEffect(() => {
-    setShops(initialShops || []);
-  }, [initialShops]);
 
   useEffect(() => {
     refreshShops('On page mount');
@@ -52,7 +54,7 @@ const ShopManagement = () => {
     return selectedCategory === 'all' || shop.category === selectedCategory;
   });
 
-  if (loading && !shops?.length) {
+  if ((loading || refreshing) && !shops?.length) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -95,9 +97,9 @@ const ShopManagement = () => {
               </DialogDescription>
             </DialogHeader>
             <ShopForm 
-              onSuccess={() => {
+              onSuccess={async () => {
+                await refreshShops('Shop added');
                 setIsAddDialogOpen(false);
-                refreshShops('Shop added');
               }}
             />
           </DialogContent>
@@ -127,8 +129,8 @@ const ShopManagement = () => {
             key={shop.id} 
             shop={shop} 
             onEdit={(shop) => setEditingShop(shop)}
-            onDeleteSuccess={() => {
-              refreshShops('Shop deleted');
+            onDeleteSuccess={async () => {
+              await refreshShops('Shop deleted');
             }}
           />
         ))}
@@ -143,8 +145,9 @@ const ShopManagement = () => {
       )}
 
       {editingShop && (
-        <Dialog open={!!editingShop} onOpenChange={(open) => {
+        <Dialog open={!!editingShop} onOpenChange={async (open) => {
             if (!open) setEditingShop(null);
+            if (!open) await refreshShops('Shop edited');
           }}>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
@@ -155,9 +158,9 @@ const ShopManagement = () => {
             </DialogHeader>
             <ShopForm 
               shop={editingShop}
-              onSuccess={() => {
+              onSuccess={async () => {
                 setEditingShop(null);
-                refreshShops('Shop edited');
+                await refreshShops('Shop edited');
               }}
             />
           </DialogContent>
