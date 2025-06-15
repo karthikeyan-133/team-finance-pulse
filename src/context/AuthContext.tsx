@@ -13,21 +13,35 @@ interface AuthContextType {
 // To add new users, add them to this array
 // To change passwords, modify the userCredentials object below
 const mockUsers: User[] = [
-  // Add your users here - example:
-  // {
-  //   id: '1',
-  //   name: 'Your Name',
-  //   email: 'your-email@example.com',
-  //   role: 'admin',
-  //   avatar: '/placeholder.svg',
-  // },
+  {
+    id: '1',
+    name: 'Admin User',
+    email: 'admin@slickerconnect.com',
+    role: 'admin',
+    avatar: '/placeholder.svg',
+  },
+  {
+    id: '2',
+    name: 'Manager User',
+    email: 'manager@slickerconnect.com',
+    role: 'manager',
+    avatar: '/placeholder.svg',
+  },
+  {
+    id: '3',
+    name: 'Team Member',
+    email: 'team@slickerconnect.com',
+    role: 'team_member',
+    avatar: '/placeholder.svg',
+  },
 ];
 
 // User credentials mapping
 // To change passwords, modify the values below
 const userCredentials: Record<string, string> = {
-  // Add your user credentials here - example:
-  // 'your-email@example.com': 'your-secure-password',
+  'admin@slickerconnect.com': 'admin123',
+  'manager@slickerconnect.com': 'manager123',
+  'team@slickerconnect.com': 'team123',
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
