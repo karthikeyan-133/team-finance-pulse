@@ -1,6 +1,7 @@
+
 import { Outlet, useLocation, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { LogOut, BarChart3, Truck, Package, Store } from "lucide-react";
+import { LogOut, BarChart3, Truck, Package, Store, Zap } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import AdminNotifications from "@/components/notifications/AdminNotifications";
 
@@ -30,8 +31,11 @@ const AppLayout = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
-              <Link to="/" className="text-xl font-semibold text-gray-900 hover:text-blue-600 transition-colors">
-                Delivery Management System
+              <Link to="/" className="flex items-center space-x-3 text-xl font-bold text-gray-900 hover:text-blue-600 transition-colors">
+                <div className="flex items-center justify-center w-10 h-10 bg-blue-600 rounded-lg">
+                  <Zap className="w-6 h-6 text-white" />
+                </div>
+                <span className="text-blue-700">SLICKERCONNECT</span>
               </Link>
             </div>
             

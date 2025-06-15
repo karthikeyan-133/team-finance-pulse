@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
+import { Zap } from 'lucide-react';
 
 const Login: React.FC = () => {
   const { user, login, isLoading } = useAuth();
@@ -46,9 +47,14 @@ const Login: React.FC = () => {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1 text-center">
-          <CardTitle className="text-3xl font-bold tracking-tight text-blue-700">Admin Portal</CardTitle>
+          <div className="flex items-center justify-center mb-4">
+            <div className="flex items-center justify-center w-16 h-16 bg-blue-600 rounded-xl">
+              <Zap className="w-10 h-10 text-white" />
+            </div>
+          </div>
+          <CardTitle className="text-3xl font-bold tracking-tight text-blue-700">SLICKERCONNECT</CardTitle>
           <CardDescription>
-            Enter your credentials to access the admin panel
+            Admin Portal - Enter your credentials to access the system
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
@@ -87,7 +93,7 @@ const Login: React.FC = () => {
               className="w-full bg-blue-600 hover:bg-blue-700 text-white"
               disabled={isLoading}
             >
-              {isLoading ? 'Signing in...' : 'Sign in to Admin Panel'}
+              {isLoading ? 'Signing in...' : 'Sign in to SLICKERCONNECT'}
             </Button>
           </CardFooter>
         </form>
