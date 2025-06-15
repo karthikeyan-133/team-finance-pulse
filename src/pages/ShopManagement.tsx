@@ -6,7 +6,8 @@ import { useShops as useShopsBase } from '@/hooks/useShops';
 import { toast } from 'sonner';
 import { Plus, Store } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import ShopCard, { type Shop } from '@/components/shops/ShopCard';
+import ShopCard from '@/components/shops/ShopCard';
+import type { Shop } from '@/types/Shop';
 import ShopForm from '@/components/shops/ShopForm';
 
 const ShopManagement = () => {

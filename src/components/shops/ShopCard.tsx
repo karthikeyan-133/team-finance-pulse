@@ -4,16 +4,7 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Edit, Trash2 } from 'lucide-react';
-
-interface Shop {
-  id: string;
-  name: string;
-  address?: string;
-  phone?: string;
-  category: string;
-  is_active: boolean;
-  updated_at?: string;
-}
+import type { Shop } from '@/types/Shop';
 
 interface ShopCardProps {
   shop: Shop;
