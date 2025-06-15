@@ -15,7 +15,6 @@ const DeliveryBoyLogin = () => {
   const [deliveryBoyData, setDeliveryBoyData] = useState(null);
   const [isCheckingSession, setIsCheckingSession] = useState(true);
 
-  // Check if already logged in
   useEffect(() => {
     const checkSession = () => {
       const savedSession = localStorage.getItem('delivery_boy_session');
@@ -50,7 +49,6 @@ const DeliveryBoyLogin = () => {
     try {
       console.log('Attempting login with phone:', phone.trim());
       
-      // Check if delivery boy exists with this phone number
       const { data, error } = await supabase
         .from('delivery_boys')
         .select('*')
@@ -73,7 +71,6 @@ const DeliveryBoyLogin = () => {
       const deliveryBoy = data[0];
       console.log('Found delivery boy:', deliveryBoy);
 
-      // Store delivery boy data in localStorage for simple auth
       localStorage.setItem('delivery_boy_session', JSON.stringify(deliveryBoy));
       setDeliveryBoyData(deliveryBoy);
       toast.success(`Welcome back, ${deliveryBoy.name}!`);
@@ -86,40 +83,54 @@ const DeliveryBoyLogin = () => {
     }
   };
 
-  // Show loading while checking session
   if (isCheckingSession) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-2 text-gray-600">Loading...</p>
+      <div className="min-h-screen relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-purple-500 via-violet-600 to-indigo-700"></div>
+        <div className="relative z-10 min-h-screen flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto"></div>
+            <p className="mt-2 text-white">Loading...</p>
+          </div>
         </div>
       </div>
     );
   }
 
-  // Redirect if already logged in
   if (deliveryBoyData) {
     console.log('Redirecting to dashboard with data:', deliveryBoyData);
     return <Navigate to="/delivery-boy-dashboard" replace />;
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1 text-center">
-          <div className="flex items-center justify-center gap-2 mb-2">
-            <Truck className="h-8 w-8 text-blue-600" />
-            <CardTitle className="text-2xl font-bold tracking-tight">Delivery Command</CardTitle>
+    <div className="min-h-screen relative overflow-hidden">
+      {/* Gradient Background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-purple-500 via-violet-600 to-indigo-700"></div>
+      
+      {/* Animated Background Elements */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-white/10 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-white/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
+        <div className="absolute top-1/3 left-1/3 w-64 h-64 bg-white/5 rounded-full blur-3xl animate-pulse delay-700"></div>
+      </div>
+
+      <div className="relative z-10 min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-3xl shadow-2xl w-full max-w-md p-8">
+          <div className="text-center mb-8">
+            <div className="flex items-center justify-center gap-2 mb-4">
+              <div className="flex items-center justify-center w-16 h-16 bg-purple-500/20 backdrop-blur-sm rounded-2xl border border-purple-300/30">
+                <Truck className="h-10 w-10 text-purple-200" />
+              </div>
+            </div>
+            <h1 className="text-2xl font-bold tracking-tight text-white drop-shadow-lg">Delivery Command</h1>
+            <p className="text-white/80 mt-2">
+              Enter your phone number to access delivery assignments
+            </p>
           </div>
-          <CardDescription>
-            Enter your phone number to access delivery assignments
-          </CardDescription>
-        </CardHeader>
-        <form onSubmit={handleLogin}>
-          <CardContent className="space-y-4">
+
+          <form onSubmit={handleLogin} className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="phone">Phone Number</Label>
+              <Label htmlFor="phone" className="text-white/90">Phone Number</Label>
               <Input
                 id="phone"
                 type="tel"
@@ -128,12 +139,13 @@ const DeliveryBoyLogin = () => {
                 onChange={(e) => setPhone(e.target.value)}
                 required
                 disabled={isLoading}
-                className="w-full"
+                className="backdrop-blur-sm bg-white/10 border border-white/20 text-white placeholder:text-white/50 focus:border-white/40 focus:bg-white/20"
               />
             </div>
+            
             <Button 
               type="submit" 
-              className="w-full"
+              className="w-full bg-purple-500/30 hover:bg-purple-500/40 text-white border border-purple-300/40 backdrop-blur-sm transition-all duration-300 shadow-lg"
               disabled={isLoading || !phone.trim()}
             >
               {isLoading ? (
@@ -145,9 +157,9 @@ const DeliveryBoyLogin = () => {
                 'Access Command Center'
               )}
             </Button>
-          </CardContent>
-        </form>
-      </Card>
+          </form>
+        </div>
+      </div>
     </div>
   );
 };
