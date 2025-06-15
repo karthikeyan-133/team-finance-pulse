@@ -15,6 +15,7 @@ const ShopPaymentManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'paid'>('all');
   const [selectedShop, setSelectedShop] = useState<string>('all');
+  const [shopSummaryStatusFilter, setShopSummaryStatusFilter] = useState<'all' | 'pending' | 'paid'>('all');
 
   const {
     payments,
@@ -43,7 +44,7 @@ const ShopPaymentManagement = () => {
   const pendingPayments = filteredPayments.filter(p => p.payment_status === 'pending');
   const paidPayments = filteredPayments.filter(p => p.payment_status === 'paid');
 
-  // Calculate totals by shop
+  // Calculate totals by shop with status filtering
   const shopTotals = uniqueShops.map(shopName => {
     const shopPayments = payments.filter(p => p.shop_name === shopName);
     const pendingAmount = shopPayments
@@ -60,6 +61,14 @@ const ShopPaymentManagement = () => {
       totalAmount: pendingAmount + paidAmount,
       pendingCount: shopPayments.filter(p => p.payment_status === 'pending').length
     };
+  }).filter(shop => {
+    if (shopSummaryStatusFilter === 'pending') {
+      return shop.pendingAmount > 0;
+    }
+    if (shopSummaryStatusFilter === 'paid') {
+      return shop.paidAmount > 0;
+    }
+    return true; // 'all'
   }).sort((a, b) => b.pendingAmount - a.pendingAmount);
 
   return (
@@ -190,7 +199,7 @@ const ShopPaymentManagement = () => {
             All Payments ({filteredPayments.length})
           </TabsTrigger>
           <TabsTrigger value="shop-summary">
-            Shop Summary ({uniqueShops.length})
+            Shop Summary ({shopTotals.length})
           </TabsTrigger>
           <TabsTrigger value="daily-summary">
             Daily Summary
@@ -212,7 +221,7 @@ const ShopPaymentManagement = () => {
                   payment={payment}
                   onMarkAsPaid={markAsPaid}
                   onUpdateAmount={updatePaymentAmount}
-                  isAdmin={true}
+                  isAdmin={false}
                 />
               ))}
             </div>
@@ -220,6 +229,19 @@ const ShopPaymentManagement = () => {
         </TabsContent>
 
         <TabsContent value="shop-summary" className="space-y-4">
+          <div className="mb-4">
+            <Select value={shopSummaryStatusFilter} onValueChange={(value: any) => setShopSummaryStatusFilter(value)}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Filter by status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Shops</SelectItem>
+                <SelectItem value="pending">With Pending Payments</SelectItem>
+                <SelectItem value="paid">With Paid Payments</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {shopTotals.map((shop) => (
               <Card key={shop.shopName}>
