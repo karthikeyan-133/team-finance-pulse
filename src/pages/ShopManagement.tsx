@@ -20,12 +20,12 @@ interface Shop {
 }
 
 const ShopManagement = () => {
+  const [fetchKey, setFetchKey] = useState(0);
   const { shops, loading, error } = useShopsBase(undefined, fetchKey);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingShop, setEditingShop] = useState<Shop | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-  const [fetchKey, setFetchKey] = useState(0);
 
   const refreshShops = useCallback(async (reason?: string) => {
     console.log("REFRESH_SHOPS called", { reason });
