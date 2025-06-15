@@ -1,29 +1,60 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useProducts } from '@/hooks/useProducts';
-import { useShops } from '@/hooks/useShops';
+import { useProducts as useProductsBase } from '@/hooks/useProducts';
+import { useShops as useShopsBase } from '@/hooks/useShops';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Plus, Edit, Trash2, Package } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 const ProductManagement = () => {
-  const { products, loading: productsLoading, error: productsError } = useProducts();
-  const { shops, loading: shopsLoading } = useShops();
+  // use base hooks only for startup/refreshing, then local state
+  const { products: initialProducts, loading: productsLoading, error: productsError } = useProductsBase();
+  const { shops: initialShops, loading: shopsLoading } = useShopsBase();
+  const [products, setProducts] = useState(initialProducts || []);
+  const [shops, setShops] = useState(initialShops || []);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedShop, setSelectedShop] = useState<string>('all');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<any>(null);
 
+  // Fetch all products for management, regardless of is_available
+  const refreshProducts = useCallback(async () => {
+    const { data, error } = await supabase.from('products').select('*').order('name');
+    if (error) {
+      toast.error('Failed to fetch products');
+      return;
+    }
+    setProducts(data || []);
+  }, []);
+
+  // Refresh shops for accurate shop names as well
+  const refreshShops = useCallback(async () => {
+    const { data, error } = await supabase.from('shops').select('*').order('name');
+    if (error) {
+      toast.error('Failed to fetch shops');
+      return;
+    }
+    setShops(data || []);
+  }, []);
+
+  useEffect(() => { setProducts(initialProducts || []); }, [initialProducts]);
+  useEffect(() => { setShops(initialShops || []); }, [initialShops]);
+  useEffect(() => {
+    refreshProducts();
+    refreshShops();
+    // eslint-disable-next-line
+  }, []);
+
   const categories = ['Food', 'Grocery', 'Vegetables', 'Meat'];
 
-  const filteredProducts = products.filter(product => {
+  const filteredProducts = (products || []).filter(product => {
     const categoryMatch = selectedCategory === 'all' || product.category === selectedCategory;
     const shopMatch = selectedShop === 'all' || product.shop_id === selectedShop;
     return categoryMatch && shopMatch;
@@ -74,7 +105,7 @@ const ProductManagement = () => {
             <ProductForm 
               onSuccess={() => {
                 setIsAddDialogOpen(false);
-                window.location.reload();
+                refreshProducts();
               }}
               shops={shops}
             />
@@ -122,6 +153,7 @@ const ProductManagement = () => {
             product={product} 
             shops={shops}
             onEdit={setEditingProduct}
+            onDeleteSuccess={refreshProducts}
           />
         ))}
       </div>
@@ -148,7 +180,7 @@ const ProductManagement = () => {
               product={editingProduct}
               onSuccess={() => {
                 setEditingProduct(null);
-                window.location.reload();
+                refreshProducts();
               }}
               shops={shops}
             />
@@ -159,7 +191,7 @@ const ProductManagement = () => {
   );
 };
 
-const ProductCard = ({ product, shops, onEdit }: any) => {
+const ProductCard = ({ product, shops, onEdit, onDeleteSuccess }: any) => {
   const shop = shops.find((s: any) => s.id === product.shop_id);
   
   const handleDelete = async () => {
@@ -176,7 +208,7 @@ const ProductCard = ({ product, shops, onEdit }: any) => {
         }
 
         toast.success('Product deleted successfully');
-        window.location.reload();
+        if (typeof onDeleteSuccess === "function") onDeleteSuccess();
       } catch (error) {
         toast.error('Error deleting product');
       }
@@ -283,7 +315,7 @@ const ProductForm = ({ product, onSuccess, shops }: any) => {
       }
 
       toast.success(`Product ${product ? 'updated' : 'created'} successfully`);
-      onSuccess();
+      if (typeof onSuccess === "function") onSuccess();
     } catch (error) {
       toast.error('Error saving product');
     }
@@ -384,3 +416,4 @@ const ProductForm = ({ product, onSuccess, shops }: any) => {
 };
 
 export default ProductManagement;
+
