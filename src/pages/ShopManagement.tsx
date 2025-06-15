@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -30,35 +30,33 @@ const ShopManagement = () => {
   const [editingShop, setEditingShop] = useState<Shop | null>(null);
   const [lastFetched, setLastFetched] = useState<Date | null>(null);
 
-  const fetchShops = useCallback(async () => {
+  // always new function instance, so never stale
+  const fetchShops = async () => {
     setLoading(true);
     setError(null);
-    console.log('[ShopManagement] Fetching shops...');
     try {
       let query = supabase.from('shops').select('*').eq('is_active', true).order('name');
       const { data, error } = await query;
       if (error) throw error;
       setShops(data || []);
       setLastFetched(new Date());
-      console.log('[ShopManagement] Fetched shops:', data);
     } catch (err: any) {
       setError('Failed to fetch shops');
-      console.log('[ShopManagement] Fetch error:', err);
     } finally {
       setLoading(false);
     }
-  }, []);
+  };
 
+  // Initial load and every refresh after change
   useEffect(() => {
     fetchShops();
-  }, [fetchShops]);
+  }, []);
 
-  // Filtering
+  // Filtering logic the same
   const filteredShops = shops.filter(shop => selectedCategory === 'all' || shop.category === selectedCategory);
 
-  // After add/edit/delete shop, refresh list
+  // Explicit refresh, guaranteed to use latest fetchShops()
   const handleRefresh = () => {
-    console.log('[ShopManagement] handleRefresh called');
     fetchShops();
   };
 
@@ -95,7 +93,10 @@ const ShopManagement = () => {
             </p>
           )}
         </div>
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <Dialog open={isAddDialogOpen} onOpenChange={open => {
+            setIsAddDialogOpen(open);
+            if (!open) handleRefresh(); // Refresh after dialog closes
+          }}>
           <DialogTrigger asChild>
             <Button>
               <Plus className="h-4 w-4 mr-2" />
@@ -112,7 +113,7 @@ const ShopManagement = () => {
             <ShopForm 
               onSuccess={() => {
                 setIsAddDialogOpen(false);
-                handleRefresh();
+                handleRefresh(); // Guaranteed to refresh
               }}
             />
           </DialogContent>
@@ -143,12 +144,11 @@ const ShopManagement = () => {
           <ShopCard 
             key={shop.id} 
             shop={shop} 
-            onEdit={setEditingShop}
+            onEdit={shop => setEditingShop(shop)}
             onDelete={handleRefresh}
           />
         ))}
       </div>
-
       {filteredShops.length === 0 && (
         <div className="text-center py-12">
           <Store className="h-16 w-16 text-gray-300 mx-auto mb-4" />
@@ -156,10 +156,12 @@ const ShopManagement = () => {
           <p className="text-gray-500">Try adjusting your filters or add a new shop.</p>
         </div>
       )}
-
       {/* Edit Dialog */}
       {editingShop && (
-        <Dialog open={!!editingShop} onOpenChange={() => setEditingShop(null)}>
+        <Dialog open={!!editingShop} onOpenChange={open => {
+            if (!open) setEditingShop(null);
+            if (!open) handleRefresh();
+          }}>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>Edit Shop</DialogTitle>
@@ -171,7 +173,7 @@ const ShopManagement = () => {
               shop={editingShop}
               onSuccess={() => {
                 setEditingShop(null);
-                handleRefresh();
+                handleRefresh(); // Refresh after edit
               }}
             />
           </DialogContent>
