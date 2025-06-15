@@ -7,7 +7,7 @@ interface DeliveryBoy {
   name: string;
   phone: string;
   email?: string;
-  vehicle_type?: 'bike' | 'bicycle' | 'car' | 'scooter';
+  vehicle_type?: 'bike' | 'bicycle' | 'car' | 'scooter' | null;
   vehicle_number?: string;
   current_location?: string;
   is_active: boolean;
@@ -30,8 +30,15 @@ export const useRealTimeDeliveryBoys = () => {
         .order('name');
 
       if (error) throw error;
-      setDeliveryBoys(data || []);
-      console.log('[useRealTimeDeliveryBoys] Fetched delivery boys:', data?.length);
+      
+      // Transform the data to handle vehicle_type properly
+      const transformedData = (data || []).map(boy => ({
+        ...boy,
+        vehicle_type: boy.vehicle_type as 'bike' | 'bicycle' | 'car' | 'scooter' | null
+      }));
+      
+      setDeliveryBoys(transformedData);
+      console.log('[useRealTimeDeliveryBoys] Fetched delivery boys:', transformedData?.length);
     } catch (err: any) {
       console.error('[useRealTimeDeliveryBoys] Error:', err);
       setError(err.message);
