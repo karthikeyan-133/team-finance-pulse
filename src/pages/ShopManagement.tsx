@@ -6,18 +6,8 @@ import { useShops as useShopsBase } from '@/hooks/useShops';
 import { toast } from 'sonner';
 import { Plus, Store } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import ShopCard from '@/components/shops/ShopCard';
+import ShopCard, { type Shop } from '@/components/shops/ShopCard';
 import ShopForm from '@/components/shops/ShopForm';
-
-interface Shop {
-  id: string;
-  name: string;
-  address?: string;
-  phone?: string;
-  category: string;
-  is_active: boolean;
-  updated_at?: string; // <-- now included, matches Supabase schema
-}
 
 const ShopManagement = () => {
   const [fetchKey, setFetchKey] = useState(0);
