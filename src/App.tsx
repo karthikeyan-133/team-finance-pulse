@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -23,6 +24,7 @@ import ShopOwnerDashboard from "./pages/ShopOwnerDashboard";
 import CustomerPortal from "./pages/CustomerPortal";
 import ProductManagement from "./pages/ProductManagement";
 import ShopManagement from "./pages/ShopManagement";
+import ShopPaymentManagement from "./pages/ShopPaymentManagement";
 
 // Layout
 import AppLayout from "./components/layout/AppLayout";
@@ -70,6 +72,7 @@ const App = () => {
                     <Route path="delivery-boy" element={<DeliveryBoy />} />
                     <Route path="shops" element={<ShopManagement />} />
                     <Route path="products" element={<ProductManagement />} />
+                    <Route path="shop-payments" element={<ShopPaymentManagement />} />
                   </Route>
                   
                   <Route path="*" element={<Navigate to="/" replace />} />

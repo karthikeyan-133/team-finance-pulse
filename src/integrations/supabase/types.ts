@@ -308,6 +308,69 @@ export type Database = {
           },
         ]
       }
+      shop_payments: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          notes: string | null
+          order_id: string | null
+          paid_at: string | null
+          paid_by: string | null
+          payment_date: string
+          payment_status: string
+          payment_type: string
+          shop_name: string
+          transaction_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          id?: string
+          notes?: string | null
+          order_id?: string | null
+          paid_at?: string | null
+          paid_by?: string | null
+          payment_date?: string
+          payment_status?: string
+          payment_type?: string
+          shop_name: string
+          transaction_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          notes?: string | null
+          order_id?: string | null
+          paid_at?: string | null
+          paid_by?: string | null
+          payment_date?: string
+          payment_status?: string
+          payment_type?: string
+          shop_name?: string
+          transaction_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shop_payments_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shop_payments_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       shops: {
         Row: {
           address: string | null
@@ -417,7 +480,18 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      shop_payment_summary: {
+        Row: {
+          paid_amount: number | null
+          payment_date: string | null
+          pending_amount: number | null
+          pending_transactions: number | null
+          shop_name: string | null
+          total_amount: number | null
+          total_transactions: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       [_ in never]: never

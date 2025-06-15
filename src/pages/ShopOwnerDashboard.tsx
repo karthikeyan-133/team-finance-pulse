@@ -1,14 +1,16 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { LogOut, Package, TrendingUp, Clock, CheckCircle, RefreshCw, ChefHat } from 'lucide-react';
+import { LogOut, Package, TrendingUp, Clock, CheckCircle, RefreshCw, ChefHat, DollarSign, CreditCard } from 'lucide-react';
 import { useShopOwner } from '@/context/ShopOwnerContext';
+import { useShopPayments } from '@/hooks/useShopPayments';
 import { formatCurrency } from '@/utils/reportUtils';
 import OrderPreparationManager from '@/components/orders/OrderPreparationManager';
+import ShopPaymentCard from '@/components/payments/ShopPaymentCard';
+import DailyPaymentSummary from '@/components/payments/DailyPaymentSummary';
 
 const ShopOwnerDashboard = () => {
   const navigate = useNavigate();
@@ -23,6 +25,15 @@ const ShopOwnerDashboard = () => {
     isLoading,
     refreshOrders
   } = useShopOwner();
+
+  const {
+    payments,
+    summaries,
+    isLoading: paymentsLoading,
+    getTotalPendingAmount,
+    getTotalPaidAmount,
+    refreshData: refreshPayments
+  } = useShopPayments(shopName);
 
   useEffect(() => {
     console.log('ShopOwnerDashboard - checking authentication');
@@ -83,6 +94,8 @@ const ShopOwnerDashboard = () => {
     ['ready', 'assigned', 'picked_up'].includes(order.order_status)
   );
 
+  const pendingPayments = payments.filter(payment => payment.payment_status === 'pending');
+
   // Show loading state while checking authentication
   if (isLoading || (!shopName && localStorage.getItem('shop_owner_session'))) {
     return (
@@ -114,7 +127,7 @@ const ShopOwnerDashboard = () => {
               </div>
             </div>
             <div className="flex items-center space-x-4">
-              <Button onClick={refreshOrders} variant="outline" size="sm" disabled={!shopName}>
+              <Button onClick={() => { refreshOrders(); refreshPayments(); }} variant="outline" size="sm" disabled={!shopName}>
                 <RefreshCw className="w-4 h-4 mr-1" />
                 Refresh
               </Button>
@@ -129,7 +142,7 @@ const ShopOwnerDashboard = () => {
 
       <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6 mb-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Today's Orders</CardTitle>
@@ -184,51 +197,62 @@ const ShopOwnerDashboard = () => {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Delivered Orders</CardTitle>
-              <CheckCircle className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium">Pending Payments</CardTitle>
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{deliveredOrders}</div>
+              <div className="text-2xl font-bold text-red-600">{formatCurrency(getTotalPendingAmount())}</div>
               <p className="text-xs text-muted-foreground">
-                Successfully completed
+                {pendingPayments.length} pending payment{pendingPayments.length !== 1 ? 's' : ''}
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Paid Amount</CardTitle>
+              <CreditCard className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-600">{formatCurrency(getTotalPaidAmount())}</div>
+              <p className="text-xs text-muted-foreground">
+                Total received
               </p>
             </CardContent>
           </Card>
         </div>
 
-        {/* Orders Management Tabs */}
+        {/* Main Content Tabs */}
         <Card>
           <CardHeader>
-            <CardTitle>Order Management</CardTitle>
+            <CardTitle>Dashboard</CardTitle>
             <CardDescription>
-              Manage your orders from preparation to delivery
+              Manage your orders and track payments
             </CardDescription>
           </CardHeader>
           <CardContent>
             {!shopName ? (
               <div className="text-center py-4">Setting up shop...</div>
             ) : isLoading ? (
-              <div className="text-center py-4">Loading orders...</div>
-            ) : orders.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                No orders found for this shop. 
-                <p className="mt-2">Shop: {shopName}</p>
-              </div>
+              <div className="text-center py-4">Loading data...</div>
             ) : (
-              <Tabs defaultValue="preparation" className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
-                  <TabsTrigger value="preparation">
-                    Preparation ({preparingOrders.length})
+              <Tabs defaultValue="orders" className="w-full">
+                <TabsList className="grid w-full grid-cols-4">
+                  <TabsTrigger value="orders">
+                    Orders ({preparingOrders.length})
                   </TabsTrigger>
                   <TabsTrigger value="active">
                     Active ({readyAndActiveOrders.length})
                   </TabsTrigger>
-                  <TabsTrigger value="all">
-                    All Orders ({orders.length})
+                  <TabsTrigger value="payments">
+                    Payments ({pendingPayments.length})
+                  </TabsTrigger>
+                  <TabsTrigger value="daily-summary">
+                    Daily Summary
                   </TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="preparation" className="space-y-4">
+                <TabsContent value="orders" className="space-y-4">
                   {preparingOrders.length === 0 ? (
                     <div className="text-center py-8 text-gray-500">
                       No orders to prepare at the moment
@@ -285,54 +309,34 @@ const ShopOwnerDashboard = () => {
                   )}
                 </TabsContent>
 
-                <TabsContent value="all" className="space-y-4">
-                  {orders.map((order) => (
-                    <div key={order.id} className="border rounded-lg p-4 space-y-3">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h3 className="font-medium">Order #{order.order_number}</h3>
-                          <p className="text-sm text-gray-600">{order.customer_name}</p>
-                          <p className="text-sm text-gray-500">{order.customer_phone}</p>
-                        </div>
-                        <div className="text-right">
-                          <Badge className={getStatusColor(order.order_status)}>
-                            {order.order_status.replace('_', ' ').toUpperCase()}
-                          </Badge>
-                          <p className="text-lg font-semibold mt-1">
-                            {formatCurrency(order.total_amount)}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <p><strong>Address:</strong> {order.customer_address}</p>
-                          <p><strong>Payment:</strong> {order.payment_method} - {order.payment_status}</p>
-                        </div>
-                        <div>
-                          <p><strong>Delivery Charge:</strong> {formatCurrency(order.delivery_charge || 0)}</p>
-                          <p><strong>Commission:</strong> {formatCurrency(order.commission || 0)}</p>
-                        </div>
-                      </div>
-
-                      {order.delivery_boy && (
-                        <div className="bg-gray-50 p-3 rounded">
-                          <p className="text-sm"><strong>Delivery Boy:</strong> {order.delivery_boy.name}</p>
-                          <p className="text-sm"><strong>Phone:</strong> {order.delivery_boy.phone}</p>
-                        </div>
-                      )}
-
-                      {order.special_instructions && (
-                        <div className="bg-blue-50 p-3 rounded">
-                          <p className="text-sm"><strong>Special Instructions:</strong> {order.special_instructions}</p>
-                        </div>
-                      )}
-
-                      <div className="text-xs text-gray-500">
-                        Created: {new Date(order.created_at).toLocaleString()}
-                      </div>
+                <TabsContent value="payments" className="space-y-4">
+                  {paymentsLoading ? (
+                    <div className="text-center py-8">Loading payment data...</div>
+                  ) : pendingPayments.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500">
+                      No pending payments
                     </div>
-                  ))}
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {pendingPayments.map((payment) => (
+                        <ShopPaymentCard
+                          key={payment.id}
+                          payment={payment}
+                          onMarkAsPaid={() => {}}
+                          onUpdateAmount={() => {}}
+                          isAdmin={false}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </TabsContent>
+
+                <TabsContent value="daily-summary" className="space-y-4">
+                  {paymentsLoading ? (
+                    <div className="text-center py-8">Loading payment summary...</div>
+                  ) : (
+                    <DailyPaymentSummary summaries={summaries} shopName={shopName} />
+                  )}
                 </TabsContent>
               </Tabs>
             )}

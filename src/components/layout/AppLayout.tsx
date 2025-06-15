@@ -14,11 +14,14 @@ const AppLayout = () => {
   };
 
   const navigation = [
-    { name: "Order Tracking", href: "/admin/order-tracking", icon: ClipboardList },
-    { name: "Analytics", href: "/admin/analytics", icon: BarChart3 },
-    { name: "Delivery Management", href: "/admin/delivery-boy", icon: Truck },
-    { name: "Shop Management", href: "/admin/shops", icon: Store },
-    { name: "Product Management", href: "/admin/products", icon: Package },
+    { name: 'Order Tracking', href: '/admin/order-tracking', icon: Package },
+    { name: 'Shop Management', href: '/admin/shops', icon: Store },
+    { name: 'Product Management', href: '/admin/products', icon: ShoppingBag },
+    { name: 'Shop Payments', href: '/admin/shop-payments', icon: CreditCard },
+    { name: 'Delivery Boys', href: '/admin/delivery-boy', icon: Truck },
+    { name: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
+    { name: 'Financial Analytics', href: '/admin/financial-analytics', icon: TrendingUp },
+    { name: 'Daily Analytics', href: '/admin/daily-analytics', icon: Calendar },
   ];
 
   return (
