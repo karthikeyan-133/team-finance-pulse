@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { User } from '../types';
 import { toast } from '@/components/ui/sonner';
@@ -14,30 +13,9 @@ interface AuthContextType {
 // To add new users, add them to this array
 // To change passwords, modify the userCredentials object below
 const mockUsers: User[] = [
-  {
-    id: '1',
-    name: 'Admin User',
-    email: 'admin@example.com',
-    role: 'admin',
-    avatar: '/placeholder.svg',
-  },
-  {
-    id: '2',
-    name: 'Manager User',
-    email: 'manager@example.com',
-    role: 'manager',
-    avatar: '/placeholder.svg',
-  },
-  {
-    id: '3',
-    name: 'Team Member',
-    email: 'team@example.com',
-    role: 'team_member',
-    avatar: '/placeholder.svg',
-  },
-  // Add new users here - example:
+  // Add your users here - example:
   // {
-  //   id: '4',
+  //   id: '1',
   //   name: 'Your Name',
   //   email: 'your-email@example.com',
   //   role: 'admin',
@@ -48,10 +26,7 @@ const mockUsers: User[] = [
 // User credentials mapping
 // To change passwords, modify the values below
 const userCredentials: Record<string, string> = {
-  'admin@example.com': 'password',
-  'manager@example.com': 'password', 
-  'team@example.com': 'password',
-  // Add new user credentials here - example:
+  // Add your user credentials here - example:
   // 'your-email@example.com': 'your-secure-password',
 };
 

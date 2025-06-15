@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -62,7 +63,7 @@ const Login: React.FC = () => {
               <Input
                 id="email"
                 type="email"
-                placeholder="admin@example.com"
+                placeholder="Enter your email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -73,18 +74,11 @@ const Login: React.FC = () => {
               <Input
                 id="password"
                 type="password"
-                placeholder="password"
+                placeholder="Enter your password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
               />
-            </div>
-            <div className="bg-blue-50 p-3 rounded-md">
-              <p className="text-sm text-blue-800 font-medium mb-2">Demo Accounts:</p>
-              <p className="text-xs text-blue-700">admin@example.com</p>
-              <p className="text-xs text-blue-700">manager@example.com</p>
-              <p className="text-xs text-blue-700">team@example.com</p>
-              <p className="text-xs text-blue-700 mt-2"><strong>Password:</strong> password</p>
             </div>
           </CardContent>
           <CardFooter>
