@@ -1,4 +1,5 @@
 
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/sonner';
@@ -162,3 +163,4 @@ export const useShopPayments = (shopName?: string) => {
     }
   };
 };
+
