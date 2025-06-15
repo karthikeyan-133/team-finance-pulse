@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -29,17 +28,22 @@ const ShopManagement = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingShop, setEditingShop] = useState<Shop | null>(null);
+  const [lastFetched, setLastFetched] = useState<Date | null>(null);
 
   const fetchShops = useCallback(async () => {
     setLoading(true);
     setError(null);
+    console.log('[ShopManagement] Fetching shops...');
     try {
       let query = supabase.from('shops').select('*').eq('is_active', true).order('name');
       const { data, error } = await query;
       if (error) throw error;
       setShops(data || []);
+      setLastFetched(new Date());
+      console.log('[ShopManagement] Fetched shops:', data);
     } catch (err: any) {
       setError('Failed to fetch shops');
+      console.log('[ShopManagement] Fetch error:', err);
     } finally {
       setLoading(false);
     }
@@ -54,6 +58,7 @@ const ShopManagement = () => {
 
   // After add/edit/delete shop, refresh list
   const handleRefresh = () => {
+    console.log('[ShopManagement] handleRefresh called');
     fetchShops();
   };
 
@@ -84,6 +89,11 @@ const ShopManagement = () => {
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Shop Management</h1>
           <p className="text-gray-600">Manage your shops and their information</p>
+          {lastFetched && (
+            <p className="text-xs text-muted-foreground mt-1">
+              Last updated: {lastFetched.toLocaleTimeString()}
+            </p>
+          )}
         </div>
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>
@@ -175,13 +185,15 @@ const ShopCard = ({ shop, onEdit, onDelete }: { shop: Shop, onEdit: (shop: Shop)
   const handleDelete = async () => {
     if (window.confirm('Are you sure you want to delete this shop?')) {
       try {
+        // Instead of permanent delete, mark is_active = false for better data consistency (soft delete)
         const { error } = await supabase
           .from('shops')
-          .delete()
+          .update({ is_active: false })
           .eq('id', shop.id);
 
         if (error) {
           toast.error('Failed to delete shop');
+          console.log('[ShopCard] Delete error:', error);
           return;
         }
 
@@ -189,6 +201,7 @@ const ShopCard = ({ shop, onEdit, onDelete }: { shop: Shop, onEdit: (shop: Shop)
         onDelete();
       } catch (error) {
         toast.error('Error deleting shop');
+        console.log('[ShopCard] Exception during delete:', error);
       }
     }
   };
@@ -252,7 +265,7 @@ const ShopForm = ({ shop, onSuccess }: { shop?: Shop, onSuccess: () => void }) =
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
       let result;
       if (shop) {
@@ -260,14 +273,17 @@ const ShopForm = ({ shop, onSuccess }: { shop?: Shop, onSuccess: () => void }) =
           .from('shops')
           .update(formData)
           .eq('id', shop.id);
+        console.log('[ShopForm] Shop updated:', result);
       } else {
         result = await supabase
           .from('shops')
           .insert([formData]);
+        console.log('[ShopForm] Shop added:', result);
       }
 
       if (result.error) {
         toast.error(`Failed to ${shop ? 'update' : 'create'} shop`);
+        console.log('[ShopForm] Mutation error:', result.error);
         return;
       }
 
@@ -275,6 +291,7 @@ const ShopForm = ({ shop, onSuccess }: { shop?: Shop, onSuccess: () => void }) =
       onSuccess();
     } catch (error) {
       toast.error('Error saving shop');
+      console.log('[ShopForm] Exception during save:', error);
     }
   };
 
