@@ -110,10 +110,10 @@ const DeliveryBoyLogin = () => {
         <CardHeader className="space-y-1 text-center">
           <div className="flex items-center justify-center gap-2 mb-2">
             <Truck className="h-8 w-8 text-blue-600" />
-            <CardTitle className="text-2xl font-bold tracking-tight">Delivery Boy Portal</CardTitle>
+            <CardTitle className="text-2xl font-bold tracking-tight">Delivery Command</CardTitle>
           </div>
           <CardDescription>
-            Enter your phone number to access your delivery assignments
+            Enter your phone number to access delivery assignments
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleLogin}>
@@ -139,10 +139,10 @@ const DeliveryBoyLogin = () => {
               {isLoading ? (
                 <div className="flex items-center gap-2">
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  Signing in...
+                  Accessing Command...
                 </div>
               ) : (
-                'Sign in'
+                'Access Command Center'
               )}
             </Button>
           </CardContent>

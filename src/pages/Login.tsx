@@ -54,7 +54,7 @@ const Login: React.FC = () => {
           </div>
           <CardTitle className="text-3xl font-bold tracking-tight text-blue-700">SLICKERCONNECT</CardTitle>
           <CardDescription>
-            Admin Portal - Enter your credentials to access the system
+            Control Center - Enter your credentials to access the system
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
@@ -93,7 +93,7 @@ const Login: React.FC = () => {
               className="w-full bg-blue-600 hover:bg-blue-700 text-white"
               disabled={isLoading}
             >
-              {isLoading ? 'Signing in...' : 'Sign in to SLICKERCONNECT'}
+              {isLoading ? 'Accessing...' : 'Access Control Center'}
             </Button>
           </CardFooter>
         </form>

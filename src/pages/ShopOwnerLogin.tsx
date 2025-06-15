@@ -67,18 +67,18 @@ const ShopOwnerLogin = () => {
           <div className="flex items-center justify-center mb-4">
             <Store className="h-12 w-12 text-blue-600" />
           </div>
-          <CardTitle className="text-2xl text-center">Shop Owner Portal</CardTitle>
+          <CardTitle className="text-2xl text-center">Business Dashboard</CardTitle>
           <CardDescription className="text-center">
-            Access your shop's order management system
+            Access your store's management system
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="shop">Select Your Shop</Label>
+              <Label htmlFor="shop">Select Your Business</Label>
               <Select value={selectedShop} onValueChange={setSelectedShop} required>
                 <SelectTrigger>
-                  <SelectValue placeholder="Choose a shop..." />
+                  <SelectValue placeholder="Choose your store..." />
                 </SelectTrigger>
                 <SelectContent>
                   {SHOPS.filter(shop => shop.isActive).map(shop => (
@@ -101,7 +101,7 @@ const ShopOwnerLogin = () => {
               />
             </div>
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? 'Signing in...' : 'Sign In'}
+              {isLoading ? 'Signing in...' : 'Access Dashboard'}
             </Button>
           </form>
           <div className="mt-4 text-center text-sm text-gray-600">

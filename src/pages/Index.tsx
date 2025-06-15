@@ -11,10 +11,10 @@ const Index = () => {
       <div className="max-w-5xl w-full space-y-8">
         <div className="text-center">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            Delivery Management System
+            SLICKERCONNECT Management Platform
           </h1>
           <p className="text-xl text-gray-600">
-            Choose your portal to access the system
+            Choose your access portal to enter the system
           </p>
         </div>
 
@@ -25,15 +25,15 @@ const Index = () => {
               <div className="mx-auto mb-4 p-3 bg-orange-100 rounded-full w-fit">
                 <MessageCircle className="h-8 w-8 text-orange-600" />
               </div>
-              <CardTitle>Customer Portal</CardTitle>
+              <CardTitle>Customer Hub</CardTitle>
               <CardDescription>
-                Chat-based ordering system
+                Smart chat-based ordering experience
               </CardDescription>
             </CardHeader>
             <CardContent className="text-center">
               <Link to="/customer-portal">
                 <Button className="w-full" variant="outline">
-                  Start Ordering
+                  Start Shopping
                 </Button>
               </Link>
             </CardContent>
@@ -45,15 +45,15 @@ const Index = () => {
               <div className="mx-auto mb-4 p-3 bg-blue-100 rounded-full w-fit">
                 <Shield className="h-8 w-8 text-blue-600" />
               </div>
-              <CardTitle>Admin Portal</CardTitle>
+              <CardTitle>Control Center</CardTitle>
               <CardDescription>
-                Complete system management and analytics
+                Complete system oversight and analytics dashboard
               </CardDescription>
             </CardHeader>
             <CardContent className="text-center">
               <Link to="/login">
                 <Button className="w-full">
-                  Access Admin Panel
+                  Access Control Center
                 </Button>
               </Link>
             </CardContent>
@@ -65,15 +65,15 @@ const Index = () => {
               <div className="mx-auto mb-4 p-3 bg-green-100 rounded-full w-fit">
                 <Store className="h-8 w-8 text-green-600" />
               </div>
-              <CardTitle>Shop Owner Portal</CardTitle>
+              <CardTitle>Business Dashboard</CardTitle>
               <CardDescription>
-                View your shop's orders and performance
+                Monitor your store performance and orders
               </CardDescription>
             </CardHeader>
             <CardContent className="text-center">
               <Link to="/shop-login">
                 <Button className="w-full" variant="outline">
-                  Access Shop Portal
+                  Access Business Dashboard
                 </Button>
               </Link>
             </CardContent>
@@ -85,15 +85,15 @@ const Index = () => {
               <div className="mx-auto mb-4 p-3 bg-purple-100 rounded-full w-fit">
                 <Truck className="h-8 w-8 text-purple-600" />
               </div>
-              <CardTitle>Delivery Boy Portal</CardTitle>
+              <CardTitle>Delivery Command</CardTitle>
               <CardDescription>
-                Manage deliveries and track orders
+                Streamline deliveries and route management
               </CardDescription>
             </CardHeader>
             <CardContent className="text-center">
               <Link to="/delivery-boy-login">
                 <Button className="w-full" variant="outline">
-                  Access Delivery Portal
+                  Access Delivery Command
                 </Button>
               </Link>
             </CardContent>
@@ -101,7 +101,7 @@ const Index = () => {
         </div>
 
         <div className="text-center text-sm text-gray-500">
-          <p>Need help? Contact your system administrator</p>
+          <p>Need assistance? Contact your system administrator</p>
         </div>
       </div>
     </div>
