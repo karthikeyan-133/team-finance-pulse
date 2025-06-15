@@ -49,14 +49,13 @@ const ShopManagement = () => {
     }
   };
 
-  // Always fetch when called, or when refreshVersion changes
+  // re-fetch on refreshVersion
   useEffect(() => {
     fetchShops();
   }, [refreshVersion]);
 
   // Supabase real-time subscription for shops
   useEffect(() => {
-    // Listen for inserts, updates, and deletes on the shops table
     const channel = supabase
       .channel('public:shops')
       .on(
@@ -68,13 +67,11 @@ const ShopManagement = () => {
         }, 
         (payload) => {
           console.log('[ShopManagement][Realtime] Shop table changed:', payload);
-          // Refetch shops on any change
           setRefreshVersion((v) => v + 1);
         }
       )
       .subscribe();
 
-    // Cleanup subscription on unmount
     return () => {
       supabase.removeChannel(channel);
     };
@@ -85,6 +82,12 @@ const ShopManagement = () => {
   // Explicit refresh (cause fetchShops + UI force update)
   const handleRefresh = () => {
     setRefreshVersion(v => v + 1);
+  };
+
+  // Provide immediate refresh after save, then close dialog/editing
+  const handleFormSuccess = async (closeCallback: () => void) => {
+    await fetchShops();
+    closeCallback();
   };
 
   if (loading) {
@@ -122,10 +125,8 @@ const ShopManagement = () => {
         </div>
         <Dialog
           open={isAddDialogOpen}
-          onOpenChange={open => {
-            setIsAddDialogOpen(open);
-            if (!open) handleRefresh(); // force refresh always on close
-          }}>
+          onOpenChange={open => setIsAddDialogOpen(open)}
+        >
           <DialogTrigger asChild>
             <Button>
               <Plus className="h-4 w-4 mr-2" />
@@ -141,8 +142,7 @@ const ShopManagement = () => {
             </DialogHeader>
             <ShopForm 
               onSuccess={() => {
-                setIsAddDialogOpen(false);
-                handleRefresh(); // refresh list after add
+                handleFormSuccess(() => setIsAddDialogOpen(false));
               }}
             />
           </DialogContent>
@@ -189,7 +189,6 @@ const ShopManagement = () => {
       {editingShop && (
         <Dialog open={!!editingShop} onOpenChange={open => {
             if (!open) setEditingShop(null);
-            if (!open) handleRefresh();
           }}>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
@@ -201,8 +200,7 @@ const ShopManagement = () => {
             <ShopForm 
               shop={editingShop}
               onSuccess={() => {
-                setEditingShop(null);
-                handleRefresh(); // refresh after edit
+                handleFormSuccess(() => setEditingShop(null));
               }}
             />
           </DialogContent>
@@ -294,9 +292,11 @@ const ShopForm = ({ shop, onSuccess }: { shop?: Shop, onSuccess: () => void }) =
     is_active: shop?.is_active ?? true
   });
 
+  const [saving, setSaving] = useState(false);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
+    setSaving(true);
     try {
       let result;
       if (shop) {
@@ -315,14 +315,17 @@ const ShopForm = ({ shop, onSuccess }: { shop?: Shop, onSuccess: () => void }) =
       if (result.error) {
         toast.error(`Failed to ${shop ? 'update' : 'create'} shop`);
         console.log('[ShopForm] Mutation error:', result.error);
+        setSaving(false);
         return;
       }
 
       toast.success(`Shop ${shop ? 'updated' : 'created'} successfully`);
+      setSaving(false);
       onSuccess();
     } catch (error) {
       toast.error('Error saving shop');
       console.log('[ShopForm] Exception during save:', error);
+      setSaving(false);
     }
   };
 
@@ -383,8 +386,8 @@ const ShopForm = ({ shop, onSuccess }: { shop?: Shop, onSuccess: () => void }) =
       </div>
 
       <div className="flex gap-2 pt-4">
-        <Button type="submit" className="flex-1">
-          {shop ? 'Update Shop' : 'Add Shop'}
+        <Button type="submit" className="flex-1" disabled={saving}>
+          {saving ? (shop ? 'Updating...' : 'Adding...') : shop ? 'Update Shop' : 'Add Shop'}
         </Button>
       </div>
     </form>
