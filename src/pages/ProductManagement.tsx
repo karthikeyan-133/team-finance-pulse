@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -42,9 +41,10 @@ const ProductManagement = () => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
-  const refreshProducts = useCallback(async () => {
+  const refreshProducts = useCallback(async (reason?: string) => {
+    console.log("REFRESH_PRODUCTS called", { reason });
     const { data, error } = await supabase.from('products').select('*').order('name');
-    console.log("Refreshing products. Data:", data, "Error:", error);
+    console.log("Refreshing products result:", { data, error });
     if (error) {
       toast.error('Failed to fetch products');
       return;
@@ -52,9 +52,10 @@ const ProductManagement = () => {
     setProducts(data || []);
   }, []);
 
-  const refreshShops = useCallback(async () => {
+  const refreshShops = useCallback(async (reason?: string) => {
+    console.log("REFRESH_SHOPS called", { reason });
     const { data, error } = await supabase.from('shops').select('*').order('name');
-    console.log("Refreshing shops. Data:", data, "Error:", error);
+    console.log("Refreshing shops result:", { data, error });
     if (error) {
       toast.error('Failed to fetch shops');
       return;
@@ -65,8 +66,8 @@ const ProductManagement = () => {
   useEffect(() => { setProducts(initialProducts || []); }, [initialProducts]);
   useEffect(() => { setShops(initialShops || []); }, [initialShops]);
   useEffect(() => {
-    refreshProducts();
-    refreshShops();
+    refreshProducts('On page mount');
+    refreshShops('On page mount');
     // eslint-disable-next-line
   }, []);
 
@@ -123,7 +124,7 @@ const ProductManagement = () => {
             <ProductForm 
               onSuccess={() => {
                 setIsAddDialogOpen(false);
-                refreshProducts();
+                refreshProducts('Product added');
               }}
               shops={shops}
             />
@@ -169,7 +170,9 @@ const ProductManagement = () => {
             product={product} 
             shops={shops}
             onEdit={setEditingProduct}
-            onDeleteSuccess={refreshProducts}
+            onDeleteSuccess={()=>{
+              refreshProducts('Product deleted');
+            }}
           />
         ))}
       </div>
@@ -183,7 +186,9 @@ const ProductManagement = () => {
       )}
 
       {editingProduct && (
-        <Dialog open={!!editingProduct} onOpenChange={() => setEditingProduct(null)}>
+        <Dialog open={!!editingProduct} onOpenChange={(open) => {
+            if (!open) setEditingProduct(null);
+        }}>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>Edit Product</DialogTitle>
@@ -195,7 +200,7 @@ const ProductManagement = () => {
               product={editingProduct}
               onSuccess={() => {
                 setEditingProduct(null);
-                refreshProducts();
+                refreshProducts('Product edited');
               }}
               shops={shops}
             />

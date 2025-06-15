@@ -66,7 +66,6 @@ const ProductForm = ({ product, onSuccess, shops }: ProductFormProps) => {
           .from('products')
           .insert([data]);
       }
-
       console.log('Supabase Product Mutation:', result);
 
       if (result.error) {
@@ -77,6 +76,20 @@ const ProductForm = ({ product, onSuccess, shops }: ProductFormProps) => {
 
       toast.success(`Product ${product ? 'updated' : 'created'} successfully`);
       setLoading(false);
+
+      // Clear fields on add (not edit)
+      if (!product) {
+        setFormData({
+          name: '',
+          description: '',
+          price: '',
+          category: '',
+          shop_id: '',
+          image_url: '',
+          is_available: true,
+        });
+      }
+
       if (typeof onSuccess === "function") onSuccess();
     } catch (error: any) {
       toast.error(`Error saving product: ${error.message}`);

@@ -64,6 +64,16 @@ const ShopForm = ({ shop, onSuccess }: ShopFormProps) => {
 
       toast.success(`Shop ${shop ? 'updated' : 'created'} successfully`);
       setLoading(false);
+      // Force-clear fields after add, but not after edit
+      if (!shop) {
+        setFormData({
+          name: '',
+          address: '',
+          phone: '',
+          category: '',
+          is_active: true,
+        });
+      }
       if (typeof onSuccess === "function") onSuccess();
 
     } catch (error: any) {

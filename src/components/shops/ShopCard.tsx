@@ -36,6 +36,7 @@ const ShopCard = ({ shop, onEdit, onDeleteSuccess }: ShopCardProps) => {
         }
 
         toast.success('Shop deleted successfully');
+        // Always call refresh after success
         if (typeof onDeleteSuccess === "function") onDeleteSuccess();
       } catch (error: any) {
         toast.error(`Error deleting shop: ${error.message}`);

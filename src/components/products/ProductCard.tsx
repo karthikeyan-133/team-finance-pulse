@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -46,6 +45,7 @@ const ProductCard = ({ product, shops, onEdit, onDeleteSuccess }: ProductCardPro
         }
 
         toast.success('Product deleted successfully');
+        // Always call refresh after success
         if (typeof onDeleteSuccess === "function") onDeleteSuccess();
       } catch (error: any) {
         toast.error(`Error deleting product: ${error.message}`);

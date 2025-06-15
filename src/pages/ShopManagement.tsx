@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -27,9 +26,10 @@ const ShopManagement = () => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingShop, setEditingShop] = useState<Shop | null>(null);
 
-  const refreshShops = useCallback(async () => {
+  const refreshShops = useCallback(async (reason?: string) => {
+    console.log("REFRESH_SHOPS called", { reason });
     const { data, error } = await supabase.from('shops').select('*').order('name');
-    console.log("Refreshing shops. Data:", data, "Error:", error);
+    console.log("Refreshing shops result:", { data, error });
     if (error) {
       toast.error('Failed to fetch shops');
       return;
@@ -42,7 +42,7 @@ const ShopManagement = () => {
   }, [initialShops]);
 
   useEffect(() => {
-    refreshShops();
+    refreshShops('On page mount');
     // eslint-disable-next-line
   }, []);
 
@@ -97,7 +97,7 @@ const ShopManagement = () => {
             <ShopForm 
               onSuccess={() => {
                 setIsAddDialogOpen(false);
-                refreshShops();
+                refreshShops('Shop added');
               }}
             />
           </DialogContent>
@@ -126,8 +126,10 @@ const ShopManagement = () => {
           <ShopCard 
             key={shop.id} 
             shop={shop} 
-            onEdit={setEditingShop}
-            onDeleteSuccess={refreshShops}
+            onEdit={(shop) => setEditingShop(shop)}
+            onDeleteSuccess={() => {
+              refreshShops('Shop deleted');
+            }}
           />
         ))}
       </div>
@@ -141,7 +143,9 @@ const ShopManagement = () => {
       )}
 
       {editingShop && (
-        <Dialog open={!!editingShop} onOpenChange={() => setEditingShop(null)}>
+        <Dialog open={!!editingShop} onOpenChange={(open) => {
+            if (!open) setEditingShop(null);
+          }}>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>Edit Shop</DialogTitle>
@@ -153,7 +157,7 @@ const ShopManagement = () => {
               shop={editingShop}
               onSuccess={() => {
                 setEditingShop(null);
-                refreshShops();
+                refreshShops('Shop edited');
               }}
             />
           </DialogContent>
