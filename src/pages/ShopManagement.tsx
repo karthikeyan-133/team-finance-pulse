@@ -29,8 +29,9 @@ const ShopManagement = () => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingShop, setEditingShop] = useState<Shop | null>(null);
   const [lastFetched, setLastFetched] = useState<Date | null>(null);
+  const [refreshVersion, setRefreshVersion] = useState(0);
 
-  // always new function instance, so never stale
+  // Always up-to-date fetch, with console after fetch
   const fetchShops = async () => {
     setLoading(true);
     setError(null);
@@ -40,6 +41,7 @@ const ShopManagement = () => {
       if (error) throw error;
       setShops(data || []);
       setLastFetched(new Date());
+      console.log('[ShopManagement] Shop list (lastFetched):', new Date(), data);
     } catch (err: any) {
       setError('Failed to fetch shops');
     } finally {
@@ -47,17 +49,16 @@ const ShopManagement = () => {
     }
   };
 
-  // Initial load and every refresh after change
+  // Always fetch when called, or when refreshVersion changes
   useEffect(() => {
     fetchShops();
-  }, []);
+  }, [refreshVersion]);
 
-  // Filtering logic the same
   const filteredShops = shops.filter(shop => selectedCategory === 'all' || shop.category === selectedCategory);
 
-  // Explicit refresh, guaranteed to use latest fetchShops()
+  // Explicit refresh (cause fetchShops + UI force update)
   const handleRefresh = () => {
-    fetchShops();
+    setRefreshVersion(v => v + 1);
   };
 
   if (loading) {
@@ -93,9 +94,11 @@ const ShopManagement = () => {
             </p>
           )}
         </div>
-        <Dialog open={isAddDialogOpen} onOpenChange={open => {
+        <Dialog
+          open={isAddDialogOpen}
+          onOpenChange={open => {
             setIsAddDialogOpen(open);
-            if (!open) handleRefresh(); // Refresh after dialog closes
+            if (!open) handleRefresh(); // force refresh always on close
           }}>
           <DialogTrigger asChild>
             <Button>
@@ -113,7 +116,7 @@ const ShopManagement = () => {
             <ShopForm 
               onSuccess={() => {
                 setIsAddDialogOpen(false);
-                handleRefresh(); // Guaranteed to refresh
+                handleRefresh(); // refresh list after add
               }}
             />
           </DialogContent>
@@ -173,7 +176,7 @@ const ShopManagement = () => {
               shop={editingShop}
               onSuccess={() => {
                 setEditingShop(null);
-                handleRefresh(); // Refresh after edit
+                handleRefresh(); // refresh after edit
               }}
             />
           </DialogContent>
