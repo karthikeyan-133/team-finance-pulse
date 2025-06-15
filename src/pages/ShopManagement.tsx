@@ -69,9 +69,11 @@ const ShopManagement = () => {
 
   return (
     <div className="container mx-auto py-6 px-4">
-      <div className="flex justify-between items-center mb-6 border-2 border-dashed border-blue-500">
+      <div className="flex justify-between items-center mb-6 border-4 border-solid border-amber-500 rounded bg-yellow-100 shadow-md">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Shop Management</h1>
+          <h1 className="text-3xl font-extrabold text-purple-900 drop-shadow bg-green-100 p-2">
+            [DEBUG UI] Shop Management
+          </h1>
           <p className="text-gray-600">Manage your shops and their information</p>
         </div>
         <Dialog open={isAddDialogOpen} onOpenChange={(open) => {
@@ -79,10 +81,8 @@ const ShopManagement = () => {
             if (!open) refreshShops('Shop add dialog closed');
           }}>
           <DialogTrigger asChild>
-            <Button className="border-2 border-green-500">
-              <span className="text-xs text-green-700 font-bold mr-1">[DEBUG ADD]</span>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Shop
+            <Button className="text-2xl bg-green-400 text-white border-4 border-green-700 px-6 py-2 rounded-lg shadow-lg font-extrabold" data-testid="add-shop-btn">
+              [ADD SHOP BUTTON - VISIBLE] <Plus className="h-6 w-6 ml-2" />
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-2xl">
@@ -102,7 +102,7 @@ const ShopManagement = () => {
         </Dialog>
       </div>
 
-      <div className="flex gap-4 mb-6 border-dashed border-2 border-yellow-500">
+      <div className="flex gap-4 mb-6 border-4 border-orange-500 p-2 bg-orange-100 rounded">
         <div>
           <Label htmlFor="category-filter">Filter by Category</Label>
           <Select value={selectedCategory} onValueChange={setSelectedCategory}>
@@ -119,9 +119,11 @@ const ShopManagement = () => {
         </div>
       </div>
 
-      <div className="border-4 border-purple-500 rounded-lg p-2">
-        <p className="text-md font-semibold mb-2 text-purple-600">[DEBUG] Shop Card Grid, count={filteredShops.length}</p>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" key={fetchKey}>
+      <div className="border-8 border-purple-700 rounded-lg p-4 bg-purple-100 shadow-xl">
+        <p className="text-3xl font-extrabold mb-4 text-purple-700">
+          [DEBUG ALWAYS] Shop Card Grid, count={filteredShops.length}
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8" key={fetchKey}>
           {filteredShops.map(shop => (
             <ShopCard 
               key={`${shop.id}-${shop.updated_at ?? ''}`}
@@ -130,7 +132,7 @@ const ShopManagement = () => {
               onDeleteSuccess={async () => {
                 await refreshShops('Shop deleted');
               }}
-              debug
+              debug={true}
             />
           ))}
         </div>

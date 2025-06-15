@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -38,50 +37,47 @@ const ShopCard = ({ shop, onEdit, onDeleteSuccess, debug }: ShopCardProps) => {
   };
 
   return (
-    <Card className={`overflow-hidden ${debug ? "border-4 border-pink-500" : ""}`}>
-      {debug && (
-        <div className="bg-pink-100 text-pink-700 text-xs px-2 py-1">[DEBUG] ShopCard id={shop.id}, name={shop.name}</div>
-      )}
+    <Card className="overflow-visible border-8 border-blue-700 bg-blue-50 shadow-2xl p-4">
+      <div className="bg-pink-300 text-pink-900 p-2 font-extrabold text-lg shadow-inner">
+        [DEBUG CARD] id={shop.id}, name={shop.name}
+      </div>
       <CardHeader className="pb-2">
-        <CardTitle className="text-lg line-clamp-1">{shop.name}</CardTitle>
-        <CardDescription className="line-clamp-2">
-          {shop.address || 'No address provided'}
-        </CardDescription>
+        <CardTitle className="text-xl font-bold text-blue-900">{shop.name}</CardTitle>
+        <CardDescription className="line-clamp-2 text-md">{shop.address || 'No address provided'}</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="space-y-2">
-          <div className="text-sm text-gray-500">
+          <div className="text-base text-gray-700">
             <p>Category: {shop.category || 'Not specified'}</p>
             {shop.phone && <p>Phone: {shop.phone}</p>}
           </div>
           <div className="flex items-center justify-between">
-            <span className={`px-2 py-1 rounded-full text-xs ${
-              shop.is_active 
-                ? 'bg-green-100 text-green-800' 
-                : 'bg-red-100 text-red-800'
-            }`}>
+            <span className={`px-3 py-2 rounded-full text-lg font-bold`}
+              style={{
+                backgroundColor: shop.is_active ? '#bbf7d0' : '#fecaca',
+                color: shop.is_active ? '#166534' : '#991b1b'
+              }}>
               {shop.is_active ? 'Active' : 'Inactive'}
             </span>
           </div>
-          <div className="flex gap-2 pt-2 border-t-2 border-pink-300 mt-2">
+          <div className="flex gap-4 pt-3 border-t-4 border-dashed border-pink-500 mt-2">
             <Button 
               variant="outline" 
-              size="sm" 
+              size="lg" 
               onClick={() => onEdit(shop)}
-              className="flex-1 border-2 border-blue-300"
+              className="border-4 border-blue-900 bg-blue-300 text-blue-900 font-extrabold text-lg px-6 py-3"
+              data-testid="edit-shop-btn"
             >
-              <span className="text-xs text-blue-700 font-bold mr-1">[Edit]</span>
-              <Edit className="h-3 w-3 mr-1" />
-              Edit
+              [EDIT]
             </Button>
             <Button 
               variant="outline" 
-              size="sm" 
+              size="lg" 
               onClick={handleDelete}
-              className="text-red-600 hover:text-red-700 border-2 border-red-400"
+              className="border-4 border-red-900 bg-red-300 text-red-900 font-extrabold text-lg px-6 py-3"
+              data-testid="delete-shop-btn"
             >
-              <span className="text-xs text-red-800 font-bold mr-1">[Delete]</span>
-              <Trash2 className="h-3 w-3" />
+              [DELETE]
             </Button>
           </div>
         </div>
@@ -89,5 +85,4 @@ const ShopCard = ({ shop, onEdit, onDeleteSuccess, debug }: ShopCardProps) => {
     </Card>
   );
 };
-
 export default ShopCard;
