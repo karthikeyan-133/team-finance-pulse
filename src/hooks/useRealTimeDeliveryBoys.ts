@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -49,25 +48,21 @@ export const useRealTimeDeliveryBoys = () => {
 
   useEffect(() => {
     fetchDeliveryBoys();
-
     const transformBoy = (boy: any): DeliveryBoy => ({
       ...boy,
       vehicle_type: boy.vehicle_type as 'bike' | 'bicycle' | 'car' | 'scooter' | null
     });
-
     const handleRealtimeUpdate = (payload: any) => {
-      console.log('[useRealTimeDeliveryBoys] Real-time update:', payload);
       const { eventType, new: newRecordUntyped, old: oldRecord } = payload;
-
       setDeliveryBoys(currentBoys => {
         let newBoys;
         switch (eventType) {
-          case 'INSERT':
+          case 'INSERT': {
             const newRecord = transformBoy(newRecordUntyped);
             newBoys = newRecord.is_active ? [newRecord, ...currentBoys] : currentBoys;
             break;
-          
-          case 'UPDATE':
+          }
+          case 'UPDATE': {
             const updatedRecord = transformBoy(newRecordUntyped);
             const boyExists = currentBoys.some(boy => boy.id === updatedRecord.id);
             if (updatedRecord.is_active) {
@@ -78,19 +73,16 @@ export const useRealTimeDeliveryBoys = () => {
               newBoys = currentBoys.filter(boy => boy.id !== updatedRecord.id);
             }
             break;
-
+          }
           case 'DELETE':
             newBoys = currentBoys.filter(boy => boy.id !== oldRecord.id);
             break;
-            
           default:
             return currentBoys;
         }
         return newBoys.sort((a, b) => a.name.localeCompare(b.name));
       });
     };
-
-    // Set up real-time subscription
     const channel = supabase
       .channel('delivery-boys-changes')
       .on(
@@ -103,11 +95,9 @@ export const useRealTimeDeliveryBoys = () => {
         handleRealtimeUpdate
       )
       .subscribe();
-
     return () => {
       supabase.removeChannel(channel);
     };
   }, []);
-
   return { deliveryBoys, loading, error, refetch: fetchDeliveryBoys };
 };

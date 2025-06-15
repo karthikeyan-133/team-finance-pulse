@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,7 +16,7 @@ import { DeliveryBoyCard } from '@/components/delivery/DeliveryBoyCard';
 import { Order, ProductDetail } from '@/types/orders';
 
 const DeliveryBoyPage = () => {
-  const { deliveryBoys, loading: deliveryBoysLoading } = useRealTimeDeliveryBoys();
+  const { deliveryBoys, loading: deliveryBoysLoading, refetch } = useRealTimeDeliveryBoys();
   const [pendingOrders, setPendingOrders] = useState<Order[]>([]);
   const [selectedDeliveryBoy, setSelectedDeliveryBoy] = useState<string>('');
   const [selectedOrder, setSelectedOrder] = useState<string>('');
@@ -180,6 +179,9 @@ const DeliveryBoyPage = () => {
   const handleFormSuccess = () => {
     setIsAddDialogOpen(false);
     setEditingDeliveryBoy(null);
+    setTimeout(() => {
+      refetch();
+    }, 300);
   };
 
   if (deliveryBoysLoading || ordersLoading) {

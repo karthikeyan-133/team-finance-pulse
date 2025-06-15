@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,7 +12,7 @@ import { ShopCard } from '@/components/shops/ShopCard';
 const categories = ['Food', 'Grocery', 'Vegetables', 'Meat'];
 
 const ShopManagement = () => {
-  const { shops, loading, error } = useRealTimeShops();
+  const { shops, loading, error, refetch } = useRealTimeShops();
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingShop, setEditingShop] = useState<any>(null);
@@ -22,9 +21,13 @@ const ShopManagement = () => {
     selectedCategory === 'all' || shop.category === selectedCategory
   );
 
+  // Refetch data immediately after add/edit dialog close, for extra reliability
   const handleFormSuccess = () => {
     setIsAddDialogOpen(false);
     setEditingShop(null);
+    setTimeout(() => {
+      refetch();
+    }, 300);
   };
 
   if (loading) {
@@ -130,7 +133,9 @@ const ShopManagement = () => {
 
       {/* Edit Dialog */}
       {editingShop && (
-        <Dialog open={!!editingShop} onOpenChange={() => setEditingShop(null)}>
+        <Dialog open={!!editingShop} onOpenChange={(open) => {
+          if (!open) setEditingShop(null);
+        }}>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>Edit Shop</DialogTitle>

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -14,7 +13,7 @@ import { ProductCard } from '@/components/products/ProductCard';
 const categories = ['Food', 'Grocery', 'Vegetables', 'Meat'];
 
 const ProductManagement = () => {
-  const { products, loading: productsLoading, error: productsError } = useRealTimeProducts();
+  const { products, loading: productsLoading, error: productsError, refetch } = useRealTimeProducts();
   const { shops, loading: shopsLoading } = useRealTimeShops();
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedShop, setSelectedShop] = useState<string>('all');
@@ -30,6 +29,9 @@ const ProductManagement = () => {
   const handleFormSuccess = () => {
     setIsAddDialogOpen(false);
     setEditingProduct(null);
+    setTimeout(() => {
+      refetch();
+    }, 300);
   };
 
   if (productsLoading || shopsLoading) {
@@ -151,7 +153,9 @@ const ProductManagement = () => {
 
       {/* Edit Dialog */}
       {editingProduct && (
-        <Dialog open={!!editingProduct} onOpenChange={() => setEditingProduct(null)}>
+        <Dialog open={!!editingProduct} onOpenChange={(open) => {
+          if (!open) setEditingProduct(null);
+        }}>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>Edit Product</DialogTitle>
