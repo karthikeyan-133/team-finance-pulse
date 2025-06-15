@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -27,19 +28,12 @@ const ShopManagement = () => {
   const [editingShop, setEditingShop] = useState<Shop | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
+  // Improved: Just bump fetchKey, don't fetch again here directly!
   const refreshShops = useCallback(async (reason?: string) => {
-    console.log("REFRESH_SHOPS called", { reason });
     setRefreshing(true);
-    const { data, error } = await supabase.from('shops').select('*').order('name');
-    if (error) {
-      toast.error('Failed to fetch shops');
-      setRefreshing(false);
-      return;
-    }
+    setFetchKey((k) => k + 1); // this re-triggers useShopsBase
     setRefreshing(false);
-    toast.success("Shop list refreshed [" + reason + "]");
-    console.log("Refreshed shops result:", { data });
-    setFetchKey((k) => k + 1);
+    toast.success("Shop list refreshed [" + (reason || "") + "]");
   }, []);
 
   useEffect(() => {
@@ -52,6 +46,9 @@ const ShopManagement = () => {
   const filteredShops = (shops || []).filter(shop => {
     return selectedCategory === 'all' || shop.category === selectedCategory;
   });
+
+  // Debug: log output every render
+  console.log("ShopManagement UI render:", { shops, filteredShops, fetchKey });
 
   if ((loading || refreshing) && !shops?.length) {
     return (
@@ -122,7 +119,8 @@ const ShopManagement = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      {/* Add key to force rerender on shop data change */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" key={fetchKey}>
         {filteredShops.map(shop => (
           <ShopCard 
             key={shop.id} 
