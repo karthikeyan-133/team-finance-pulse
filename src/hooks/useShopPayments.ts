@@ -50,7 +50,14 @@ export const useShopPayments = (shopName?: string) => {
       const { data, error } = await query;
 
       if (error) throw error;
-      setPayments(data || []);
+      
+      // Type the data properly to ensure payment_status is correctly typed
+      const typedData = (data || []).map(item => ({
+        ...item,
+        payment_status: item.payment_status as 'pending' | 'paid'
+      })) as ShopPayment[];
+      
+      setPayments(typedData);
     } catch (error) {
       console.error('Error fetching shop payments:', error);
       toast.error('Failed to fetch payment data');

@@ -1,7 +1,6 @@
-
 import { Outlet, useLocation, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { LogOut, BarChart3, Truck, ClipboardList, Store, Package } from "lucide-react";
+import { LogOut, BarChart3, Truck, ClipboardList, Store, Package, ShoppingBag, CreditCard, TrendingUp, Calendar } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import AdminNotifications from "@/components/notifications/AdminNotifications";
 
