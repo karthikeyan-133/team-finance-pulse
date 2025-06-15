@@ -1,9 +1,17 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import type { Shop } from '@/types/Shop';
 
-// add fetchKey param
-export const useShops = (category?: string, fetchKey: number = 0) => {
+interface Shop {
+  id: string;
+  name: string;
+  address?: string;
+  phone?: string;
+  category: string;
+  is_active: boolean;
+}
+
+export const useShops = (category?: string) => {
   const [shops, setShops] = useState<Shop[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -21,6 +29,7 @@ export const useShops = (category?: string, fetchKey: number = 0) => {
         if (category) {
           query = query.eq('category', category);
         }
+
         const { data, error } = await query;
 
         if (error) {
@@ -28,6 +37,7 @@ export const useShops = (category?: string, fetchKey: number = 0) => {
           setError(error.message);
           return;
         }
+
         setShops(data || []);
       } catch (err) {
         console.error('Error fetching shops:', err);
@@ -38,7 +48,7 @@ export const useShops = (category?: string, fetchKey: number = 0) => {
     };
 
     fetchShops();
-  }, [category, fetchKey]); // now refetches when fetchKey changes
+  }, [category]);
 
   return { shops, loading, error };
 };

@@ -1,52 +1,31 @@
-import React, { useState, useEffect, useCallback } from 'react';
+
+import React, { useState } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useShops as useShopsBase } from '@/hooks/useShops';
+import { useShops } from '@/hooks/useShops';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Plus, Store } from 'lucide-react';
+import { Plus, Edit, Trash2, Store } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import ShopCard from '@/components/shops/ShopCard';
-import type { Shop } from '@/types/Shop';
-import ShopForm from '@/components/shops/ShopForm';
 
 const ShopManagement = () => {
-  const [fetchKey, setFetchKey] = useState(0);
-  const { shops, loading, error } = useShopsBase(undefined, fetchKey);
+  const { shops, loading, error } = useShops();
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [editingShop, setEditingShop] = useState<Shop | null>(null);
-  const [refreshing, setRefreshing] = useState(false);
-
-  // Use only fetchKey to trigger re-query. Always clear edit state FIRST.
-  const refreshShops = useCallback(async (reason?: string) => {
-    setRefreshing(true);
-    setEditingShop(null);
-    setIsAddDialogOpen(false);
-    setFetchKey((k) => k + 1);
-    setRefreshing(false);
-    toast.success("Shop list refreshed [" + (reason || "") + "]");
-  }, []);
-  
-  useEffect(() => {
-    refreshShops('On page mount');
-    // eslint-disable-next-line
-  }, []);
+  const [editingShop, setEditingShop] = useState<any>(null);
 
   const categories = ['Food', 'Grocery', 'Vegetables', 'Meat'];
 
-  const filteredShops = React.useMemo(() => {
-    const list = (shops || []).filter(shop => {
-      return selectedCategory === 'all' || shop.category === selectedCategory;
-    });
-    return list.sort((a, b) => (a.name > b.name ? 1 : -1));
-  }, [shops, selectedCategory]);
+  const filteredShops = shops.filter(shop => {
+    const categoryMatch = selectedCategory === 'all' || shop.category === selectedCategory;
+    return categoryMatch;
+  });
 
-  // Debug: log values to ensure UI renders
-  console.log("ShopManagement: shops =", shops);
-  console.log("ShopManagement: filteredShops =", filteredShops);
-
-  if ((loading || refreshing) && !shops?.length) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -69,20 +48,16 @@ const ShopManagement = () => {
 
   return (
     <div className="container mx-auto py-6 px-4">
-      <div className="flex justify-between items-center mb-6 border-4 border-solid border-amber-500 rounded bg-yellow-100 shadow-md">
+      <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-3xl font-extrabold text-purple-900 drop-shadow bg-green-100 p-2">
-            [DEBUG UI] Shop Management
-          </h1>
+          <h1 className="text-3xl font-bold text-gray-900">Shop Management</h1>
           <p className="text-gray-600">Manage your shops and their information</p>
         </div>
-        <Dialog open={isAddDialogOpen} onOpenChange={(open) => {
-            setIsAddDialogOpen(open);
-            if (!open) refreshShops('Shop add dialog closed');
-          }}>
+        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="text-2xl bg-green-400 text-white border-4 border-green-700 px-6 py-2 rounded-lg shadow-lg font-extrabold" data-testid="add-shop-btn">
-              [ADD SHOP BUTTON - VISIBLE] <Plus className="h-6 w-6 ml-2" />
+            <Button>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Shop
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-2xl">
@@ -93,16 +68,17 @@ const ShopManagement = () => {
               </DialogDescription>
             </DialogHeader>
             <ShopForm 
-              onSuccess={async () => {
+              onSuccess={() => {
                 setIsAddDialogOpen(false);
-                await refreshShops('Shop added');
+                window.location.reload();
               }}
             />
           </DialogContent>
         </Dialog>
       </div>
 
-      <div className="flex gap-4 mb-6 border-4 border-orange-500 p-2 bg-orange-100 rounded">
+      {/* Filters */}
+      <div className="flex gap-4 mb-6">
         <div>
           <Label htmlFor="category-filter">Filter by Category</Label>
           <Select value={selectedCategory} onValueChange={setSelectedCategory}>
@@ -119,23 +95,15 @@ const ShopManagement = () => {
         </div>
       </div>
 
-      <div className="border-8 border-purple-700 rounded-lg p-4 bg-purple-100 shadow-xl">
-        <p className="text-3xl font-extrabold mb-4 text-purple-700">
-          [DEBUG ALWAYS] Shop Card Grid, count={filteredShops.length}
-        </p>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8" key={fetchKey}>
-          {filteredShops.map(shop => (
-            <ShopCard 
-              key={`${shop.id}-${shop.updated_at ?? ''}`}
-              shop={shop}
-              onEdit={() => setEditingShop(shop)}
-              onDeleteSuccess={async () => {
-                await refreshShops('Shop deleted');
-              }}
-              debug={true}
-            />
-          ))}
-        </div>
+      {/* Shops Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {filteredShops.map(shop => (
+          <ShopCard 
+            key={shop.id} 
+            shop={shop} 
+            onEdit={setEditingShop}
+          />
+        ))}
       </div>
 
       {filteredShops.length === 0 && (
@@ -146,13 +114,9 @@ const ShopManagement = () => {
         </div>
       )}
 
+      {/* Edit Dialog */}
       {editingShop && (
-        <Dialog open={!!editingShop} onOpenChange={async (open) => {
-            if (!open) {
-              setEditingShop(null);
-              await refreshShops('Shop edited');
-            }
-          }}>
+        <Dialog open={!!editingShop} onOpenChange={() => setEditingShop(null)}>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>Edit Shop</DialogTitle>
@@ -162,15 +126,189 @@ const ShopManagement = () => {
             </DialogHeader>
             <ShopForm 
               shop={editingShop}
-              onSuccess={async () => {
+              onSuccess={() => {
                 setEditingShop(null);
-                await refreshShops('Shop edited');
+                window.location.reload();
               }}
             />
           </DialogContent>
         </Dialog>
       )}
     </div>
+  );
+};
+
+const ShopCard = ({ shop, onEdit }: any) => {
+  const handleDelete = async () => {
+    if (window.confirm('Are you sure you want to delete this shop?')) {
+      try {
+        const { error } = await supabase
+          .from('shops')
+          .delete()
+          .eq('id', shop.id);
+
+        if (error) {
+          toast.error('Failed to delete shop');
+          return;
+        }
+
+        toast.success('Shop deleted successfully');
+        window.location.reload();
+      } catch (error) {
+        toast.error('Error deleting shop');
+      }
+    }
+  };
+
+  return (
+    <Card className="overflow-hidden">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-lg line-clamp-1">{shop.name}</CardTitle>
+        <CardDescription className="line-clamp-2">
+          {shop.address || 'No address provided'}
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-2">
+          <div className="text-sm text-gray-500">
+            <p>Category: {shop.category || 'Not specified'}</p>
+            {shop.phone && <p>Phone: {shop.phone}</p>}
+          </div>
+          <div className="flex items-center justify-between">
+            <span className={`px-2 py-1 rounded-full text-xs ${
+              shop.is_active 
+                ? 'bg-green-100 text-green-800' 
+                : 'bg-red-100 text-red-800'
+            }`}>
+              {shop.is_active ? 'Active' : 'Inactive'}
+            </span>
+          </div>
+          <div className="flex gap-2 pt-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => onEdit(shop)}
+              className="flex-1"
+            >
+              <Edit className="h-3 w-3 mr-1" />
+              Edit
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleDelete}
+              className="text-red-600 hover:text-red-700"
+            >
+              <Trash2 className="h-3 w-3" />
+            </Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+const ShopForm = ({ shop, onSuccess }: any) => {
+  const [formData, setFormData] = useState({
+    name: shop?.name || '',
+    address: shop?.address || '',
+    phone: shop?.phone || '',
+    category: shop?.category || '',
+    is_active: shop?.is_active ?? true
+  });
+
+  const categories = ['Food', 'Grocery', 'Vegetables', 'Meat'];
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    try {
+      let result;
+      if (shop) {
+        result = await supabase
+          .from('shops')
+          .update(formData)
+          .eq('id', shop.id);
+      } else {
+        result = await supabase
+          .from('shops')
+          .insert([formData]);
+      }
+
+      if (result.error) {
+        toast.error(`Failed to ${shop ? 'update' : 'create'} shop`);
+        return;
+      }
+
+      toast.success(`Shop ${shop ? 'updated' : 'created'} successfully`);
+      onSuccess();
+    } catch (error) {
+      toast.error('Error saving shop');
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label htmlFor="name">Shop Name</Label>
+          <Input
+            id="name"
+            value={formData.name}
+            onChange={(e) => setFormData({...formData, name: e.target.value})}
+            required
+          />
+        </div>
+        <div>
+          <Label htmlFor="phone">Phone Number</Label>
+          <Input
+            id="phone"
+            value={formData.phone}
+            onChange={(e) => setFormData({...formData, phone: e.target.value})}
+          />
+        </div>
+      </div>
+
+      <div>
+        <Label htmlFor="address">Address</Label>
+        <Textarea
+          id="address"
+          value={formData.address}
+          onChange={(e) => setFormData({...formData, address: e.target.value})}
+          rows={3}
+        />
+      </div>
+
+      <div>
+        <Label htmlFor="category">Category</Label>
+        <Select value={formData.category} onValueChange={(value) => setFormData({...formData, category: value})}>
+          <SelectTrigger>
+            <SelectValue placeholder="Select category" />
+          </SelectTrigger>
+          <SelectContent>
+            {categories.map(category => (
+              <SelectItem key={category} value={category}>{category}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="flex items-center space-x-2">
+        <input
+          type="checkbox"
+          id="is_active"
+          checked={formData.is_active}
+          onChange={(e) => setFormData({...formData, is_active: e.target.checked})}
+        />
+        <Label htmlFor="is_active">Shop is active</Label>
+      </div>
+
+      <div className="flex gap-2 pt-4">
+        <Button type="submit" className="flex-1">
+          {shop ? 'Update Shop' : 'Add Shop'}
+        </Button>
+      </div>
+    </form>
   );
 };
 

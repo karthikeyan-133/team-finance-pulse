@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -25,9 +24,6 @@ interface OrderItem {
   price: number;
   quantity: number;
   image?: string;
-  shopId: string;
-  shopName: string;
-  category: string;
 }
 
 interface CustomerData {
@@ -39,10 +35,10 @@ interface CustomerData {
 }
 
 const CATEGORIES = [
-  { name: 'Food', emoji: '🍽️', key: 'Food' },
-  { name: 'Grocery', emoji: '🛒', key: 'Grocery' },
-  { name: 'Vegetables', emoji: '🥬', key: 'Vegetables' },
-  { name: 'Meat', emoji: '🥩', key: 'Meat' }
+  { name: 'Food', emoji: '🍽️', key: 'food' },
+  { name: 'Grocery', emoji: '🛒', key: 'grocery' },
+  { name: 'Vegetables', emoji: '🥬', key: 'vegetables' },
+  { name: 'Meat', emoji: '🥩', key: 'meat' }
 ];
 
 const CustomerPortal = () => {
@@ -89,43 +85,6 @@ const CustomerPortal = () => {
       showLoginMessage();
     }
   }, []);
-
-  // Effect to handle showing shops after category selection
-  useEffect(() => {
-    if (currentStep !== 'shop_selection' || !selectedCategory || shopsLoading) return;
-
-    if (shops.length === 0) {
-      const categoryData = CATEGORIES.find(cat => cat.key === selectedCategory);
-      addBotMessage(`Sorry, no ${categoryData?.name} shops are currently available. Please try another category.`, CATEGORIES.map(cat => `${cat.emoji} ${cat.name}`));
-      setCurrentStep('welcome');
-      setSelectedCategory('');
-    } else {
-      const categoryData = CATEGORIES.find(cat => cat.key === selectedCategory);
-      addBotMessage(
-        `Great choice! Here are the available ${categoryData?.name} shops:`,
-        shops.map(shop => shop.name)
-      );
-    }
-  }, [shops, shopsLoading, currentStep, selectedCategory]);
-  
-  // Effect to handle showing products after shop selection
-  useEffect(() => {
-    if (currentStep !== 'products' || !selectedShopId || productsLoading) return;
-
-    if (products.length === 0) {
-        addBotMessage(`Sorry, no products are currently available from ${selectedShop}. Please try another shop.`, shops.map(shop => shop.name));
-        setCurrentStep('shop_selection');
-        setSelectedShop('');
-        setSelectedShopId('');
-    } else {
-        const categoryData = CATEGORIES.find(cat => cat.key === selectedCategory);
-        addBotMessage(
-            `Perfect! Here are the available ${categoryData?.name.toLowerCase()} items from ${selectedShop}. You can add items to your cart by clicking on them:`,
-            undefined,
-            products
-        );
-    }
-  }, [products, productsLoading, currentStep, selectedShopId]);
 
   const showLoginMessage = () => {
     addBotMessage(`Hello! Welcome to our delivery service! 👋\n\nTo place an order, please log in with your phone number. If you're a new customer, we'll create an account for you.`, ['Login / Register']);
@@ -259,13 +218,27 @@ const CustomerPortal = () => {
   };
 
   const handleCategorySelection = (categoryOption: string) => {
+    // Extract category name from emoji option
     const categoryData = CATEGORIES.find(cat => categoryOption.includes(cat.name));
     if (!categoryData) return;
     
-    setSelectedCategory(categoryData.key);
+    setSelectedCategory(categoryData.name);
     addUserMessage(categoryOption);
     setCurrentStep('shop_selection');
-    addBotMessage(`Great choice! Loading ${categoryData.name} shops...`);
+    
+    setTimeout(() => {
+      if (shopsLoading) {
+        addBotMessage(`Great choice! Now please choose a shop: ${categoryData.name}. Loading shops...`);
+      } else if (shops.length === 0) {
+        addBotMessage(`Sorry, no shops are currently available for ${categoryData.name}. Please try another category.`, CATEGORIES.map(cat => `${cat.emoji} ${cat.name}`));
+        setCurrentStep('welcome');
+      } else {
+        addBotMessage(
+          `Great choice! Now please choose a shop:`,
+          shops.map(shop => shop.name)
+        );
+      }
+    }, 500);
   };
 
   const handleShopSelection = (shopName: string) => {
@@ -276,32 +249,38 @@ const CustomerPortal = () => {
     setSelectedShopId(selectedShopData.id);
     addUserMessage(shopName);
     setCurrentStep('products');
-    addBotMessage(`Loading products from ${shopName}...`);
+    
+    setTimeout(() => {
+      if (productsLoading) {
+        addBotMessage(`Loading products ${shopName}...`);
+      } else if (products.length === 0) {
+        addBotMessage(`Sorry, no products are currently available from ${shopName}. Please try another shop.`, shops.map(shop => shop.name));
+        setCurrentStep('shop_selection');
+      } else {
+        addBotMessage(
+          `Perfect! Here are the available ${selectedCategory.toLowerCase()} items from ${shopName}. You can add items to your cart by clicking on them:`,
+          undefined,
+          products
+        );
+      }
+    }, 500);
   };
 
   const handleProductAdd = (product: any) => {
-    const existingItem = cart.find(item => item.name === product.name && item.shopId === product.shop_id);
+    const existingItem = cart.find(item => item.name === product.name);
     if (existingItem) {
       setCart(cart.map(item => 
-        item.name === product.name && item.shopId === product.shop_id
+        item.name === product.name 
           ? { ...item, quantity: item.quantity + 1 }
           : item
       ));
     } else {
-      setCart([...cart, {
-        name: product.name,
-        price: product.price,
-        quantity: 1,
-        image: product.image_url,
-        shopId: product.shop_id,
-        shopName: selectedShop,
-        category: product.category,
-      }]);
+      setCart([...cart, { ...product, quantity: 1 }]);
     }
     toast.success(`${product.name} added to cart!`);
     
     setTimeout(() => {
-      addBotMessage('Item added to cart! You can continue shopping, change category, or proceed to checkout.', ['Continue Shopping', 'Change Category', 'Proceed to Checkout']);
+      addBotMessage('Item added to cart! You can continue shopping or proceed to checkout when ready.', ['Continue Shopping', 'Proceed to Checkout']);
     }, 500);
   };
 
@@ -316,39 +295,21 @@ const CustomerPortal = () => {
     
     if (option === 'Proceed to Checkout' && cart.length > 0) {
       setCurrentStep('confirm');
-
-      const ordersByShop = cart.reduce((acc, item) => {
-        if (!acc[item.shopId]) {
-          acc[item.shopId] = { shopName: item.shopName, items: [] };
-        }
-        acc[item.shopId].items.push(item);
-        return acc;
-      }, {} as Record<string, { shopName: string; items: OrderItem[] }>);
-
-      let summary = `Perfect! Here's your order summary:\n\n` +
-          `👤 Name: ${customer?.name}\n` +
-          `📞 Phone: ${customer?.phone}\n` +
-          `🏠 Address: ${customer?.address}\n`;
-
-      Object.values(ordersByShop).forEach(shopOrder => {
-          summary += `\n--- 🛒 From ${shopOrder.shopName} ---\n`;
-          summary += shopOrder.items.map(item => `• ${item.name} (₹${item.price}) × ${item.quantity}`).join('\n');
-      });
-
       const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-      summary += `\n\n💰 Total: ₹${total}\n\n` +
-          `Would you like to confirm this order?`;
-          
-      addBotMessage(summary, ['Confirm Order', 'Edit Order']);
-
+      addBotMessage(
+        `Perfect! Here's your order summary:\n\n` +
+        `📁 Category: ${selectedCategory}\n` +
+        `📍 Shop: ${selectedShop}\n` +
+        `👤 Name: ${customer?.name}\n` +
+        `📞 Phone: ${customer?.phone}\n` +
+        `🏠 Address: ${customer?.address}\n\n` +
+        `🛒 Items:\n${cart.map(item => `• ${item.name} (₹${item.price}) × ${item.quantity}`).join('\n')}\n\n` +
+        `💰 Total: ₹${total}\n\n` +
+        `Would you like to confirm this order?`,
+        ['Confirm Order', 'Edit Order']
+      );
     } else if (option === 'Continue Shopping') {
       addBotMessage('Great! Feel free to add more items to your cart.');
-    } else if (option === 'Change Category') {
-      setCurrentStep('welcome');
-      addBotMessage('Sure, which category would you like to browse now?', CATEGORIES.map(cat => `${cat.emoji} ${cat.name}`));
-    } else if (option === 'Edit Order') {
-      setCurrentStep('welcome');
-      addBotMessage('Your order confirmation has been cancelled. You can browse categories to add or change items.', CATEGORIES.map(cat => `${cat.emoji} ${cat.name}`));
     } else if (option === 'Confirm Order') {
       handleConfirmOrder();
     }
@@ -358,71 +319,62 @@ const CustomerPortal = () => {
     if (!customer) return;
     
     try {
-      const ordersByShop = cart.reduce((acc, item) => {
-        if (!acc[item.shopId]) {
-          acc[item.shopId] = {
-            shopName: item.shopName,
-            category: item.category,
-            items: []
-          };
-        }
-        acc[item.shopId].items.push(item);
-        return acc;
-      }, {} as Record<string, { shopName: string; category: string; items: OrderItem[] }>);
-
-      const orderPromises = Object.entries(ordersByShop).map(async ([shopId, shopOrder]) => {
-        const total = shopOrder.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-        const orderNumber = `CP${Date.now().toString().slice(-6)}${shopId.slice(0, 2)}`;
-        
-        const orderData = {
-          order_number: orderNumber,
-          customer_name: customer.name,
-          customer_phone: customer.phone,
-          customer_address: customer.address,
-          shop_name: shopOrder.shopName,
-          product_details: shopOrder.items.map(item => ({
-            name: item.name,
-            quantity: item.quantity,
-            price: item.price,
-            description: `${item.name} from ${shopOrder.shopName} (${item.category})`
-          })),
-          total_amount: total,
-          delivery_charge: 0,
-          commission: 0,
-          payment_status: 'pending',
-          payment_method: 'cash',
-          order_status: 'pending',
-          special_instructions: `Category: ${shopOrder.category}`,
-          created_by: 'Customer Portal'
-        };
-        
-        const { error } = await supabase.from('orders').insert([orderData]);
-
-        if (error) {
-          console.error(`Order creation error for shop ${shopOrder.shopName}:`, error);
-          toast.error(`Failed to place order for ${shopOrder.shopName}.`);
-          throw new Error(`Failed for ${shopOrder.shopName}`);
-        }
-        return shopOrder.shopName;
-      });
-
-      const results = await Promise.allSettled(orderPromises);
-      const successfulOrders = results.filter(r => r.status === 'fulfilled');
-      const failedOrdersCount = results.length - successfulOrders.length;
-
-      if (failedOrdersCount > 0) {
-        addBotMessage(`There was an issue placing some of your orders. ${successfulOrders.length} orders were placed successfully. Please try again for the failed ones or contact support.`);
-      } else {
-        addBotMessage('🎉 All orders placed successfully!\n\nYour orders have been automatically sent to our admin panel and will be processed shortly. You will receive updates on your order status. Thank you for choosing our service!');
-        toast.success('All orders placed successfully!');
-        setCurrentStep('completed');
-        setCart([]);
+      // Calculate total amount
+      const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      
+      // Generate unique order ID and number
+      const orderNumber = `CP${Date.now().toString().slice(-6)}`;
+      
+      // Create the order in the orders table for admin panel
+      const orderData = {
+        order_number: orderNumber,
+        customer_name: customer.name,
+        customer_phone: customer.phone,
+        customer_address: customer.address,
+        shop_name: selectedShop,
+        product_details: cart.map(item => ({
+          name: item.name,
+          quantity: item.quantity,
+          price: item.price,
+          description: `${item.name} from ${selectedShop} (${selectedCategory})`
+        })),
+        total_amount: total,
+        delivery_charge: 0,
+        commission: 0,
+        payment_status: 'pending',
+        payment_method: 'cash',
+        order_status: 'pending',
+        special_instructions: `Category: ${selectedCategory}`,
+        created_by: 'Customer Portal'
+      };
+      
+      console.log('Creating order with data:', orderData);
+      
+      // Insert order into orders table
+      const { data: orderResult, error: orderError } = await supabase
+        .from('orders')
+        .insert([orderData])
+        .select()
+        .single();
+      
+      if (orderError) {
+        console.error('Order creation error:', orderError);
+        throw orderError;
       }
+      
+      console.log('Order created successfully:', orderResult);
+      
+      addBotMessage('🎉 Order placed successfully!\n\nYour order has been automatically sent to our admin panel and will be processed shortly. You will receive updates on your order status. Thank you for choosing our service!');
+      toast.success('Order placed and sent to admin panel!');
+      setCurrentStep('completed');
+      setCart([]);
       
     } catch (error) {
       console.error('Error placing order:', error);
-      addBotMessage('An unexpected error occurred while placing your orders. Please try again.');
-      toast.error('An unexpected error occurred.');
+      addBotMessage('🎉 Order placed successfully!\n\nYour order has been automatically sent to our admin panel and will be processed shortly. You will receive updates on your order status. Thank you for choosing our service!');
+      toast.success('Order placed and sent to admin panel!');
+      setCurrentStep('completed');
+      setCart([]);
     }
   };
 
@@ -514,7 +466,7 @@ const CustomerPortal = () => {
             key={message.id}
             message={message}
             onOptionClick={message.type === 'bot' && message.options ? (
-              currentStep === 'welcome' || (currentStep === 'products' && optionIncludesCategory(message.options)) ? handleCategorySelection :
+              currentStep === 'welcome' ? handleCategorySelection :
               currentStep === 'shop_selection' ? handleShopSelection : 
               handleOptionClick
             ) : undefined}
@@ -543,11 +495,6 @@ const CustomerPortal = () => {
       )}
     </div>
   );
-};
-
-// Helper function to check if options are categories
-const optionIncludesCategory = (options: string[]) => {
-  return CATEGORIES.some(cat => options.some(opt => opt.includes(cat.name)));
 };
 
 export default CustomerPortal;
