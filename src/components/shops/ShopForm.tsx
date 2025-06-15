@@ -31,11 +31,14 @@ const ShopForm = ({ shop, onSuccess }: ShopFormProps) => {
     is_active: shop?.is_active ?? true
   });
 
+  const [loading, setLoading] = useState(false);
+
   const categories = ['Food', 'Grocery', 'Vegetables', 'Meat'];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+    setLoading(true);
+
     try {
       let result;
       if (shop) {
@@ -51,16 +54,21 @@ const ShopForm = ({ shop, onSuccess }: ShopFormProps) => {
           .select('*');
       }
 
+      console.log('Supabase Shop Mutation:', result);
+
       if (result.error) {
         toast.error(`Failed to ${shop ? 'update' : 'create'} shop: ${result.error.message}`);
+        setLoading(false);
         return;
       }
 
       toast.success(`Shop ${shop ? 'updated' : 'created'} successfully`);
+      setLoading(false);
       if (typeof onSuccess === "function") onSuccess();
 
     } catch (error: any) {
       toast.error(`Error saving shop: ${error.message}`);
+      setLoading(false);
     }
   };
 
@@ -121,7 +129,7 @@ const ShopForm = ({ shop, onSuccess }: ShopFormProps) => {
       </div>
 
       <div className="flex gap-2 pt-4">
-        <Button type="submit" className="flex-1">
+        <Button type="submit" className="flex-1" disabled={loading}>
           {shop ? 'Update Shop' : 'Add Shop'}
         </Button>
       </div>

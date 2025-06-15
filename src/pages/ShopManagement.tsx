@@ -29,6 +29,7 @@ const ShopManagement = () => {
 
   const refreshShops = useCallback(async () => {
     const { data, error } = await supabase.from('shops').select('*').order('name');
+    console.log("Refreshing shops. Data:", data, "Error:", error);
     if (error) {
       toast.error('Failed to fetch shops');
       return;

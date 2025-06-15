@@ -41,11 +41,14 @@ const ProductForm = ({ product, onSuccess, shops }: ProductFormProps) => {
     is_available: product?.is_available ?? true
   });
 
+  const [loading, setLoading] = useState(false);
+
   const categories = ['Food', 'Grocery', 'Vegetables', 'Meat'];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+    setLoading(true);
+
     try {
       const data = {
         ...formData,
@@ -64,15 +67,20 @@ const ProductForm = ({ product, onSuccess, shops }: ProductFormProps) => {
           .insert([data]);
       }
 
+      console.log('Supabase Product Mutation:', result);
+
       if (result.error) {
         toast.error(`Failed to ${product ? 'update' : 'create'} product: ${result.error.message}`);
+        setLoading(false);
         return;
       }
 
       toast.success(`Product ${product ? 'updated' : 'created'} successfully`);
+      setLoading(false);
       if (typeof onSuccess === "function") onSuccess();
     } catch (error: any) {
       toast.error(`Error saving product: ${error.message}`);
+      setLoading(false);
     }
   };
 
@@ -162,7 +170,7 @@ const ProductForm = ({ product, onSuccess, shops }: ProductFormProps) => {
       </div>
 
       <div className="flex gap-2 pt-4">
-        <Button type="submit" className="flex-1">
+        <Button type="submit" className="flex-1" disabled={loading}>
           {product ? 'Update Product' : 'Add Product'}
         </Button>
       </div>

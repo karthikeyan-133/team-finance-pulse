@@ -44,6 +44,7 @@ const ProductManagement = () => {
 
   const refreshProducts = useCallback(async () => {
     const { data, error } = await supabase.from('products').select('*').order('name');
+    console.log("Refreshing products. Data:", data, "Error:", error);
     if (error) {
       toast.error('Failed to fetch products');
       return;
@@ -53,6 +54,7 @@ const ProductManagement = () => {
 
   const refreshShops = useCallback(async () => {
     const { data, error } = await supabase.from('shops').select('*').order('name');
+    console.log("Refreshing shops. Data:", data, "Error:", error);
     if (error) {
       toast.error('Failed to fetch shops');
       return;
@@ -205,3 +207,5 @@ const ProductManagement = () => {
 };
 
 export default ProductManagement;
+
+// Reminder: This file is long, consider refactoring into smaller files if more changes are needed!
