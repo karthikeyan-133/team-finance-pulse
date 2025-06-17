@@ -16,7 +16,7 @@ const mockUsers: User[] = [
   {
     id: '1',
     name: 'KNS13',
-    email: 'karthikeyan.kn13@.com',
+    email: 'kns13@slickerconnect.com',
     role: 'admin',
     avatar: '/placeholder.svg',
   },
@@ -39,7 +39,7 @@ const mockUsers: User[] = [
 // User credentials mapping
 // To change passwords, modify the values below
 const userCredentials: Record<string, string> = {
-  'karthikeyan.kn13@.com': 'KNS1313',
+  'kns13@slickerconnect.com': 'KNS1313',
   'sachu@slickerconnect.com': 'sachu123',
   'jiju@slickerconnect.com': 'jiju123',
 };
