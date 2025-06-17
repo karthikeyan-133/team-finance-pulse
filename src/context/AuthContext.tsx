@@ -15,23 +15,23 @@ interface AuthContextType {
 const mockUsers: User[] = [
   {
     id: '1',
-    name: 'Admin User',
-    email: 'admin@slickerconnect.com',
+    name: 'KN13',
+    email: 'karthikeyan.kn13@.com',
     role: 'admin',
     avatar: '/placeholder.svg',
   },
   {
     id: '2',
-    name: 'Manager User',
-    email: 'manager@slickerconnect.com',
-    role: 'manager',
+    name: 'Sachu',
+    email: 'sachu@slickerconnect.com',
+    role: 'admin',
     avatar: '/placeholder.svg',
   },
   {
     id: '3',
-    name: 'Team Member',
-    email: 'team@slickerconnect.com',
-    role: 'team_member',
+    name: 'Jiju',
+    email: 'jiju@slickerconnect.com',
+    role: 'admin',
     avatar: '/placeholder.svg',
   },
 ];
@@ -39,9 +39,9 @@ const mockUsers: User[] = [
 // User credentials mapping
 // To change passwords, modify the values below
 const userCredentials: Record<string, string> = {
-  'admin@slickerconnect.com': 'admin123',
-  'manager@slickerconnect.com': 'manager123',
-  'team@slickerconnect.com': 'team123',
+  'karthikeyan.kn13@.com': 'KNS1313',
+  'sachu@slickerconnect.com': 'sachu123',
+  'jiju@slickerconnect.com': 'jiju123',
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
