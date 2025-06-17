@@ -15,7 +15,7 @@ interface AuthContextType {
 const mockUsers: User[] = [
   {
     id: '1',
-    name: 'KN13',
+    name: 'KNS13',
     email: 'karthikeyan.kn13@.com',
     role: 'admin',
     avatar: '/placeholder.svg',
