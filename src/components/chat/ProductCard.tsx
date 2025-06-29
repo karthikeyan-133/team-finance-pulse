@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
+import { Plus, IndianRupee } from 'lucide-react';
 
 interface Product {
   id: number;
@@ -42,7 +42,10 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onAdd }) => {
           <p className="text-xs text-gray-600 mb-2 line-clamp-2">{product.description}</p>
           
           <div className="flex items-center justify-between">
-            <span className="font-bold text-green-600">₹{product.price}</span>
+            <div className="flex items-center text-green-600 font-bold">
+              <IndianRupee className="h-3 w-3 mr-1" />
+              <span>{product.price}</span>
+            </div>
             <Button size="sm" onClick={onAdd} className="h-7 w-7 p-0">
               <Plus className="h-3 w-3" />
             </Button>
