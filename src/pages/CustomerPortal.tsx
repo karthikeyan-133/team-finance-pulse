@@ -245,6 +245,7 @@ const CustomerPortal = () => {
     const selectedShopData = shops.find(shop => shop.name === shopName);
     if (!selectedShopData) return;
 
+    console.log('Selected shop:', selectedShopData);
     setSelectedShop(shopName);
     setSelectedShopId(selectedShopData.id);
     addUserMessage(shopName);
@@ -252,9 +253,9 @@ const CustomerPortal = () => {
     
     setTimeout(() => {
       if (productsLoading) {
-        addBotMessage(`Loading products ${shopName}...`);
+        addBotMessage(`Loading products from ${shopName}...`);
       } else if (products.length === 0) {
-        addBotMessage(`Sorry, no products are currently available from ${shopName}. Please try another shop.`, shops.map(shop => shop.name));
+        addBotMessage(`Sorry, no products are currently available from ${shopName} in the ${selectedCategory} category. Please try another shop.`, shops.map(shop => shop.name));
         setCurrentStep('shop_selection');
       } else {
         addBotMessage(

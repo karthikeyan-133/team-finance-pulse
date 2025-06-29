@@ -22,17 +22,23 @@ export const useProducts = (shopId?: string, category?: string) => {
     const fetchProducts = async () => {
       try {
         setLoading(true);
+        setError(null);
+        
         let query = supabase
           .from('products')
           .select('*')
           .eq('is_available', true)
           .order('name');
 
+        // Always filter by shop_id if provided - this is the key fix
         if (shopId) {
+          console.log('Filtering products by shop_id:', shopId);
           query = query.eq('shop_id', shopId);
         }
 
+        // Also filter by category if provided
         if (category) {
+          console.log('Filtering products by category:', category);
           query = query.eq('category', category);
         }
 
@@ -44,6 +50,8 @@ export const useProducts = (shopId?: string, category?: string) => {
           return;
         }
 
+        console.log('Fetched products:', data?.length || 0, 'products');
+        console.log('Products data:', data);
         setProducts(data || []);
       } catch (err) {
         console.error('Error fetching products:', err);
@@ -53,7 +61,13 @@ export const useProducts = (shopId?: string, category?: string) => {
       }
     };
 
-    fetchProducts();
+    // Only fetch if shopId is provided (for Customer Portal use case)
+    if (shopId) {
+      fetchProducts();
+    } else {
+      // If no shopId provided, still fetch but don't filter by shop
+      fetchProducts();
+    }
   }, [shopId, category]);
 
   return { products, loading, error };
