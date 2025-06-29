@@ -247,24 +247,41 @@ const CustomerPortal = () => {
 
     console.log('Selected shop:', selectedShopData);
     setSelectedShop(shopName);
+    
+    // Update the shop ID and then handle the products display
     setSelectedShopId(selectedShopData.id);
     addUserMessage(shopName);
     setCurrentStep('products');
     
+    // Add a longer delay to ensure state updates properly
     setTimeout(() => {
-      if (productsLoading) {
-        addBotMessage(`Loading products from ${shopName}...`);
-      } else if (products.length === 0) {
+      // Force a re-fetch of products with the new shop ID
+      handleProductsDisplay(selectedShopData.id, shopName);
+    }, 1000);
+  };
+
+  const handleProductsDisplay = (shopId: string, shopName: string) => {
+    // This function will be called after the shop ID is set
+    console.log('Displaying products for shop ID:', shopId);
+    
+    if (productsLoading) {
+      addBotMessage(`Loading products from ${shopName}...`);
+    } else {
+      // Filter products by the specific shop ID
+      const shopProducts = products.filter(product => product.shop_id === shopId);
+      console.log('Filtered products for shop:', shopProducts);
+      
+      if (shopProducts.length === 0) {
         addBotMessage(`Sorry, no products are currently available from ${shopName} in the ${selectedCategory} category. Please try another shop.`, shops.map(shop => shop.name));
         setCurrentStep('shop_selection');
       } else {
         addBotMessage(
           `Perfect! Here are the available ${selectedCategory.toLowerCase()} items from ${shopName}. You can add items to your cart by clicking on them:`,
           undefined,
-          products
+          shopProducts
         );
       }
-    }, 500);
+    }
   };
 
   const handleProductAdd = (product: any) => {
