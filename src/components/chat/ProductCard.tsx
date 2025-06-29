@@ -9,7 +9,7 @@ interface Product {
   name: string;
   price: number;
   description: string;
-  image?: string;
+  image_url?: string; // Changed from image to image_url to match database
 }
 
 interface ProductCardProps {
@@ -23,9 +23,9 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onAdd }) => {
       <CardContent className="p-0">
         {/* Product Image */}
         <div className="h-32 bg-gray-200 rounded-t-lg overflow-hidden">
-          {product.image ? (
+          {product.image_url ? (
             <img 
-              src={product.image} 
+              src={product.image_url} 
               alt={product.name}
               className="w-full h-full object-cover"
             />
