@@ -77,7 +77,7 @@ const DeliveryStatusUpdater: React.FC<DeliveryStatusUpdaterProps> = ({ order, on
     }
   };
 
-  const canPickUp = order.order_status === 'assigned';
+  const canPickUp = order.order_status === 'assigned' || order.order_status === 'ready';
   const canDeliver = order.order_status === 'picked_up';
   const isDelivered = order.order_status === 'delivered';
   const preparationInfo = getPreparationStatusInfo();
@@ -102,6 +102,11 @@ const DeliveryStatusUpdater: React.FC<DeliveryStatusUpdaterProps> = ({ order, on
                 {preparationInfo.text}
               </span>
             </div>
+            {order.prepared_at && (
+              <p className="text-sm text-gray-600 mt-1">
+                Prepared at: {new Date(order.prepared_at).toLocaleString()}
+              </p>
+            )}
             {order.ready_at && (
               <p className="text-sm text-gray-600 mt-1">
                 Ready since: {new Date(order.ready_at).toLocaleString()}

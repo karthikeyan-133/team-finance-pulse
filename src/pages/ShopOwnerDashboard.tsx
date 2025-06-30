@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -8,6 +7,7 @@ import { RefreshCw, Package, DollarSign, Clock, CheckCircle, Plus } from 'lucide
 import { useShopOwner } from '@/context/ShopOwnerContext';
 import { formatCurrency } from '@/utils/reportUtils';
 import ShopOwnerOrderForm from '@/components/forms/ShopOwnerOrderForm';
+import OrderPreparationManager from '@/components/orders/OrderPreparationManager';
 
 const ShopOwnerDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
@@ -25,18 +25,26 @@ const ShopOwnerDashboard = () => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'assigned': return 'bg-blue-100 text-blue-800';
-      case 'picked_up': return 'bg-orange-100 text-orange-800';
-      case 'delivered': return 'bg-green-100 text-green-800';
+      case 'preparing': return 'bg-orange-100 text-orange-800';
+      case 'prepared': return 'bg-blue-100 text-blue-800';
+      case 'ready': return 'bg-green-100 text-green-800';
+      case 'assigned': return 'bg-purple-100 text-purple-800';
+      case 'picked_up': return 'bg-indigo-100 text-indigo-800';
+      case 'delivered': return 'bg-emerald-100 text-emerald-800';
       case 'cancelled': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
 
   const handleOrderCreated = () => {
-    setActiveTab('orders'); // Switch to orders tab after creating
-    refreshOrders(); // Refresh the orders list
+    setActiveTab('orders');
+    refreshOrders();
   };
+
+  // Filter orders that need preparation management
+  const ordersNeedingPreparation = orders.filter(order => 
+    ['pending', 'preparing', 'prepared'].includes(order.order_status)
+  );
 
   if (!shopName) {
     return (
@@ -121,8 +129,11 @@ const ShopOwnerDashboard = () => {
 
       {/* Main Content */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="preparation">
+            Preparation ({ordersNeedingPreparation.length})
+          </TabsTrigger>
           <TabsTrigger value="create-order">
             <Plus className="w-4 h-4 mr-2" />
             Create Order
@@ -165,6 +176,38 @@ const ShopOwnerDashboard = () => {
                         </Badge>
                       </div>
                     </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="preparation" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Order Preparation</CardTitle>
+              <CardDescription>
+                Manage order preparation and mark items as ready
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <div className="text-center py-4">Loading orders...</div>
+              ) : ordersNeedingPreparation.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <Package className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                  <p>No orders need preparation</p>
+                  <p className="text-sm">All orders are ready or completed</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {ordersNeedingPreparation.map((order) => (
+                    <OrderPreparationManager
+                      key={order.id}
+                      order={order}
+                      onStatusUpdate={refreshOrders}
+                    />
                   ))}
                 </div>
               )}
