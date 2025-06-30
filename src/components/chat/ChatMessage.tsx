@@ -24,24 +24,24 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onOptionClick, onPro
   const isBot = message.type === 'bot';
 
   return (
-    <div className={`flex ${isBot ? 'justify-start' : 'justify-end'} mb-4`}>
-      <div className={`flex items-start gap-3 max-w-3xl ${isBot ? 'flex-row' : 'flex-row-reverse'}`}>
+    <div className={`flex ${isBot ? 'justify-start' : 'justify-end'} mb-2`}>
+      <div className={`flex items-start gap-2 max-w-xs ${isBot ? 'flex-row' : 'flex-row-reverse'}`}>
         {/* Avatar */}
-        <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
+        <div className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center ${
           isBot ? 'bg-blue-100' : 'bg-gray-100'
         }`}>
           {isBot ? (
-            <Bot className="h-4 w-4 text-blue-600" />
+            <Bot className="h-3 w-3 text-blue-600" />
           ) : (
-            <User className="h-4 w-4 text-gray-600" />
+            <User className="h-3 w-3 text-gray-600" />
           )}
         </div>
 
         {/* Message Content */}
         <div className={`flex flex-col ${isBot ? 'items-start' : 'items-end'}`}>
           <Card className={`${isBot ? 'bg-white' : 'bg-blue-600 text-white'} shadow-sm`}>
-            <CardContent className="p-3">
-              <div className="whitespace-pre-line text-sm">
+            <CardContent className="p-2">
+              <div className="whitespace-pre-line text-xs leading-4">
                 {message.content}
               </div>
             </CardContent>
@@ -49,14 +49,14 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onOptionClick, onPro
 
           {/* Options */}
           {isBot && message.options && (
-            <div className="flex flex-wrap gap-2 mt-2">
+            <div className="flex flex-wrap gap-1 mt-1 max-w-xs">
               {message.options.map((option, index) => (
                 <Button
                   key={index}
                   variant="outline"
                   size="sm"
                   onClick={() => onOptionClick?.(option)}
-                  className="text-xs"
+                  className="text-xs h-6 px-2 py-1"
                 >
                   {option}
                 </Button>
@@ -66,7 +66,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onOptionClick, onPro
 
           {/* Products */}
           {isBot && message.products && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3 w-full">
+            <div className="grid grid-cols-1 gap-2 mt-2 w-full max-w-xs">
               {message.products.map((product) => (
                 <ProductCard
                   key={product.id}
