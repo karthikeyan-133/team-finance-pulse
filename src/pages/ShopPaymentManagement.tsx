@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
@@ -29,8 +29,21 @@ const ShopPaymentManagement = () => {
     refreshData
   } = useShopPayments();
 
+  // Auto-refresh every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      console.log('Auto-refreshing shop payment data...');
+      refreshData();
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [refreshData]);
+
   // Get unique shop names for filter
   const uniqueShops = Array.from(new Set(payments.map(p => p.shop_name))).sort();
+
+  console.log('Shop Payment Management - Total payments:', payments.length);
+  console.log('Unique shops:', uniqueShops);
 
   // Filter payments
   const filteredPayments = payments.filter(payment => {
@@ -78,6 +91,8 @@ const ShopPaymentManagement = () => {
       p => p.shop_name === shopName && p.payment_status === 'pending'
     );
     
+    console.log(`Marking ${shopPendingPayments.length} payments as paid for shop: ${shopName}`);
+    
     for (const payment of shopPendingPayments) {
       await markAsPaid(payment.id, 'Admin');
     }
@@ -88,6 +103,8 @@ const ShopPaymentManagement = () => {
     const shopPaidPayments = payments.filter(
       p => p.shop_name === shopName && p.payment_status === 'paid'
     );
+    
+    console.log(`Marking ${shopPaidPayments.length} payments as pending for shop: ${shopName}`);
     
     for (const payment of shopPaidPayments) {
       await markAsPending(payment.id);
@@ -244,7 +261,7 @@ const ShopPaymentManagement = () => {
                   payment={payment}
                   onMarkAsPaid={markAsPaid}
                   onUpdateAmount={updatePaymentAmount}
-                  isAdmin={false}
+                  isAdmin={true}
                 />
               ))}
             </div>

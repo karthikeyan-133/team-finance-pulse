@@ -48,15 +48,28 @@ const ShopPaymentCard: React.FC<ShopPaymentCardProps> = ({
     setIsEditing(false);
   };
 
+  const getPaymentTypeLabel = (type: string) => {
+    switch (type) {
+      case 'commission':
+        return 'Commission';
+      case 'delivery_charge':
+        return 'Delivery Charge';
+      case 'other':
+        return 'Other';
+      default:
+        return type;
+    }
+  };
+
   return (
     <Card className="w-full">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <div>
           <CardTitle className="text-sm font-medium">
-            {payment.payment_type === 'commission' ? 'Commission' : 'Delivery Charge'}
+            {payment.shop_name}
           </CardTitle>
           <CardDescription>
-            {new Date(payment.payment_date).toLocaleDateString()}
+            {getPaymentTypeLabel(payment.payment_type)} • {new Date(payment.payment_date).toLocaleDateString()}
           </CardDescription>
         </div>
         <div className="flex items-center space-x-2">
@@ -66,7 +79,7 @@ const ShopPaymentCard: React.FC<ShopPaymentCardProps> = ({
         </div>
       </CardHeader>
       <CardContent>
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mb-2">
           <div className="flex items-center space-x-2">
             <DollarSign className="h-4 w-4 text-muted-foreground" />
             {isEditing && isAdmin ? (
@@ -136,6 +149,12 @@ const ShopPaymentCard: React.FC<ShopPaymentCardProps> = ({
         {payment.order_id && (
           <div className="mt-2 text-xs text-muted-foreground">
             Order ID: {payment.order_id.slice(0, 8)}...
+          </div>
+        )}
+
+        {payment.notes && (
+          <div className="mt-2 text-xs text-muted-foreground">
+            Notes: {payment.notes}
           </div>
         )}
       </CardContent>

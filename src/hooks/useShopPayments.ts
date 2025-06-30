@@ -37,24 +37,33 @@ export const useShopPayments = (shopName?: string) => {
   const fetchPayments = async () => {
     try {
       setIsLoading(true);
+      console.log('Fetching shop payments...');
       
       let query = supabase
         .from('shop_payments')
         .select('*')
-        .order('payment_date', { ascending: false });
+        .order('payment_date', { ascending: false })
+        .order('created_at', { ascending: false });
 
       if (shopName) {
-        query = query.eq('shop_name', shopName);
+        // Use ilike for case-insensitive partial matching
+        query = query.ilike('shop_name', `%${shopName}%`);
       }
 
       const { data, error } = await query;
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching shop payments:', error);
+        throw error;
+      }
+      
+      console.log('Fetched shop payments:', data?.length || 0, 'records');
       
       // Type the data properly to ensure payment_status is correctly typed
       const typedData = (data || []).map(item => ({
         ...item,
-        payment_status: item.payment_status as 'pending' | 'paid'
+        payment_status: item.payment_status as 'pending' | 'paid',
+        amount: Number(item.amount) // Ensure amount is a number
       })) as ShopPayment[];
       
       setPayments(typedData);
@@ -68,18 +77,25 @@ export const useShopPayments = (shopName?: string) => {
 
   const fetchSummaries = async () => {
     try {
+      console.log('Fetching shop payment summaries...');
+      
       let query = supabase
         .from('shop_payment_summary')
         .select('*')
         .order('payment_date', { ascending: false });
 
       if (shopName) {
-        query = query.eq('shop_name', shopName);
+        query = query.ilike('shop_name', `%${shopName}%`);
       }
 
       const { data, error } = await query;
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching payment summaries:', error);
+        throw error;
+      }
+      
+      console.log('Fetched payment summaries:', data?.length || 0, 'records');
       setSummaries(data || []);
     } catch (error) {
       console.error('Error fetching payment summaries:', error);
@@ -89,6 +105,8 @@ export const useShopPayments = (shopName?: string) => {
 
   const markAsPaid = async (paymentId: string, paidBy: string) => {
     try {
+      console.log('Marking payment as paid:', paymentId);
+      
       const { error } = await supabase
         .from('shop_payments')
         .update({
@@ -102,8 +120,7 @@ export const useShopPayments = (shopName?: string) => {
       if (error) throw error;
 
       toast.success('Payment marked as paid successfully');
-      await fetchPayments();
-      await fetchSummaries();
+      await refreshData();
     } catch (error) {
       console.error('Error marking payment as paid:', error);
       toast.error('Failed to update payment status');
@@ -112,6 +129,8 @@ export const useShopPayments = (shopName?: string) => {
 
   const markAsPending = async (paymentId: string) => {
     try {
+      console.log('Marking payment as pending:', paymentId);
+      
       const { error } = await supabase
         .from('shop_payments')
         .update({
@@ -125,8 +144,7 @@ export const useShopPayments = (shopName?: string) => {
       if (error) throw error;
 
       toast.success('Payment marked as pending successfully');
-      await fetchPayments();
-      await fetchSummaries();
+      await refreshData();
     } catch (error) {
       console.error('Error marking payment as pending:', error);
       toast.error('Failed to update payment status');
@@ -135,6 +153,8 @@ export const useShopPayments = (shopName?: string) => {
 
   const updatePaymentAmount = async (paymentId: string, newAmount: number) => {
     try {
+      console.log('Updating payment amount:', paymentId, 'to:', newAmount);
+      
       const { error } = await supabase
         .from('shop_payments')
         .update({
@@ -146,8 +166,7 @@ export const useShopPayments = (shopName?: string) => {
       if (error) throw error;
 
       toast.success('Payment amount updated successfully');
-      await fetchPayments();
-      await fetchSummaries();
+      await refreshData();
     } catch (error) {
       console.error('Error updating payment amount:', error);
       toast.error('Failed to update payment amount');
@@ -166,9 +185,37 @@ export const useShopPayments = (shopName?: string) => {
       .reduce((sum, payment) => sum + Number(payment.amount), 0);
   };
 
+  const refreshData = async () => {
+    console.log('Refreshing shop payment data...');
+    await Promise.all([
+      fetchPayments(),
+      fetchSummaries()
+    ]);
+  };
+
   useEffect(() => {
-    fetchPayments();
-    fetchSummaries();
+    refreshData();
+  }, [shopName]);
+
+  // Set up real-time subscription for shop_payments
+  useEffect(() => {
+    console.log('Setting up real-time subscription for shop_payments');
+    
+    const channel = supabase
+      .channel('shop_payments_changes')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'shop_payments' }, 
+        (payload) => {
+          console.log('Shop payment change detected:', payload);
+          refreshData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      console.log('Cleaning up shop payments subscription');
+      supabase.removeChannel(channel);
+    };
   }, [shopName]);
 
   return {
@@ -180,9 +227,6 @@ export const useShopPayments = (shopName?: string) => {
     updatePaymentAmount,
     getTotalPendingAmount,
     getTotalPaidAmount,
-    refreshData: () => {
-      fetchPayments();
-      fetchSummaries();
-    }
+    refreshData
   };
 };
