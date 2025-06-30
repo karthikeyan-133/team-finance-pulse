@@ -4,14 +4,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Edit, Check, X, DollarSign } from 'lucide-react';
+import { Edit, Check, X, DollarSign, Loader2 } from 'lucide-react';
 import { ShopPayment } from '@/hooks/useShopPayments';
 import { formatCurrency } from '@/utils/reportUtils';
+import { toast } from 'sonner';
 
 interface ShopPaymentCardProps {
   payment: ShopPayment;
-  onMarkAsPaid: (paymentId: string, paidBy: string) => void;
-  onUpdateAmount: (paymentId: string, newAmount: number) => void;
+  onMarkAsPaid: (paymentId: string, paidBy: string) => Promise<void>;
+  onUpdateAmount: (paymentId: string, newAmount: number) => Promise<void>;
   isAdmin?: boolean;
 }
 
@@ -28,19 +29,37 @@ const ShopPaymentCard: React.FC<ShopPaymentCardProps> = ({
   const handleSaveAmount = async () => {
     const newAmount = parseFloat(editAmount);
     if (isNaN(newAmount) || newAmount < 0) {
+      toast.error('Please enter a valid amount');
       return;
     }
 
-    setIsProcessing(true);
-    await onUpdateAmount(payment.id, newAmount);
-    setIsEditing(false);
-    setIsProcessing(false);
+    if (newAmount === payment.amount) {
+      setIsEditing(false);
+      return;
+    }
+
+    try {
+      setIsProcessing(true);
+      await onUpdateAmount(payment.id, newAmount);
+      setIsEditing(false);
+    } catch (error) {
+      console.error('Error updating amount:', error);
+      toast.error('Failed to update amount');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const handleMarkAsPaid = async () => {
-    setIsProcessing(true);
-    await onMarkAsPaid(payment.id, 'Admin');
-    setIsProcessing(false);
+    try {
+      setIsProcessing(true);
+      await onMarkAsPaid(payment.id, 'Admin');
+    } catch (error) {
+      console.error('Error marking as paid:', error);
+      toast.error('Failed to mark as paid');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const handleCancelEdit = () => {
@@ -91,6 +110,7 @@ const ShopPaymentCard: React.FC<ShopPaymentCardProps> = ({
                   className="w-24 h-8"
                   step="0.01"
                   min="0"
+                  disabled={isProcessing}
                 />
                 <Button
                   size="sm"
@@ -98,7 +118,7 @@ const ShopPaymentCard: React.FC<ShopPaymentCardProps> = ({
                   onClick={handleSaveAmount}
                   disabled={isProcessing}
                 >
-                  <Check className="h-3 w-3" />
+                  {isProcessing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
                 </Button>
                 <Button
                   size="sm"
@@ -135,6 +155,9 @@ const ShopPaymentCard: React.FC<ShopPaymentCardProps> = ({
               disabled={isProcessing}
               className="bg-green-600 hover:bg-green-700"
             >
+              {isProcessing ? (
+                <Loader2 className="h-3 w-3 animate-spin mr-1" />
+              ) : null}
               Mark as Paid
             </Button>
           )}

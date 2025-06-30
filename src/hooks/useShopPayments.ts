@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/components/ui/sonner';
+import { toast } from 'sonner';
 
 export interface ShopPayment {
   id: string;
@@ -46,7 +46,6 @@ export const useShopPayments = (shopName?: string) => {
         .order('created_at', { ascending: false });
 
       if (shopName) {
-        // Use ilike for case-insensitive partial matching
         query = query.ilike('shop_name', `%${shopName}%`);
       }
 
@@ -54,16 +53,16 @@ export const useShopPayments = (shopName?: string) => {
 
       if (error) {
         console.error('Error fetching shop payments:', error);
-        throw error;
+        toast.error('Failed to fetch payment data: ' + error.message);
+        return;
       }
       
       console.log('Fetched shop payments:', data?.length || 0, 'records');
       
-      // Type the data properly to ensure payment_status is correctly typed
       const typedData = (data || []).map(item => ({
         ...item,
         payment_status: item.payment_status as 'pending' | 'paid',
-        amount: Number(item.amount) // Ensure amount is a number
+        amount: Number(item.amount)
       })) as ShopPayment[];
       
       setPayments(typedData);
@@ -92,7 +91,8 @@ export const useShopPayments = (shopName?: string) => {
 
       if (error) {
         console.error('Error fetching payment summaries:', error);
-        throw error;
+        toast.error('Failed to fetch payment summaries: ' + error.message);
+        return;
       }
       
       console.log('Fetched payment summaries:', data?.length || 0, 'records');
@@ -117,7 +117,11 @@ export const useShopPayments = (shopName?: string) => {
         })
         .eq('id', paymentId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error marking payment as paid:', error);
+        toast.error('Failed to update payment status: ' + error.message);
+        return;
+      }
 
       toast.success('Payment marked as paid successfully');
       await refreshData();
@@ -141,7 +145,11 @@ export const useShopPayments = (shopName?: string) => {
         })
         .eq('id', paymentId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error marking payment as pending:', error);
+        toast.error('Failed to update payment status: ' + error.message);
+        return;
+      }
 
       toast.success('Payment marked as pending successfully');
       await refreshData();
@@ -163,7 +171,11 @@ export const useShopPayments = (shopName?: string) => {
         })
         .eq('id', paymentId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error updating payment amount:', error);
+        toast.error('Failed to update payment amount: ' + error.message);
+        return;
+      }
 
       toast.success('Payment amount updated successfully');
       await refreshData();
@@ -197,7 +209,7 @@ export const useShopPayments = (shopName?: string) => {
     refreshData();
   }, [shopName]);
 
-  // Set up real-time subscription for shop_payments
+  // Set up real-time subscription
   useEffect(() => {
     console.log('Setting up real-time subscription for shop_payments');
     
@@ -207,7 +219,7 @@ export const useShopPayments = (shopName?: string) => {
         { event: '*', schema: 'public', table: 'shop_payments' }, 
         (payload) => {
           console.log('Shop payment change detected:', payload);
-          refreshData();
+          fetchPayments();
         }
       )
       .subscribe();
