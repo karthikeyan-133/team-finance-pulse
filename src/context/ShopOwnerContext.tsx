@@ -52,6 +52,15 @@ export const ShopOwnerProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       setIsLoading(true);
       console.log('Fetching orders for shop:', shopName);
       
+      // First, let's check what shop names exist in the database
+      const { data: allOrders, error: debugError } = await supabase
+        .from('orders')
+        .select('shop_name')
+        .limit(10);
+      
+      console.log('Sample shop names in database:', allOrders?.map(o => o.shop_name));
+      
+      // Use case-insensitive search with ILIKE instead of exact match
       const { data, error } = await supabase
         .from('orders')
         .select(`
@@ -62,10 +71,12 @@ export const ShopOwnerProvider: React.FC<{ children: React.ReactNode }> = ({ chi
             phone
           )
         `)
-        .eq('shop_name', shopName)
+        .ilike('shop_name', `%${shopName}%`)
         .order('created_at', { ascending: false });
 
-      console.log('Orders query result:', { data, error });
+      console.log('Orders query with ILIKE result:', { data, error });
+      console.log('Shop name being searched:', shopName);
+      console.log('Number of orders found:', data?.length || 0);
 
       if (error) {
         console.error('Supabase error:', error);
@@ -87,8 +98,43 @@ export const ShopOwnerProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         } : undefined
       }));
 
-      console.log('Transformed orders:', transformedOrders);
+      console.log('Transformed orders for shop:', transformedOrders);
       setOrders(transformedOrders);
+      
+      if (transformedOrders.length === 0) {
+        // Try exact match as fallback
+        const { data: exactData, error: exactError } = await supabase
+          .from('orders')
+          .select(`
+            *,
+            delivery_boys (
+              id,
+              name,
+              phone
+            )
+          `)
+          .eq('shop_name', shopName)
+          .order('created_at', { ascending: false });
+          
+        console.log('Exact match fallback result:', { data: exactData, error: exactError });
+        
+        if (exactData && exactData.length > 0) {
+          const exactTransformed = exactData.map(order => ({
+            ...order,
+            product_details: (order.product_details as unknown) as ProductDetail[],
+            payment_status: order.payment_status as 'pending' | 'paid',
+            payment_method: order.payment_method as 'cash' | 'upi' | 'card' | 'other',
+            order_status: order.order_status as 'pending' | 'assigned' | 'picked_up' | 'delivered' | 'cancelled',
+            delivery_boy: order.delivery_boys ? {
+              id: order.delivery_boys.id,
+              name: order.delivery_boys.name,
+              phone: order.delivery_boys.phone
+            } : undefined
+          }));
+          setOrders(exactTransformed);
+        }
+      }
+      
     } catch (error) {
       console.error('Error fetching orders:', error);
       toast.error('Failed to fetch orders');
