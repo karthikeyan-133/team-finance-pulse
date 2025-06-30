@@ -317,7 +317,7 @@ const CustomerPortal = () => {
 
     if (option === 'Done for Now') {
       addUserMessage(option);
-      addBotMessage('Thank you for using our service! Have a great day! 😊\n\nFeel free to come back anytime to place another order.');
+      addBotMessage('Thank you for using our service! Have a great day! 😊\n\nFeel free to come back anytime to place another order.', ['Place Another Order']);
       return;
     }
 
