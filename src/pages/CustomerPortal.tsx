@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
-import { Send, MessageCircle, ShoppingCart, User, LogOut, Loader2 } from 'lucide-react';
+import { Send, MessageCircle, ShoppingCart, User, LogOut, Loader2, RotateCcw } from 'lucide-react';
 import ChatMessage from '@/components/chat/ChatMessage';
 import ProductCard from '@/components/chat/ProductCard';
 import { toast } from '@/components/ui/sonner';
@@ -309,6 +309,18 @@ const CustomerPortal = () => {
       return;
     }
 
+    if (option === 'Place Another Order') {
+      addUserMessage(option);
+      startNewOrder();
+      return;
+    }
+
+    if (option === 'Done for Now') {
+      addUserMessage(option);
+      addBotMessage('Thank you for using our service! Have a great day! 😊\n\nFeel free to come back anytime to place another order.');
+      return;
+    }
+
     addUserMessage(option);
     
     if (option === 'Proceed to Checkout' && cart.length > 0) {
@@ -382,18 +394,36 @@ const CustomerPortal = () => {
       
       console.log('Order created successfully:', orderResult);
       
-      addBotMessage('🎉 Order placed successfully!\n\nYour order has been automatically sent to our admin panel and will be processed shortly. You will receive updates on your order status. Thank you for choosing our service!');
+      addBotMessage(
+        '🎉 Order placed successfully!\n\nYour order has been automatically sent to our admin panel and will be processed shortly. You will receive updates on your order status. Thank you for choosing our service!\n\nWould you like to place another order?',
+        ['Place Another Order', 'Done for Now']
+      );
       toast.success('Order placed and sent to admin panel!');
       setCurrentStep('completed');
-      setCart([]);
       
     } catch (error) {
       console.error('Error placing order:', error);
-      addBotMessage('🎉 Order placed successfully!\n\nYour order has been automatically sent to our admin panel and will be processed shortly. You will receive updates on your order status. Thank you for choosing our service!');
+      addBotMessage(
+        '🎉 Order placed successfully!\n\nYour order has been automatically sent to our admin panel and will be processed shortly. You will receive updates on your order status. Thank you for choosing our service!\n\nWould you like to place another order?',
+        ['Place Another Order', 'Done for Now']
+      );
       toast.success('Order placed and sent to admin panel!');
       setCurrentStep('completed');
-      setCart([]);
     }
+  };
+
+  const startNewOrder = () => {
+    setMessages([]);
+    setCurrentStep('welcome');
+    setSelectedCategory('');
+    setSelectedShop('');
+    setSelectedShopId('');
+    setCart([]);
+    setInputValue('');
+    
+    // Show welcome message with category options
+    addBotMessage(`Ready for your next order! 🛒\n\nI'm here to help you place another order. Let's start by choosing a category.`, CATEGORIES.map(cat => `${cat.emoji} ${cat.name}`));
+    toast.success('Ready for your next order!');
   };
 
   const getTotalItems = () => {
@@ -425,7 +455,20 @@ const CustomerPortal = () => {
         
         {/* Cart & User Info */}
         <div className="flex items-center gap-2">
-          {cart.length > 0 && (
+          {/* New Order Button - Show when order is completed */}
+          {currentStep === 'completed' && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={startNewOrder}
+              className="h-6 px-2 text-xs"
+            >
+              <RotateCcw className="h-3 w-3 mr-1" />
+              New Order
+            </Button>
+          )}
+          
+          {cart.length > 0 && currentStep !== 'completed' && (
             <div className="flex items-center gap-1 bg-blue-100 px-2 py-1 rounded-full">
               <ShoppingCart className="h-3 w-3 text-blue-600" />
               <span className="text-xs font-medium text-blue-800">
