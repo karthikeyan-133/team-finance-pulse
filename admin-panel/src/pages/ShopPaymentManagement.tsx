@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CreditCard, Search, Filter } from 'lucide-react';
+import { CreditCard, Search, Filter, RefreshCw, DollarSign, Store } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
@@ -13,10 +13,15 @@ interface ShopPayment {
   shop_name: string;
   amount: number;
   payment_date: string;
-  payment_status: string;
-  payment_type: string;
-  notes: string;
+  payment_status: 'pending' | 'paid';
+  payment_type: 'commission' | 'delivery_charge' | 'other';
+  order_id?: string;
+  transaction_id?: string;
+  paid_by?: string;
+  paid_at?: string;
+  notes?: string;
   created_at: string;
+  updated_at: string;
 }
 
 const ShopPaymentManagement = () => {
@@ -30,6 +35,22 @@ const ShopPaymentManagement = () => {
 
   useEffect(() => {
     fetchPayments();
+    
+    // Set up real-time subscription
+    const channel = supabase
+      .channel('admin_shop_payments_changes')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'shop_payments' }, 
+        (payload) => {
+          console.log('Admin panel - Shop payment change detected:', payload);
+          fetchPayments();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   useEffect(() => {
@@ -39,18 +60,58 @@ const ShopPaymentManagement = () => {
 
   const fetchPayments = async () => {
     try {
+      console.log('Admin panel - Fetching shop payments...');
       const { data, error } = await supabase
         .from('shop_payments')
         .select('*')
+        .order('payment_date', { ascending: false })
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setPayments(data || []);
+      
+      console.log('Admin panel - Raw shop payments data:', data);
+      console.log('Admin panel - Fetched shop payments:', data?.length || 0, 'records');
+      
+      const typedData = (data || []).map(item => ({
+        ...item,
+        payment_status: item.payment_status as 'pending' | 'paid',
+        amount: Number(item.amount)
+      })) as ShopPayment[];
+      
+      setPayments(typedData);
     } catch (error) {
-      console.error('Error fetching payments:', error);
+      console.error('Admin panel - Error fetching payments:', error);
       toast.error('Failed to load payments');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const markAsPaid = async (paymentId: string, paidBy: string = 'Admin') => {
+    try {
+      console.log('Admin panel - Marking payment as paid:', paymentId);
+      
+      const { error } = await supabase
+        .from('shop_payments')
+        .update({
+          payment_status: 'paid',
+          paid_by: paidBy,
+          paid_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', paymentId);
+
+      if (error) {
+        console.error('Admin panel - Error marking payment as paid:', error);
+        toast.error('Failed to update payment status: ' + error.message);
+        return;
+      }
+
+      toast.success('Payment marked as paid successfully');
+      await fetchPayments();
+    } catch (error) {
+      console.error('Admin panel - Error marking payment as paid:', error);
+      toast.error('Failed to update payment status');
     }
   };
 
@@ -142,6 +203,11 @@ const ShopPaymentManagement = () => {
       .reduce((sum, p) => sum + Number(p.amount), 0);
   };
 
+  const refreshData = async () => {
+    setLoading(true);
+    await fetchPayments();
+  };
+
   if (loading) {
     return (
       <div className="container mx-auto py-6 px-4">
@@ -155,22 +221,28 @@ const ShopPaymentManagement = () => {
 
   return (
     <div className="container mx-auto py-6 px-4 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Shop Payment Management</h1>
-        <p className="text-muted-foreground">Manage payments to partner shops</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Shop Payment Management</h1>
+          <p className="text-muted-foreground">Manage payments to partner shops</p>
+        </div>
+        <Button onClick={refreshData} disabled={loading}>
+          <RefreshCw className="w-4 h-4 mr-2" />
+          Refresh
+        </Button>
       </div>
 
       {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Pending</CardTitle>
-            <CreditCard className="h-4 w-4 text-muted-foreground" />
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">₹{getTotalPending().toLocaleString()}</div>
+            <div className="text-2xl font-bold text-red-600">₹{getTotalPending().toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">
-              Awaiting payment
+              {payments.filter(p => p.payment_status === 'pending').length} pending payment{payments.filter(p => p.payment_status === 'pending').length !== 1 ? 's' : ''}
             </p>
           </CardContent>
         </Card>
@@ -178,25 +250,38 @@ const ShopPaymentManagement = () => {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Paid</CardTitle>
-            <CreditCard className="h-4 w-4 text-muted-foreground" />
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">₹{getTotalPaid().toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">
-              Successfully paid
+              {payments.filter(p => p.payment_status === 'paid').length} completed payment{payments.filter(p => p.payment_status === 'paid').length !== 1 ? 's' : ''}
             </p>
           </CardContent>
         </Card>
         
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Payments</CardTitle>
-            <CreditCard className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Active Shops</CardTitle>
+            <Store className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{payments.length}</div>
+            <div className="text-2xl font-bold">{Array.from(new Set(payments.map(p => p.shop_name))).length}</div>
             <p className="text-xs text-muted-foreground">
-              All payment records
+              Shops with payments
+            </p>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Amount</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">₹{(getTotalPending() + getTotalPaid()).toLocaleString()}</div>
+            <p className="text-xs text-muted-foreground">
+              All time total
             </p>
           </CardContent>
         </Card>
@@ -357,7 +442,11 @@ const ShopPaymentManagement = () => {
                           Created: {new Date(payment.created_at).toLocaleDateString()}
                         </div>
                         {payment.payment_status === 'pending' && (
-                          <Button size="sm" className="mt-2">
+                          <Button 
+                            size="sm" 
+                            className="mt-2 bg-green-600 hover:bg-green-700"
+                            onClick={() => markAsPaid(payment.id)}
+                          >
                             Mark as Paid
                           </Button>
                         )}
