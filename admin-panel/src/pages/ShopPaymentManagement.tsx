@@ -203,6 +203,30 @@ const ShopPaymentManagement = () => {
       .reduce((sum, p) => sum + Number(p.amount), 0);
   };
 
+  const syncShopPayments = async () => {
+    try {
+      setLoading(true);
+      console.log('Syncing shop payments...');
+      
+      const { data, error } = await supabase.functions.invoke('sync-shop-payments');
+      
+      if (error) {
+        console.error('Error syncing shop payments:', error);
+        toast.error('Failed to sync shop payments: ' + error.message);
+        return;
+      }
+      
+      console.log('Sync result:', data);
+      toast.success(data.message || 'Shop payments synced successfully');
+      await fetchPayments();
+    } catch (error) {
+      console.error('Error syncing shop payments:', error);
+      toast.error('Failed to sync shop payments');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const refreshData = async () => {
     setLoading(true);
     await fetchPayments();
@@ -226,10 +250,16 @@ const ShopPaymentManagement = () => {
           <h1 className="text-3xl font-bold">Shop Payment Management</h1>
           <p className="text-muted-foreground">Manage payments to partner shops</p>
         </div>
-        <Button onClick={refreshData} disabled={loading}>
-          <RefreshCw className="w-4 h-4 mr-2" />
-          Refresh
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={syncShopPayments} disabled={loading} variant="outline">
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Sync Payments
+          </Button>
+          <Button onClick={refreshData} disabled={loading}>
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Refresh
+          </Button>
+        </div>
       </div>
 
       {/* Summary Cards */}
