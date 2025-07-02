@@ -37,7 +37,7 @@ export const useShopPayments = (shopName?: string) => {
   const fetchPayments = async () => {
     try {
       setIsLoading(true);
-      console.log('Fetching shop payments...');
+      console.log('Fetching shop payments...', { shopName });
       
       let query = supabase
         .from('shop_payments')
@@ -47,6 +47,9 @@ export const useShopPayments = (shopName?: string) => {
 
       if (shopName) {
         query = query.ilike('shop_name', `%${shopName}%`);
+        console.log('Filtering by shop name:', shopName);
+      } else {
+        console.log('Fetching all shop payments (no filter)');
       }
 
       const { data, error } = await query;
