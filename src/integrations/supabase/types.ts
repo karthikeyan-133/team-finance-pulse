@@ -494,10 +494,7 @@ export type Database = {
       }
     }
     Functions: {
-      update_shop_payments_from_orders: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      [_ in never]: never
     }
     Enums: {
       [_ in never]: never
