@@ -60,6 +60,7 @@ export const useShopPayments = (shopName?: string) => {
         return;
       }
       
+      console.log('Raw shop payments data:', data);
       console.log('Fetched shop payments:', data?.length || 0, 'records');
       
       const typedData = (data || []).map(item => ({
