@@ -21,6 +21,13 @@ const DeliveryStatusUpdater: React.FC<DeliveryStatusUpdaterProps> = ({ order, on
   const updateOrderStatus = async (newStatus: 'picked_up' | 'delivered') => {
     setIsUpdating(true);
     try {
+      console.log('Updating order status:', {
+        orderId: order.id,
+        currentStatus: order.order_status,
+        newStatus: newStatus,
+        deliveryBoyId: order.delivery_boy_id
+      });
+
       const updateData: any = {
         order_status: newStatus,
         updated_at: new Date().toISOString()
@@ -32,18 +39,34 @@ const DeliveryStatusUpdater: React.FC<DeliveryStatusUpdaterProps> = ({ order, on
         updateData.delivered_at = new Date().toISOString();
       }
 
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('orders')
         .update(updateData)
-        .eq('id', order.id);
+        .eq('id', order.id)
+        .select();
 
-      if (error) throw error;
+      console.log('Update result:', { data, error });
+
+      if (error) {
+        console.error('Supabase error details:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
+        throw error;
+      }
+
+      if (!data || data.length === 0) {
+        console.error('No rows updated - order may not exist or access denied');
+        throw new Error('Order not found or access denied');
+      }
 
       toast.success(`Order marked as ${newStatus.replace('_', ' ')}!`);
       onStatusUpdate();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating order status:', error);
-      toast.error('Failed to update order status');
+      toast.error(`Failed to update order status: ${error.message || 'Unknown error'}`);
     } finally {
       setIsUpdating(false);
     }
