@@ -28,6 +28,7 @@ const ShopPaymentManagement = () => {
   const [payments, setPayments] = useState<ShopPayment[]>([]);
   const [filteredPayments, setFilteredPayments] = useState<ShopPayment[]>([]);
   const [shopSummaries, setShopSummaries] = useState<any[]>([]);
+  const [allShops, setAllShops] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -35,6 +36,7 @@ const ShopPaymentManagement = () => {
 
   useEffect(() => {
     fetchPayments();
+    fetchAllShops();
     
     // Set up real-time subscription
     const channel = supabase
@@ -56,7 +58,26 @@ const ShopPaymentManagement = () => {
   useEffect(() => {
     filterPayments();
     generateShopSummaries();
-  }, [payments, searchTerm, statusFilter]);
+  }, [payments, allShops, searchTerm, statusFilter]);
+
+  const fetchAllShops = async () => {
+    try {
+      console.log('Admin panel - Fetching all shops...');
+      const { data, error } = await supabase
+        .from('shops')
+        .select('*')
+        .eq('is_active', true)
+        .order('name');
+
+      if (error) throw error;
+      
+      console.log('Admin panel - Fetched shops:', data?.length || 0, 'records');
+      setAllShops(data || []);
+    } catch (error) {
+      console.error('Admin panel - Error fetching shops:', error);
+      toast.error('Failed to load shops');
+    }
+  };
 
   const fetchPayments = async () => {
     try {
@@ -118,11 +139,36 @@ const ShopPaymentManagement = () => {
   const generateShopSummaries = () => {
     const shopMap = new Map();
     
+    // First, initialize all shops with zero amounts
+    allShops.forEach(shop => {
+      shopMap.set(shop.name, {
+        shop_name: shop.name,
+        shop_id: shop.id,
+        shop_address: shop.address,
+        shop_phone: shop.phone,
+        shop_category: shop.category,
+        total_pending: 0,
+        total_paid: 0,
+        commission_pending: 0,
+        delivery_charge_pending: 0,
+        commission_paid: 0,
+        delivery_charge_paid: 0,
+        payment_count: 0,
+        last_payment_date: null
+      });
+    });
+    
+    // Then, add payment data where it exists
     payments.forEach(payment => {
       const shopName = payment.shop_name;
       if (!shopMap.has(shopName)) {
+        // If shop not in shops table but has payments, add it
         shopMap.set(shopName, {
           shop_name: shopName,
+          shop_id: null,
+          shop_address: null,
+          shop_phone: null,
+          shop_category: null,
           total_pending: 0,
           total_paid: 0,
           commission_pending: 0,
@@ -136,6 +182,7 @@ const ShopPaymentManagement = () => {
       
       const shop = shopMap.get(shopName);
       shop.payment_count++;
+      shop.last_payment_date = payment.payment_date;
       
       if (payment.payment_status === 'pending') {
         shop.total_pending += Number(payment.amount);
@@ -154,7 +201,14 @@ const ShopPaymentManagement = () => {
       }
     });
     
-    const summaries = Array.from(shopMap.values()).sort((a, b) => b.total_pending - a.total_pending);
+    // Sort by total pending (highest first), then by shop name
+    const summaries = Array.from(shopMap.values()).sort((a, b) => {
+      if (b.total_pending !== a.total_pending) {
+        return b.total_pending - a.total_pending;
+      }
+      return a.shop_name.localeCompare(b.shop_name);
+    });
+    
     setShopSummaries(summaries);
   };
 
@@ -229,7 +283,7 @@ const ShopPaymentManagement = () => {
 
   const refreshData = async () => {
     setLoading(true);
-    await fetchPayments();
+    await Promise.all([fetchPayments(), fetchAllShops()]);
   };
 
   if (loading) {
@@ -292,13 +346,13 @@ const ShopPaymentManagement = () => {
         
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Shops</CardTitle>
+            <CardTitle className="text-sm font-medium">Total Shops</CardTitle>
             <Store className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{Array.from(new Set(payments.map(p => p.shop_name))).length}</div>
+            <div className="text-2xl font-bold">{allShops.length}</div>
             <p className="text-xs text-muted-foreground">
-              Shops with payments
+              All registered shops
             </p>
           </CardContent>
         </Card>
