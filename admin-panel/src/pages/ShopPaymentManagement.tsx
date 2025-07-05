@@ -99,6 +99,13 @@ const ShopPaymentManagement = () => {
         amount: Number(item.amount)
       })) as ShopPayment[];
       
+      console.log('Admin panel - Processed payments by shop:', 
+        typedData.reduce((acc, payment) => {
+          acc[payment.shop_name] = (acc[payment.shop_name] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>)
+      );
+      
       setPayments(typedData);
     } catch (error) {
       console.error('Admin panel - Error fetching payments:', error);
