@@ -77,7 +77,7 @@ const DeliveryStatusUpdater: React.FC<DeliveryStatusUpdaterProps> = ({ order, on
     }
   };
 
-  const canPickUp = order.order_status === 'assigned' || order.order_status === 'ready';
+  const canPickUp = order.order_status === 'assigned';
   const canDeliver = order.order_status === 'picked_up';
   const isDelivered = order.order_status === 'delivered';
   const preparationInfo = getPreparationStatusInfo();
