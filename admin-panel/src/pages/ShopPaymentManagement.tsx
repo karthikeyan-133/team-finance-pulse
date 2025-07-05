@@ -141,8 +141,9 @@ const ShopPaymentManagement = () => {
     
     // First, initialize all shops with zero amounts
     allShops.forEach(shop => {
-      shopMap.set(shop.name, {
-        shop_name: shop.name,
+      const normalizedShopName = shop.name.toLowerCase().trim();
+      shopMap.set(normalizedShopName, {
+        shop_name: shop.name, // Use original shop name for display
         shop_id: shop.id,
         shop_address: shop.address,
         shop_phone: shop.phone,
@@ -158,13 +159,33 @@ const ShopPaymentManagement = () => {
       });
     });
     
-    // Then, add payment data where it exists
+    // Then, add payment data where it exists (using case-insensitive matching)
     payments.forEach(payment => {
-      const shopName = payment.shop_name;
-      if (!shopMap.has(shopName)) {
-        // If shop not in shops table but has payments, add it
-        shopMap.set(shopName, {
-          shop_name: shopName,
+      const normalizedPaymentShop = payment.shop_name.toLowerCase().trim();
+      
+      // Find matching shop by normalized name
+      let matchedShop = null;
+      for (const [key, shop] of shopMap.entries()) {
+        if (key === normalizedPaymentShop) {
+          matchedShop = shop;
+          break;
+        }
+      }
+      
+      // If no exact match found, try partial matching
+      if (!matchedShop) {
+        for (const [key, shop] of shopMap.entries()) {
+          if (key.includes(normalizedPaymentShop) || normalizedPaymentShop.includes(key)) {
+            matchedShop = shop;
+            break;
+          }
+        }
+      }
+      
+      // If still no match, create a new entry
+      if (!matchedShop) {
+        shopMap.set(normalizedPaymentShop, {
+          shop_name: payment.shop_name,
           shop_id: null,
           shop_address: null,
           shop_phone: null,
@@ -178,25 +199,25 @@ const ShopPaymentManagement = () => {
           payment_count: 0,
           last_payment_date: payment.payment_date
         });
+        matchedShop = shopMap.get(normalizedPaymentShop);
       }
       
-      const shop = shopMap.get(shopName);
-      shop.payment_count++;
-      shop.last_payment_date = payment.payment_date;
+      matchedShop.payment_count++;
+      matchedShop.last_payment_date = payment.payment_date;
       
       if (payment.payment_status === 'pending') {
-        shop.total_pending += Number(payment.amount);
+        matchedShop.total_pending += Number(payment.amount);
         if (payment.payment_type === 'commission') {
-          shop.commission_pending += Number(payment.amount);
+          matchedShop.commission_pending += Number(payment.amount);
         } else if (payment.payment_type === 'delivery_charge') {
-          shop.delivery_charge_pending += Number(payment.amount);
+          matchedShop.delivery_charge_pending += Number(payment.amount);
         }
       } else if (payment.payment_status === 'paid') {
-        shop.total_paid += Number(payment.amount);
+        matchedShop.total_paid += Number(payment.amount);
         if (payment.payment_type === 'commission') {
-          shop.commission_paid += Number(payment.amount);
+          matchedShop.commission_paid += Number(payment.amount);
         } else if (payment.payment_type === 'delivery_charge') {
-          shop.delivery_charge_paid += Number(payment.amount);
+          matchedShop.delivery_charge_paid += Number(payment.amount);
         }
       }
     });
@@ -209,6 +230,7 @@ const ShopPaymentManagement = () => {
       return a.shop_name.localeCompare(b.shop_name);
     });
     
+    console.log('Generated shop summaries:', summaries);
     setShopSummaries(summaries);
   };
 
