@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CreditCard, Search, Filter, RefreshCw, DollarSign, Store } from 'lucide-react';
+import { CreditCard, Search, Filter, RefreshCw, DollarSign, Store, Truck, User, Clock, CheckCircle, AlertTriangle } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
@@ -22,6 +22,22 @@ interface ShopPayment {
   notes?: string;
   created_at: string;
   updated_at: string;
+  // Order details
+  order?: {
+    id: string;
+    order_number: string;
+    order_status: string;
+    customer_name: string;
+    customer_phone: string;
+    total_amount: number;
+    delivered_at?: string;
+    delivery_boy_id?: string;
+    delivery_boy?: {
+      id: string;
+      name: string;
+      phone: string;
+    };
+  };
 }
 
 const ShopPaymentManagement = () => {
@@ -31,7 +47,7 @@ const ShopPaymentManagement = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [viewMode, setViewMode] = useState<'summary' | 'detailed'>('summary');
+  const [viewMode, setViewMode] = useState<'summary' | 'detailed' | 'delivery'>('summary');
 
   useEffect(() => {
     fetchPayments();
@@ -60,10 +76,27 @@ const ShopPaymentManagement = () => {
 
   const fetchPayments = async () => {
     try {
-      console.log('Admin panel - Fetching shop payments...');
+      console.log('Admin panel - Fetching shop payments with order details...');
       const { data, error } = await supabase
         .from('shop_payments')
-        .select('*')
+        .select(`
+          *,
+          order:orders!shop_payments_order_id_fkey (
+            id,
+            order_number,
+            order_status,
+            customer_name,
+            customer_phone,
+            total_amount,
+            delivered_at,
+            delivery_boy_id,
+            delivery_boy:delivery_boys!orders_delivery_boy_id_fkey (
+              id,
+              name,
+              phone
+            )
+          )
+        `)
         .order('payment_date', { ascending: false })
         .order('created_at', { ascending: false });
 
@@ -75,7 +108,8 @@ const ShopPaymentManagement = () => {
       const typedData = (data || []).map(item => ({
         ...item,
         payment_status: item.payment_status as 'pending' | 'paid',
-        amount: Number(item.amount)
+        amount: Number(item.amount),
+        order: Array.isArray(item.order) ? item.order[0] : item.order
       })) as ShopPayment[];
       
       setPayments(typedData);
@@ -324,15 +358,16 @@ const ShopPaymentManagement = () => {
         </CardHeader>
         <CardContent>
           <div className="flex gap-4 items-center">
-            <Select value={viewMode} onValueChange={(value: any) => setViewMode(value)}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="View Mode" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="summary">Shop Summary</SelectItem>
-                <SelectItem value="detailed">Detailed Payments</SelectItem>
-              </SelectContent>
-            </Select>
+              <Select value={viewMode} onValueChange={(value: any) => setViewMode(value)}>
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="View Mode" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="summary">Shop Summary</SelectItem>
+                  <SelectItem value="detailed">Detailed Payments</SelectItem>
+                  <SelectItem value="delivery">Delivery Portal</SelectItem>
+                </SelectContent>
+              </Select>
             
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -460,6 +495,11 @@ const ShopPaymentManagement = () => {
                         <div className="text-sm text-muted-foreground">
                           Payment Date: {new Date(payment.payment_date).toLocaleDateString()}
                         </div>
+                        {payment.order && (
+                          <div className="text-sm text-muted-foreground">
+                            Order: {payment.order.order_number} | Customer: {payment.order.customer_name}
+                          </div>
+                        )}
                         {payment.notes && (
                           <div className="text-sm text-muted-foreground">
                             Notes: {payment.notes}
@@ -481,6 +521,166 @@ const ShopPaymentManagement = () => {
                           </Button>
                         )}
                       </div>
+                    </div>
+                  </Card>
+                ))
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Delivery Portal View */}
+      {viewMode === 'delivery' && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Delivery Portal - Payment Tracking</CardTitle>
+            <CardDescription>Track payment status with delivery completion details</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {filteredPayments.length === 0 ? (
+                <div className="text-center py-8">
+                  <Truck className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">
+                    {payments.length === 0 ? 'No payment records found' : 'No payments match your search criteria'}
+                  </p>
+                </div>
+              ) : (
+                filteredPayments.map((payment) => (
+                  <Card key={payment.id} className="overflow-hidden">
+                    <div className={`border-l-4 ${
+                      payment.payment_status === 'paid' ? 'border-l-green-500' : 
+                      payment.order?.order_status === 'delivered' ? 'border-l-orange-500' : 'border-l-yellow-500'
+                    }`}>
+                      <CardContent className="p-6">
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                          {/* Shop & Payment Info */}
+                          <div className="space-y-3">
+                            <div className="flex items-center gap-2">
+                              <Store className="h-5 w-5 text-blue-600" />
+                              <span className="font-semibold text-lg">{payment.shop_name}</span>
+                            </div>
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm text-muted-foreground">Payment Amount:</span>
+                                <span className="font-bold text-lg">₹{Number(payment.amount).toLocaleString()}</span>
+                              </div>
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm text-muted-foreground">Type:</span>
+                                <Badge className={getTypeColor(payment.payment_type)}>
+                                  {payment.payment_type}
+                                </Badge>
+                              </div>
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm text-muted-foreground">Status:</span>
+                                <Badge className={getStatusColor(payment.payment_status)}>
+                                  {payment.payment_status === 'paid' ? (
+                                    <><CheckCircle className="w-3 h-3 mr-1" />Paid</>
+                                  ) : (
+                                    <><AlertTriangle className="w-3 h-3 mr-1" />Pending</>
+                                  )}
+                                </Badge>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Order & Customer Info */}
+                          {payment.order && (
+                            <div className="space-y-3">
+                              <div className="flex items-center gap-2">
+                                <CreditCard className="h-5 w-5 text-purple-600" />
+                                <span className="font-semibold">Order Details</span>
+                              </div>
+                              <div className="space-y-2">
+                                <div className="text-sm">
+                                  <strong>Order #:</strong> {payment.order.order_number}
+                                </div>
+                                <div className="text-sm">
+                                  <strong>Customer:</strong> {payment.order.customer_name}
+                                </div>
+                                <div className="text-sm">
+                                  <strong>Phone:</strong> {payment.order.customer_phone}
+                                </div>
+                                <div className="text-sm">
+                                  <strong>Order Total:</strong> ₹{Number(payment.order.total_amount).toLocaleString()}
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm">Status:</span>
+                                  <Badge variant={payment.order.order_status === 'delivered' ? 'default' : 'secondary'}>
+                                    {payment.order.order_status}
+                                  </Badge>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Delivery & Payment Status */}
+                          <div className="space-y-3">
+                            <div className="flex items-center gap-2">
+                              <Truck className="h-5 w-5 text-green-600" />
+                              <span className="font-semibold">Delivery Status</span>
+                            </div>
+                            <div className="space-y-2">
+                              {payment.order?.delivery_boy ? (
+                                <div className="space-y-1">
+                                  <div className="flex items-center gap-2">
+                                    <User className="h-4 w-4" />
+                                    <span className="text-sm font-medium">{payment.order.delivery_boy.name}</span>
+                                  </div>
+                                  <div className="text-xs text-muted-foreground">
+                                    Phone: {payment.order.delivery_boy.phone}
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="text-sm text-muted-foreground">No delivery boy assigned</div>
+                              )}
+                              
+                              {payment.order?.delivered_at ? (
+                                <div className="bg-green-50 p-3 rounded-lg border border-green-200">
+                                  <div className="flex items-center gap-2 text-green-800">
+                                    <CheckCircle className="h-4 w-4" />
+                                    <span className="text-sm font-medium">Delivered</span>
+                                  </div>
+                                  <div className="text-xs text-green-700 mt-1">
+                                    {new Date(payment.order.delivered_at).toLocaleString()}
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="bg-yellow-50 p-3 rounded-lg border border-yellow-200">
+                                  <div className="flex items-center gap-2 text-yellow-800">
+                                    <Clock className="h-4 w-4" />
+                                    <span className="text-sm font-medium">Pending Delivery</span>
+                                  </div>
+                                </div>
+                              )}
+
+                              {payment.payment_status === 'paid' && payment.paid_at && (
+                                <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
+                                  <div className="text-sm font-medium text-blue-800">Payment Completed</div>
+                                  <div className="text-xs text-blue-700 mt-1">
+                                    Paid by: {payment.paid_by || 'System'}
+                                  </div>
+                                  <div className="text-xs text-blue-700">
+                                    {new Date(payment.paid_at).toLocaleString()}
+                                  </div>
+                                </div>
+                              )}
+
+                              {payment.payment_status === 'pending' && payment.order?.order_status === 'delivered' && (
+                                <Button 
+                                  size="sm" 
+                                  className="w-full bg-green-600 hover:bg-green-700"
+                                  onClick={() => markAsPaid(payment.id)}
+                                >
+                                  <CheckCircle className="w-4 h-4 mr-2" />
+                                  Mark as Paid
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
                     </div>
                   </Card>
                 ))
