@@ -230,19 +230,17 @@ const CustomerPortal = () => {
     addUserMessage(categoryOption);
     setCurrentStep('shop_selection');
     
-    setTimeout(() => {
-      if (shopsLoading) {
-        addBotMessage(`Great choice! Now please choose a shop: ${categoryData.name}. Loading shops...`);
-      } else if (shops.length === 0) {
-        addBotMessage(`Sorry, no shops are currently available for ${categoryData.name}. Please try another category.`, CATEGORIES.map(cat => `${cat.emoji} ${cat.name}`));
-        setCurrentStep('welcome');
-      } else {
-        addBotMessage(
-          `Great choice! Now please choose a shop:`,
-          shops.map(shop => shop.name)
-        );
-      }
-    }, 500);
+    if (shopsLoading) {
+      addBotMessage(`Great choice! Now please choose a shop: ${categoryData.name}. Loading shops...`);
+    } else if (shops.length === 0) {
+      addBotMessage(`Sorry, no shops are currently available for ${categoryData.name}. Please try another category.`, CATEGORIES.map(cat => `${cat.emoji} ${cat.name}`));
+      setCurrentStep('welcome');
+    } else {
+      addBotMessage(
+        `Great choice! Now please choose a shop:`,
+        shops.map(shop => shop.name)
+      );
+    }
   };
 
   const handleShopSelection = (shopName: string) => {
@@ -268,20 +266,18 @@ const CustomerPortal = () => {
     console.log('Filtered products for shop:', shopProducts);
     
     if (shopProducts.length === 0) {
-      // Show message without loading delay - either no products loaded yet or actually no products
-      setTimeout(() => {
-        const latestProducts = products.filter(product => product.shop_id === shopId);
-        if (latestProducts.length === 0) {
-          addBotMessage(`Sorry, no products are currently available from ${shopName} in the ${selectedCategory} category. Please try another shop.`, shops.map(shop => shop.name));
-          setCurrentStep('shop_selection');
-        } else {
-          addBotMessage(
-            `Perfect! Here are the available ${selectedCategory.toLowerCase()} items from ${shopName}. You can add items to your cart by clicking on them:`,
-            undefined,
-            latestProducts
-          );
-        }
-      }, 200); // Very short delay to allow products to load
+      // Check if products might still be loading
+      const latestProducts = products.filter(product => product.shop_id === shopId);
+      if (latestProducts.length === 0) {
+        addBotMessage(`Sorry, no products are currently available from ${shopName} in the ${selectedCategory} category. Please try another shop.`, shops.map(shop => shop.name));
+        setCurrentStep('shop_selection');
+      } else {
+        addBotMessage(
+          `Perfect! Here are the available ${selectedCategory.toLowerCase()} items from ${shopName}. You can add items to your cart by clicking on them:`,
+          undefined,
+          latestProducts
+        );
+      }
     } else {
       addBotMessage(
         `Perfect! Here are the available ${selectedCategory.toLowerCase()} items from ${shopName}. You can add items to your cart by clicking on them:`,
@@ -304,9 +300,7 @@ const CustomerPortal = () => {
     }
     toast.success(`${product.name} added to cart!`);
     
-    setTimeout(() => {
-      addBotMessage('Item added to cart! You can continue shopping or proceed to checkout when ready.', ['Continue Shopping', 'Proceed to Checkout']);
-    }, 500);
+    addBotMessage('Item added to cart! You can continue shopping or proceed to checkout when ready.', ['Continue Shopping', 'Proceed to Checkout']);
   };
 
   const handleOptionClick = (option: string) => {
@@ -338,9 +332,7 @@ const CustomerPortal = () => {
         undefined
       );
       // Show delivery options immediately
-      setTimeout(() => {
-        showDeliveryOptions();
-      }, 500);
+      showDeliveryOptions();
     } else if (option.includes('Urgent Delivery') || option.includes('Scheduled Delivery')) {
       handleDeliveryTypeSelection(option);
     } else if (option.includes('Today') || option.includes('Tomorrow')) {
