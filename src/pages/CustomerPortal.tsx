@@ -55,6 +55,7 @@ const CustomerPortal = () => {
   const [registrationName, setRegistrationName] = useState('');
   const [deliveryType, setDeliveryType] = useState<'urgent' | 'scheduled' | ''>('');
   const [selectedTimeSlot, setSelectedTimeSlot] = useState('');
+  const [customTimeInput, setCustomTimeInput] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Fetch shops and products based on current selection
@@ -337,6 +338,11 @@ const CustomerPortal = () => {
       handleDeliveryTypeSelection(option);
     } else if (option.includes('Today') || option.includes('Tomorrow')) {
       handleTimeSlotSelection(option);
+    } else if (option === 'Type Custom Time') {
+      setCustomTimeInput(true);
+      addUserMessage('Type Custom Time');
+      setCurrentStep('custom_time_input');
+      addBotMessage('Please type your preferred delivery time (e.g., "Today 3:00 PM" or "Tomorrow 10:00 AM"):');
     } else if (option === 'Continue to Order Summary') {
       showOrderSummary();
     } else if (option === 'Continue Shopping') {
@@ -352,6 +358,8 @@ const CustomerPortal = () => {
     try {
       // Calculate total amount
       const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      const urgentDeliveryCharge = deliveryType === 'urgent' ? 30 : 0;
+      const finalTotal = total + urgentDeliveryCharge;
       
       // Generate unique order ID and number
       const orderNumber = `CP${Date.now().toString().slice(-6)}`;
@@ -369,8 +377,8 @@ const CustomerPortal = () => {
           price: item.price,
           description: `${item.name} from ${selectedShop} (${selectedCategory})`
         })),
-        total_amount: total,
-        delivery_charge: 0,
+        total_amount: finalTotal,
+        delivery_charge: urgentDeliveryCharge,
         commission: 0,
         payment_status: 'pending',
         payment_method: 'cash',
@@ -455,7 +463,7 @@ const CustomerPortal = () => {
       setDeliveryType('urgent');
       addUserMessage('⚡ Urgent Delivery');
       addBotMessage(
-        `Great! Urgent delivery selected.\n\n⏱️ Estimated delivery time: 30-40 minutes\n\nReady to proceed with your order?`,
+        `Great! Urgent delivery selected.\n\n⏱️ Estimated delivery time: 30-40 minutes\n💰 Urgent delivery charge: ₹30\n\nReady to proceed with your order?`,
         ['Continue to Order Summary']
       );
     } else if (option.includes('Scheduled Delivery')) {
@@ -466,19 +474,14 @@ const CustomerPortal = () => {
   };
 
   const showTimeSlots = () => {
-    const today = new Date();
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    
     const timeSlots = [
       'Today 6:00-7:00 PM',
       'Today 8:00-9:00 PM',
-      'Tomorrow 10:00-11:00 AM',
-      'Tomorrow 12:00-1:00 PM'
+      'Type Custom Time'
     ];
     
     addBotMessage(
-      `📅 Select Time Slot\n\nChoose your preferred delivery window:`,
+      `📅 Select Time Slot\n\nChoose your preferred delivery window or type your own:`,
       timeSlots
     );
   };
@@ -492,15 +495,32 @@ const CustomerPortal = () => {
     );
   };
 
+  const handleCustomTimeInput = async () => {
+    if (!inputValue.trim()) return;
+    
+    const customTime = inputValue.trim();
+    setSelectedTimeSlot(customTime);
+    addUserMessage(customTime);
+    setCustomTimeInput(false);
+    setCurrentStep('delivery_time');
+    addBotMessage(
+      `Perfect! Custom delivery time set for ${customTime}.\n\nReady to proceed with your order?`,
+      ['Continue to Order Summary']
+    );
+    setInputValue('');
+  };
+
   const showOrderSummary = () => {
     setCurrentStep('confirm');
     const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const urgentDeliveryCharge = deliveryType === 'urgent' ? 30 : 0;
+    const finalTotal = total + urgentDeliveryCharge;
     
     let deliveryInfo = '';
     if (deliveryType === 'urgent') {
-      deliveryInfo = '🚚 Delivery: Urgent (30-40 min)';
+      deliveryInfo = '🚚 Delivery: Urgent (30-40 min) - ₹30';
     } else if (deliveryType === 'scheduled') {
-      deliveryInfo = `🚚 Delivery: Scheduled (${selectedTimeSlot})`;
+      deliveryInfo = `🚚 Delivery: Scheduled (${selectedTimeSlot}) - Free`;
     }
     
     addBotMessage(
@@ -511,8 +531,10 @@ const CustomerPortal = () => {
       `📞 Phone: ${customer?.phone}\n` +
       `🏠 Address: ${customer?.address}\n` +
       `${deliveryInfo}\n\n` +
-      `🛒 Items:\n${cart.map(item => `• ${item.name} (₹${item.price}) × ${item.quantity}`).join('\n')}\n\n` +
-      `💰 Total: ₹${total}\n\n` +
+      `🛒 Items:\n${cart.map(item => `• ${item.name} (₹${item.price}) × ${item.quantity}`).join('\n')}\n` +
+      `Subtotal: ₹${total}\n` +
+      (urgentDeliveryCharge > 0 ? `Delivery Charge: ₹${urgentDeliveryCharge}\n` : '') +
+      `\n💰 Total: ₹${finalTotal}\n\n` +
       `Would you like to confirm this order?`,
       ['Confirm Order', 'Edit Order']
     );
@@ -626,17 +648,21 @@ const CustomerPortal = () => {
       </div>
 
       {/* Input Area - Mobile Optimized */}
-      {currentStep !== 'completed' && ['register', 'register_address'].includes(currentStep) && (
+      {currentStep !== 'completed' && ['register', 'register_address', 'custom_time_input'].includes(currentStep) && (
         <div className="bg-white border-t p-2 fixed bottom-0 left-0 right-0">
           <div className="flex gap-2 max-w-sm mx-auto">
             <Input
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleRegistration()}
-              placeholder="Type your message..."
+              onKeyPress={(e) => e.key === 'Enter' && (currentStep === 'custom_time_input' ? handleCustomTimeInput() : handleRegistration())}
+              placeholder={currentStep === 'custom_time_input' ? "e.g., Today 3:00 PM..." : "Type your message..."}
               className="flex-1 text-sm h-8"
             />
-            <Button onClick={handleRegistration} disabled={!inputValue.trim()} className="h-8 px-2">
+            <Button 
+              onClick={currentStep === 'custom_time_input' ? handleCustomTimeInput : handleRegistration} 
+              disabled={!inputValue.trim()} 
+              className="h-8 px-2"
+            >
               <Send className="h-3 w-3" />
             </Button>
           </div>
