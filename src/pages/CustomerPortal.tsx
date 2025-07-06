@@ -56,6 +56,7 @@ const CustomerPortal = () => {
   const [deliveryType, setDeliveryType] = useState<'urgent' | 'scheduled' | ''>('');
   const [selectedTimeSlot, setSelectedTimeSlot] = useState('');
   const [customTimeInput, setCustomTimeInput] = useState(false);
+  const [orderHistory, setOrderHistory] = useState<any[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Fetch shops and products based on current selection
@@ -78,7 +79,8 @@ const CustomerPortal = () => {
         const customerData = JSON.parse(savedCustomer);
         setCustomer(customerData);
         setCurrentStep('welcome');
-        addBotMessage(`Welcome back, ${customerData.name}! 👋\n\nI'm here to help you place an order. Let's start by choosing a category.`, CATEGORIES.map(cat => `${cat.emoji} ${cat.name}`));
+        fetchOrderHistory(customerData.phone);
+        addBotMessage(`Welcome back, ${customerData.name}! 👋\n\nI'm here to help you place an order. What would you like to do?`, ['Place New Order', 'View Order History']);
       } catch (error) {
         console.error('Error parsing saved customer data:', error);
         localStorage.removeItem('customer_data');
@@ -88,6 +90,26 @@ const CustomerPortal = () => {
       showLoginMessage();
     }
   }, []);
+
+  const fetchOrderHistory = async (customerPhone: string) => {
+    try {
+      const { data: orders, error } = await supabase
+        .from('orders')
+        .select('*')
+        .eq('customer_phone', customerPhone)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (error) {
+        console.error('Error fetching order history:', error);
+        return;
+      }
+
+      setOrderHistory(orders || []);
+    } catch (error) {
+      console.error('Error fetching order history:', error);
+    }
+  };
 
   const showLoginMessage = () => {
     addBotMessage(`Hello! Welcome to our delivery service! 👋\n\nTo place an order, please log in with your phone number. If you're a new customer, we'll create an account for you.`, ['Login / Register']);
@@ -142,7 +164,8 @@ const CustomerPortal = () => {
         setShowLoginForm(false);
         setCurrentStep('welcome');
         addUserMessage(`Logged in with ${loginPhone}`);
-        addBotMessage(`Welcome back, ${existingCustomer.name}! 👋\n\nI'm here to help you place an order. Let's start by choosing a category.`, CATEGORIES.map(cat => `${cat.emoji} ${cat.name}`));
+        fetchOrderHistory(existingCustomer.phone);
+        addBotMessage(`Welcome back, ${existingCustomer.name}! 👋\n\nI'm here to help you place an order. What would you like to do?`, ['Place New Order', 'View Order History']);
         toast.success(`Welcome back, ${existingCustomer.name}!`);
       } else {
         // New customer - need to collect details
@@ -194,7 +217,8 @@ const CustomerPortal = () => {
         setCustomer(createdCustomer);
         localStorage.setItem('customer_data', JSON.stringify(createdCustomer));
         setCurrentStep('welcome');
-        addBotMessage(`Perfect! Your account has been created, ${createdCustomer.name}! 🎉\n\nI'm here to help you place an order. Let's start by choosing a category.`, CATEGORIES.map(cat => `${cat.emoji} ${cat.name}`));
+        fetchOrderHistory(createdCustomer.phone);
+        addBotMessage(`Perfect! Your account has been created, ${createdCustomer.name}! 🎉\n\nI'm here to help you place an order. What would you like to do?`, ['Place New Order', 'View Order History']);
         toast.success('Registration successful!');
       } catch (error) {
         console.error('Registration error:', error);
@@ -308,6 +332,19 @@ const CustomerPortal = () => {
     if (option === 'Login / Register') {
       setShowLoginForm(true);
       addUserMessage(option);
+      return;
+    }
+
+    if (option === 'Place New Order') {
+      addUserMessage(option);
+      addBotMessage(`Great! Let's start by choosing a category.`, CATEGORIES.map(cat => `${cat.emoji} ${cat.name}`));
+      setCurrentStep('category_selection');
+      return;
+    }
+
+    if (option === 'View Order History') {
+      addUserMessage(option);
+      showOrderHistory();
       return;
     }
 
@@ -438,8 +475,8 @@ const CustomerPortal = () => {
     setSelectedTimeSlot('');
     setInputValue('');
     
-    // Show welcome message with category options
-    addBotMessage(`Ready for your next order! 🛒\n\nI'm here to help you place another order. Let's start by choosing a category.`, CATEGORIES.map(cat => `${cat.emoji} ${cat.name}`));
+    // Show welcome message with options
+    addBotMessage(`Ready for your next order! 🛒\n\nWhat would you like to do?`, ['Place New Order', 'View Order History']);
     toast.success('Ready for your next order!');
   };
 
@@ -449,6 +486,24 @@ const CustomerPortal = () => {
 
   const getTotalAmount = () => {
     return cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  };
+
+  const showOrderHistory = () => {
+    if (orderHistory.length === 0) {
+      addBotMessage('You have no previous orders yet. 📝\n\nWould you like to place your first order?', ['Place New Order']);
+      return;
+    }
+
+    const historyText = orderHistory.map((order, index) => {
+      const date = new Date(order.created_at).toLocaleDateString();
+      const time = new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const status = order.order_status || 'pending';
+      const statusEmoji = status === 'delivered' ? '✅' : status === 'pending' ? '⏳' : '🚚';
+      
+      return `${index + 1}. Order #${order.order_number}\n📅 ${date} at ${time}\n🏪 ${order.shop_name}\n💰 ₹${order.total_amount}\n${statusEmoji} Status: ${status.charAt(0).toUpperCase() + status.slice(1)}`;
+    }).join('\n\n');
+
+    addBotMessage(`📋 Your Order History:\n\n${historyText}\n\nWould you like to place a new order?`, ['Place New Order']);
   };
 
   const showDeliveryOptions = () => {
@@ -637,7 +692,8 @@ const CustomerPortal = () => {
             key={message.id}
             message={message}
             onOptionClick={message.type === 'bot' && message.options ? (
-              currentStep === 'welcome' ? handleCategorySelection :
+              currentStep === 'welcome' ? handleOptionClick :
+              currentStep === 'category_selection' ? handleCategorySelection :
               currentStep === 'shop_selection' ? handleShopSelection : 
               handleOptionClick
             ) : undefined}
