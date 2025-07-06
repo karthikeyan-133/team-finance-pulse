@@ -40,6 +40,7 @@ export const useRealTimeOrders = (deliveryBoyId?: string) => {
 
       try {
         setLoading(true);
+        setError(null);
         
         // Fetch accepted orders
         const { data: ordersData, error: ordersError } = await supabase
