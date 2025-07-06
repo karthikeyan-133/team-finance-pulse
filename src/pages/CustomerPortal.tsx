@@ -53,6 +53,8 @@ const CustomerPortal = () => {
   const [showLoginForm, setShowLoginForm] = useState(false);
   const [loginPhone, setLoginPhone] = useState('');
   const [registrationName, setRegistrationName] = useState('');
+  const [deliveryType, setDeliveryType] = useState<'urgent' | 'scheduled' | ''>('');
+  const [selectedTimeSlot, setSelectedTimeSlot] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Fetch shops and products based on current selection
@@ -213,6 +215,8 @@ const CustomerPortal = () => {
     setSelectedCategory('');
     setSelectedShop('');
     setSelectedShopId('');
+    setDeliveryType('');
+    setSelectedTimeSlot('');
     showLoginMessage();
     toast.info('Logged out successfully');
   };
@@ -324,20 +328,22 @@ const CustomerPortal = () => {
     addUserMessage(option);
     
     if (option === 'Proceed to Checkout' && cart.length > 0) {
-      setCurrentStep('confirm');
-      const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      setCurrentStep('delivery_time');
       addBotMessage(
-        `Perfect! Here's your order summary:\n\n` +
-        `📁 Category: ${selectedCategory}\n` +
-        `📍 Shop: ${selectedShop}\n` +
-        `👤 Name: ${customer?.name}\n` +
-        `📞 Phone: ${customer?.phone}\n` +
-        `🏠 Address: ${customer?.address}\n\n` +
-        `🛒 Items:\n${cart.map(item => `• ${item.name} (₹${item.price}) × ${item.quantity}`).join('\n')}\n\n` +
-        `💰 Total: ₹${total}\n\n` +
-        `Would you like to confirm this order?`,
-        ['Confirm Order', 'Edit Order']
+        `🚚 Delivery Time\n\nChoose the delivery type and time slot for your order:`,
+        undefined,
+        undefined
       );
+      // Show delivery options immediately
+      setTimeout(() => {
+        showDeliveryOptions();
+      }, 500);
+    } else if (option.includes('Urgent Delivery') || option.includes('Scheduled Delivery')) {
+      handleDeliveryTypeSelection(option);
+    } else if (option.includes('Today') || option.includes('Tomorrow')) {
+      handleTimeSlotSelection(option);
+    } else if (option === 'Continue to Order Summary') {
+      showOrderSummary();
     } else if (option === 'Continue Shopping') {
       addBotMessage('Great! Feel free to add more items to your cart.');
     } else if (option === 'Confirm Order') {
@@ -374,7 +380,13 @@ const CustomerPortal = () => {
         payment_status: 'pending',
         payment_method: 'cash',
         order_status: 'pending',
-        special_instructions: `Category: ${selectedCategory}`,
+        special_instructions: `Category: ${selectedCategory}${
+          deliveryType === 'urgent' 
+            ? ' | Delivery: Urgent (30-40 min)' 
+            : deliveryType === 'scheduled' 
+            ? ` | Delivery: Scheduled (${selectedTimeSlot})` 
+            : ''
+        }`,
         created_by: 'Customer Portal'
       };
       
@@ -419,6 +431,8 @@ const CustomerPortal = () => {
     setSelectedShop('');
     setSelectedShopId('');
     setCart([]);
+    setDeliveryType('');
+    setSelectedTimeSlot('');
     setInputValue('');
     
     // Show welcome message with category options
@@ -432,6 +446,81 @@ const CustomerPortal = () => {
 
   const getTotalAmount = () => {
     return cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  };
+
+  const showDeliveryOptions = () => {
+    addBotMessage(
+      `Please select your preferred delivery type:`,
+      ['⚡ Urgent Delivery - as soon as possible', '📅 Scheduled Delivery - select window']
+    );
+  };
+
+  const handleDeliveryTypeSelection = (option: string) => {
+    if (option.includes('Urgent Delivery')) {
+      setDeliveryType('urgent');
+      addUserMessage('⚡ Urgent Delivery');
+      addBotMessage(
+        `Great! Urgent delivery selected.\n\n⏱️ Estimated delivery time: 30-40 minutes\n\nReady to proceed with your order?`,
+        ['Continue to Order Summary']
+      );
+    } else if (option.includes('Scheduled Delivery')) {
+      setDeliveryType('scheduled');
+      addUserMessage('📅 Scheduled Delivery');
+      showTimeSlots();
+    }
+  };
+
+  const showTimeSlots = () => {
+    const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    const timeSlots = [
+      'Today 6:00-7:00 PM',
+      'Today 8:00-9:00 PM',
+      'Tomorrow 10:00-11:00 AM',
+      'Tomorrow 12:00-1:00 PM'
+    ];
+    
+    addBotMessage(
+      `📅 Select Time Slot\n\nChoose your preferred delivery window:`,
+      timeSlots
+    );
+  };
+
+  const handleTimeSlotSelection = (timeSlot: string) => {
+    setSelectedTimeSlot(timeSlot);
+    addUserMessage(timeSlot);
+    addBotMessage(
+      `Perfect! Scheduled delivery selected for ${timeSlot}.\n\nReady to proceed with your order?`,
+      ['Continue to Order Summary']
+    );
+  };
+
+  const showOrderSummary = () => {
+    setCurrentStep('confirm');
+    const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    
+    let deliveryInfo = '';
+    if (deliveryType === 'urgent') {
+      deliveryInfo = '🚚 Delivery: Urgent (30-40 min)';
+    } else if (deliveryType === 'scheduled') {
+      deliveryInfo = `🚚 Delivery: Scheduled (${selectedTimeSlot})`;
+    }
+    
+    addBotMessage(
+      `Perfect! Here's your order summary:\n\n` +
+      `📁 Category: ${selectedCategory}\n` +
+      `📍 Shop: ${selectedShop}\n` +
+      `👤 Name: ${customer?.name}\n` +
+      `📞 Phone: ${customer?.phone}\n` +
+      `🏠 Address: ${customer?.address}\n` +
+      `${deliveryInfo}\n\n` +
+      `🛒 Items:\n${cart.map(item => `• ${item.name} (₹${item.price}) × ${item.quantity}`).join('\n')}\n\n` +
+      `💰 Total: ₹${total}\n\n` +
+      `Would you like to confirm this order?`,
+      ['Confirm Order', 'Edit Order']
+    );
   };
 
   return (
