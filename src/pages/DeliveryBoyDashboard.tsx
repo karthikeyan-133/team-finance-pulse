@@ -11,12 +11,14 @@ import { toast } from 'sonner';
 import { OrderAssignment, ProductDetail, Order } from '@/types/orders';
 import DeliveryStatusUpdater from '@/components/orders/DeliveryStatusUpdater';
 import OrderStatusTracker from '@/components/orders/OrderStatusTracker';
+import { useRealTimeOrders } from '@/hooks/useRealTimeOrders';
 
 const DeliveryBoyDashboard = () => {
   const [deliveryBoy, setDeliveryBoy] = useState(null);
-  const [assignments, setAssignments] = useState<OrderAssignment[]>([]);
-  const [acceptedOrders, setAcceptedOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // Use real-time hook for orders and assignments
+  const { orders: acceptedOrders, assignments, loading: ordersLoading, refetch } = useRealTimeOrders(deliveryBoy?.id);
 
   useEffect(() => {
     console.log('Dashboard useEffect running');
@@ -35,92 +37,13 @@ const DeliveryBoyDashboard = () => {
       const deliveryBoyData = JSON.parse(savedSession);
       console.log('Parsed delivery boy data:', deliveryBoyData);
       setDeliveryBoy(deliveryBoyData);
-      fetchAssignments(deliveryBoyData.id);
-      fetchAcceptedOrders(deliveryBoyData.id);
+      setIsLoading(false);
     } catch (error) {
       console.error('Error parsing delivery boy session:', error);
       localStorage.removeItem('delivery_boy_session');
       setIsLoading(false);
     }
   }, []);
-
-  const fetchAssignments = async (deliveryBoyId: string) => {
-    try {
-      console.log('Fetching assignments for delivery boy:', deliveryBoyId);
-      
-      const { data: assignmentsData, error } = await supabase
-        .from('order_assignments')
-        .select(`
-          *,
-          orders(*)
-        `)
-        .eq('delivery_boy_id', deliveryBoyId)
-        .eq('status', 'pending')
-        .order('assigned_at', { ascending: false });
-
-      console.log('Assignments query result:', { assignmentsData, error });
-
-      if (error) {
-        console.error('Assignments query error:', error);
-        throw error;
-      }
-
-      // Type cast the assignments data
-      const typedAssignments = (assignmentsData || []).map(assignment => ({
-        ...assignment,
-        status: assignment.status as 'pending' | 'accepted' | 'rejected',
-        orders: assignment.orders ? {
-          ...assignment.orders,
-          product_details: (assignment.orders.product_details as unknown) as ProductDetail[],
-          payment_status: assignment.orders.payment_status as 'pending' | 'paid',
-          payment_method: assignment.orders.payment_method as 'cash' | 'upi' | 'card' | 'other',
-          order_status: assignment.orders.order_status as 'pending' | 'assigned' | 'picked_up' | 'delivered' | 'cancelled'
-        } : undefined
-      }));
-
-      console.log('Processed assignments:', typedAssignments);
-      setAssignments(typedAssignments);
-    } catch (error) {
-      console.error('Error fetching assignments:', error);
-      toast.error('Failed to load assignments');
-    }
-  };
-
-  const fetchAcceptedOrders = async (deliveryBoyId: string) => {
-    try {
-      console.log('Fetching accepted orders for delivery boy:', deliveryBoyId);
-      
-      const { data: ordersData, error } = await supabase
-        .from('orders')
-        .select('*')
-        .eq('delivery_boy_id', deliveryBoyId)
-        .in('order_status', ['assigned', 'picked_up'])
-        .order('assigned_at', { ascending: false });
-
-      console.log('Accepted orders query result:', { ordersData, error });
-
-      if (error) {
-        console.error('Accepted orders query error:', error);
-        throw error;
-      }
-
-      const typedOrders = (ordersData || []).map(order => ({
-        ...order,
-        product_details: (order.product_details as unknown) as ProductDetail[],
-        payment_status: order.payment_status as 'pending' | 'paid',
-        payment_method: order.payment_method as 'cash' | 'upi' | 'card' | 'other',
-        order_status: order.order_status as 'pending' | 'assigned' | 'picked_up' | 'delivered' | 'cancelled'
-      }));
-
-      console.log('Processed accepted orders:', typedOrders);
-      setAcceptedOrders(typedOrders);
-    } catch (error) {
-      console.error('Error fetching accepted orders:', error);
-      toast.error('Failed to load accepted orders');
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const updateAssignmentStatus = async (assignmentId: string, status: 'accepted' | 'rejected', orderId: string) => {
     try {
@@ -148,8 +71,8 @@ const DeliveryBoyDashboard = () => {
       }
 
       toast.success(`Order ${status} successfully!`);
-      fetchAssignments(deliveryBoy.id);
-      fetchAcceptedOrders(deliveryBoy.id);
+      // Use refetch instead of manual fetch functions
+      refetch();
     } catch (error) {
       console.error('Error updating assignment:', error);
       toast.error('Failed to update assignment');
@@ -157,7 +80,8 @@ const DeliveryBoyDashboard = () => {
   };
 
   const handleStatusUpdate = () => {
-    fetchAcceptedOrders(deliveryBoy.id);
+    // Use refetch instead of manual fetch function
+    refetch();
   };
 
   const handleLogout = () => {
@@ -168,19 +92,18 @@ const DeliveryBoyDashboard = () => {
 
   const handleRefresh = () => {
     if (deliveryBoy) {
-      fetchAssignments(deliveryBoy.id);
-      fetchAcceptedOrders(deliveryBoy.id);
+      refetch();
     }
   };
 
-  console.log('Dashboard render - deliveryBoy:', deliveryBoy, 'isLoading:', isLoading);
+  console.log('Dashboard render - deliveryBoy:', deliveryBoy, 'isLoading:', isLoading, 'ordersLoading:', ordersLoading);
 
   if (!deliveryBoy && !isLoading) {
     console.log('No delivery boy and not loading, redirecting to login');
     return <Navigate to="/delivery-boy-login" replace />;
   }
 
-  if (isLoading) {
+  if (isLoading || (deliveryBoy && ordersLoading)) {
     return (
       <div className="container mx-auto px-4 py-6">
         <div className="text-center">Loading dashboard...</div>
