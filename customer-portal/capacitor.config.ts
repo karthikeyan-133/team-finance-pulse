@@ -1,7 +1,7 @@
 import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'app.lovable.customer.7acb16e4faa940c5a598ca38e8d6a9cd',
+  appId: 'com.lovable.customer.slickerconnect',
   appName: 'Customer Portal',
   webDir: 'dist',
   server: {

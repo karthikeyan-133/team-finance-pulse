@@ -1,7 +1,7 @@
 import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'app.lovable.adminpanel.7acb16e4faa940c5a598ca38e8d6a9cd',
+  appId: 'com.lovable.adminpanel.slickerconnect',
   appName: 'Management Panel',
   webDir: 'dist',
   server: {
