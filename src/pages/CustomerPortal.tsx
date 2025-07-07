@@ -1,10 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Send, MessageCircle, ShoppingCart, User, LogOut, Loader2, RotateCcw } from 'lucide-react';
 import ChatMessage from '@/components/chat/ChatMessage';
-import ProductCard from '@/components/chat/ProductCard';
 import { toast } from '@/components/ui/sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useShops } from '@/hooks/useShops';

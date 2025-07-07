@@ -7,7 +7,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { DataProvider } from "./context/DataContext";
 import { ShopOwnerProvider } from "./context/ShopOwnerContext";
-import React from 'react';
+
 
 // Pages
 import Index from "./pages/Index";
