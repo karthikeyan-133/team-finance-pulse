@@ -1,73 +1,110 @@
-# Welcome to your Lovable project
+# SlickerConnect - Multi-Portal Business Management System
 
-## Project info
+A comprehensive React-based web application for managing delivery business operations across multiple user roles.
 
-**URL**: https://lovable.dev/projects/7acb16e4-faa9-40c5-a598-ca38e8d6a9cd
+## 🚀 Features
 
-## How can I edit this code?
+### Admin Panel
+- Complete system oversight and analytics
+- Order tracking & management
+- Shop and product management
+- Delivery boy management
+- Financial analytics
 
-There are several ways of editing your application.
+### Customer Portal
+- Chat-based ordering experience
+- Category-based product browsing
+- Real-time order tracking
 
-**Use Lovable**
+### Shop Portal
+- Business dashboard for shop owners
+- Order management
+- Sales analytics
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/7acb16e4-faa9-40c5-a598-ca38e8d6a9cd) and start prompting.
+### Delivery Portal
+- Delivery management interface
+- Real-time assignment updates
+- Route optimization
 
-Changes made via Lovable will be committed automatically to this repo.
+## 🛠️ Tech Stack
 
-**Use your preferred IDE**
+- **Frontend**: React 18 + TypeScript
+- **Build Tool**: Vite
+- **Styling**: Tailwind CSS
+- **UI Components**: Shadcn/ui
+- **Database**: Supabase
+- **Authentication**: Supabase Auth
+- **State Management**: React Query
+- **Routing**: React Router DOM
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## 🚀 Getting Started
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### Prerequisites
+- Node.js 18+
+- npm or yarn
 
-Follow these steps:
+### Installation
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+1. Clone the repository
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+3. Start the development server:
+   ```bash
+   npm run dev
+   ```
 
-# Step 3: Install the necessary dependencies.
-npm i
+4. Open [http://localhost:8080](http://localhost:8080) in your browser
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+## 📱 Portal Access
+
+| Portal | Route | Demo Credentials |
+|--------|-------|------------------|
+| Admin Panel | `/login` | admin@slickerconnect.com / admin123 |
+| Customer Portal | `/customer-portal` | Phone-based registration |
+| Shop Portal | `/shop-login` | Access code: `shop123` |
+| Delivery Portal | `/delivery-boy-login` | Phone-based authentication |
+
+## 📁 Project Structure
+
+```
+src/                    # Main application
+├── components/         # Reusable UI components
+├── pages/             # Page components
+├── hooks/             # Custom React hooks
+├── context/           # React context providers
+├── types/             # TypeScript definitions
+└── integrations/      # Supabase integration
+
+admin-panel/           # Admin dashboard
+customer-portal/       # Customer interface
+delivery-portal/       # Delivery management
+shop-portal/          # Shop owner interface
 ```
 
-**Edit a file directly in GitHub**
+## 🔧 Available Scripts
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run preview` - Preview production build
+- `npm run lint` - Run ESLint
 
-**Use GitHub Codespaces**
+## 🌐 Deployment
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+Deploy easily via [Lovable](https://lovable.dev/projects/7acb16e4-faa9-40c5-a598-ca38e8d6a9cd):
+1. Click Share → Publish
+2. Connect custom domain (optional)
 
-## What technologies are used for this project?
+## 🗄️ Database
 
-This project is built with:
+Uses Supabase for:
+- Real-time data synchronization
+- User authentication
+- File storage
+- Backend logic
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## 📝 License
 
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/7acb16e4-faa9-40c5-a598-ca38e8d6a9cd) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+MIT License

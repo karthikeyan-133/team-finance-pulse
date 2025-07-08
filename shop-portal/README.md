@@ -1,14 +1,15 @@
 # Business Dashboard - SlickerConnect
 
-Shop owner mobile application for managing orders, products, and business operations.
+Web-based business management portal for shop owners.
 
 ## Features
 
-- Order management and tracking
-- Real-time order status updates
-- Product management
-- Sales analytics
-- Mobile-first responsive design
+- 📊 Order management and tracking
+- 🔄 Real-time order status updates
+- 📦 Product management
+- 📈 Sales analytics
+- 💻 Responsive web design
+- 📱 Mobile-optimized interface
 
 ## Getting Started
 
@@ -17,30 +18,17 @@ npm install
 npm run dev
 ```
 
-## Mobile Development
+## Build for Production
 
 ```bash
-# Add Android platform
-npx cap add android
-
-# Build and sync
 npm run build
-npx cap sync
-
-# Open in Android Studio
-npx cap open android
+npm run preview
 ```
 
-## iOS Development
+## Tech Stack
 
-```bash
-# Add iOS platform (requires macOS)
-npx cap add ios
-
-# Build and sync
-npm run build
-npx cap sync
-
-# Open in Xcode
-npx cap open ios
-```
+- React 18 + TypeScript
+- Vite
+- Tailwind CSS
+- Supabase
+- React Query

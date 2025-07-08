@@ -1,15 +1,15 @@
 # Delivery Command - SlickerConnect
 
-Delivery boy mobile application for managing deliveries and tracking orders.
+Web-based delivery management portal for delivery personnel.
 
 ## Features
 
-- Real-time delivery tracking
-- Order assignment and status updates
-- GPS navigation integration
-- Earnings tracking
-- Customer communication tools
-- Mobile-first responsive design
+- 📦 Real-time delivery tracking
+- 📋 Order assignment and status updates
+- 🚚 Route optimization
+- 💰 Earnings tracking
+- 📱 Responsive web design
+- 🔄 Real-time notifications
 
 ## Getting Started
 
@@ -18,30 +18,17 @@ npm install
 npm run dev
 ```
 
-## Mobile Development
+## Build for Production
 
 ```bash
-# Add Android platform
-npx cap add android
-
-# Build and sync
 npm run build
-npx cap sync
-
-# Open in Android Studio
-npx cap open android
+npm run preview
 ```
 
-## iOS Development
+## Tech Stack
 
-```bash
-# Add iOS platform (requires macOS)
-npx cap add ios
-
-# Build and sync
-npm run build
-npx cap sync
-
-# Open in Xcode
-npx cap open ios
-```
+- React 18 + TypeScript
+- Vite
+- Tailwind CSS
+- Supabase
+- React Query
