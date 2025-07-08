@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar, TrendingUp, Package, Users } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -177,7 +177,7 @@ const DailyAnalytics = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {dailyStats.slice(0, 10).map((stat, index) => (
+            {dailyStats.slice(0, 10).map((stat) => (
               <div key={stat.date} className="flex items-center justify-between p-4 border rounded-lg">
                 <div>
                   <div className="font-medium">

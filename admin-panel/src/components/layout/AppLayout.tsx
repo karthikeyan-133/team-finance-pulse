@@ -1,5 +1,5 @@
 import React from 'react';
-import { Outlet, useLocation, Link } from 'react-router-dom';
+import { useLocation, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { LogOut, BarChart3, Truck, Package, Store, Zap, Menu, CreditCard } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
