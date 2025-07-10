@@ -1,159 +1,77 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent } from '@/components/ui/card';
-import { Send, MessageCircle, ShoppingCart, User, LogOut, Loader2, RotateCcw } from 'lucide-react';
-import ChatMessage from '@/components/chat/ChatMessage';
-import ProductCard from '@/components/chat/ProductCard';
-import { toast } from '@/components/ui/sonner';
-import { supabase } from '@/integrations/supabase/client';
-import { useShops } from '@/hooks/useShops';
-import { useProducts } from '@/hooks/useProducts';
-
-interface Message {
-  id: string;
-  type: 'bot' | 'user';
-  content: string;
-  timestamp: Date;
-  options?: string[];
-  products?: any[];
-}
-
-interface OrderItem {
-  name: string;
-  price: number;
-  quantity: number;
-  image?: string;
-}
-
-interface CustomerData {
-  id: string;
-  name: string;
-  phone: string;
-  address: string;
-  email?: string;
-}
-
-const CATEGORIES = [
-  { name: 'Food', emoji: '🍽️', key: 'food' },
-  { name: 'Grocery', emoji: '🛒', key: 'grocery' },
-  { name: 'Vegetables', emoji: '🥬', key: 'vegetables' },
-  { name: 'Meat', emoji: '🥩', key: 'meat' }
-];
+import React, { useState, useEffect } from 'react';
+import CustomerPortalHeader from '@/components/CustomerPortalHeader';
+import LoginModal from '@/components/LoginModal';
+import ChatArea from '@/components/ChatArea';
+import OrderInputArea from '@/components/OrderInputArea';
+import { useCustomerAuth } from '@/hooks/useCustomerAuth';
+import { useOrderChat } from '@/hooks/useOrderChat';
 
 const CustomerPortal = () => {
-  const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
-  const [currentStep, setCurrentStep] = useState('login');
-  const [selectedCategory, setSelectedCategory] = useState('');
-  const [selectedShop, setSelectedShop] = useState('');
-  const [selectedShopId, setSelectedShopId] = useState('');
-  const [customer, setCustomer] = useState<CustomerData | null>(null);
-  const [cart, setCart] = useState<OrderItem[]>([]);
-  const [showLoginForm, setShowLoginForm] = useState(false);
-  const [loginPhone, setLoginPhone] = useState('');
-  const [registrationName, setRegistrationName] = useState('');
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  
+  const {
+    customer,
+    showLoginForm,
+    setShowLoginForm,
+    loginPhone,
+    setLoginPhone,
+    registrationName,
+    setRegistrationName,
+    handleLogin,
+    handleRegistration,
+    handleLogout
+  } = useCustomerAuth();
 
-  // Fetch shops and products based on current selection
-  const { shops, loading: shopsLoading } = useShops(selectedCategory);
-  const { products, loading: productsLoading } = useProducts(selectedShopId, selectedCategory);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  const {
+    messages,
+    currentStep,
+    setCurrentStep,
+    selectedCategory,
+    selectedShop,
+    cart,
+    messagesEndRef,
+    shopsLoading,
+    productsLoading,
+    addBotMessage,
+    addUserMessage,
+    showWelcomeMessage,
+    handleCategorySelection,
+    handleShopSelection,
+    handleProductAdd,
+    handleConfirmOrder,
+    startNewOrder,
+    resetForNewCustomer,
+    getTotalItems,
+    getTotalAmount
+  } = useOrderChat(customer);
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  useEffect(() => {
-    // Check if customer is already logged in
-    const savedCustomer = localStorage.getItem('customer_data');
-    if (savedCustomer) {
-      try {
-        const customerData = JSON.parse(savedCustomer);
-        setCustomer(customerData);
-        setCurrentStep('welcome');
-        addBotMessage(`Welcome back, ${customerData.name}! 👋\n\nI'm here to help you place an order. Let's start by choosing a category.`, CATEGORIES.map(cat => `${cat.emoji} ${cat.name}`));
-      } catch (error) {
-        console.error('Error parsing saved customer data:', error);
-        localStorage.removeItem('customer_data');
-        showLoginMessage();
-      }
+    if (customer) {
+      showWelcomeMessage();
     } else {
-      showLoginMessage();
+      showWelcomeMessage();
     }
-  }, []);
+  }, [customer]);
 
-  const showLoginMessage = () => {
-    addBotMessage(`Hello! Welcome to our delivery service! 👋\n\nTo place an order, please log in with your phone number. If you're a new customer, we'll create an account for you.`, ['Login / Register']);
-  };
-
-  const addBotMessage = (content: string, options?: string[], products?: any[]) => {
-    const newMessage: Message = {
-      id: Date.now().toString(),
-      type: 'bot',
-      content,
-      timestamp: new Date(),
-      options,
-      products
-    };
-    setMessages(prev => [...prev, newMessage]);
-  };
-
-  const addUserMessage = (content: string) => {
-    const newMessage: Message = {
-      id: Date.now().toString(),
-      type: 'user',
-      content,
-      timestamp: new Date()
-    };
-    setMessages(prev => [...prev, newMessage]);
-  };
-
-  const handleLogin = async () => {
-    if (!loginPhone.trim()) {
-      toast.error('Please enter your phone number');
-      return;
-    }
-
-    try {
-      // Check if customer exists
-      const { data: existingCustomer, error } = await supabase
-        .from('customers')
-        .select('*')
-        .eq('phone', loginPhone.trim())
-        .single();
-
-      if (error && error.code !== 'PGRST116') {
-        console.error('Database error:', error);
-        toast.error('Login failed. Please try again.');
-        return;
-      }
-
-      if (existingCustomer) {
-        // Existing customer
-        setCustomer(existingCustomer);
-        localStorage.setItem('customer_data', JSON.stringify(existingCustomer));
-        setShowLoginForm(false);
-        setCurrentStep('welcome');
-        addUserMessage(`Logged in with ${loginPhone}`);
-        addBotMessage(`Welcome back, ${existingCustomer.name}! 👋\n\nI'm here to help you place an order. Let's start by choosing a category.`, CATEGORIES.map(cat => `${cat.emoji} ${cat.name}`));
-        toast.success(`Welcome back, ${existingCustomer.name}!`);
-      } else {
-        // New customer - need to collect details
+  const onLogin = async () => {
+    const result = await handleLogin();
+    if (result.success) {
+      if (result.isNew) {
         setCurrentStep('register');
         addUserMessage(`Register with ${loginPhone}`);
         addBotMessage("What's your name?");
+      } else if (result.customer) {
+        setCurrentStep('welcome');
+        addUserMessage(`Logged in with ${loginPhone}`);
+        addBotMessage(
+          `Welcome back, ${result.customer.name}! 👋\n\nI'm here to help you place an order. Let's start by choosing a category.`,
+          ['🍽️ Food', '🛒 Grocery', '🥬 Vegetables', '🥩 Meat']
+        );
       }
-    } catch (error) {
-      console.error('Login error:', error);
-      toast.error('Login failed. Please try again.');
     }
   };
 
-  const handleRegistration = async () => {
+  const onRegistration = async () => {
     if (!inputValue.trim()) return;
 
     if (currentStep === 'register') {
@@ -168,138 +86,23 @@ const CustomerPortal = () => {
       const address = inputValue.trim();
       addUserMessage(address);
       
-      try {
-        const newCustomer = {
-          name: registrationName,
-          phone: loginPhone,
-          address: address,
-          is_new: true
-        };
-
-        const { data: createdCustomer, error } = await supabase
-          .from('customers')
-          .insert([newCustomer])
-          .select()
-          .single();
-
-        if (error) {
-          console.error('Registration error:', error);
-          toast.error('Registration failed. Please try again.');
-          return;
-        }
-
-        setCustomer(createdCustomer);
-        localStorage.setItem('customer_data', JSON.stringify(createdCustomer));
+      const result = await handleRegistration(registrationName, address);
+      if (result.success && result.customer) {
         setCurrentStep('welcome');
-        addBotMessage(`Perfect! Your account has been created, ${createdCustomer.name}! 🎉\n\nI'm here to help you place an order. Let's start by choosing a category.`, CATEGORIES.map(cat => `${cat.emoji} ${cat.name}`));
-        toast.success('Registration successful!');
-      } catch (error) {
-        console.error('Registration error:', error);
-        toast.error('Registration failed. Please try again.');
+        addBotMessage(
+          `Perfect! Your account has been created, ${result.customer.name}! 🎉\n\nI'm here to help you place an order. Let's start by choosing a category.`,
+          ['🍽️ Food', '🛒 Grocery', '🥬 Vegetables', '🥩 Meat']
+        );
       }
     }
     
     setInputValue('');
   };
 
-  const handleLogout = () => {
-    setCustomer(null);
-    localStorage.removeItem('customer_data');
-    setCart([]);
-    setMessages([]);
-    setCurrentStep('login');
-    setLoginPhone('');
-    setRegistrationName('');
-    setSelectedCategory('');
-    setSelectedShop('');
-    setSelectedShopId('');
-    showLoginMessage();
-    toast.info('Logged out successfully');
-  };
-
-  const handleCategorySelection = (categoryOption: string) => {
-    // Extract category name from emoji option
-    const categoryData = CATEGORIES.find(cat => categoryOption.includes(cat.name));
-    if (!categoryData) return;
-    
-    setSelectedCategory(categoryData.name);
-    addUserMessage(categoryOption);
-    setCurrentStep('shop_selection');
-    
-    setTimeout(() => {
-      if (shopsLoading) {
-        addBotMessage(`Great choice! Now please choose a shop: ${categoryData.name}. Loading shops...`);
-      } else if (shops.length === 0) {
-        addBotMessage(`Sorry, no shops are currently available for ${categoryData.name}. Please try another category.`, CATEGORIES.map(cat => `${cat.emoji} ${cat.name}`));
-        setCurrentStep('welcome');
-      } else {
-        addBotMessage(
-          `Great choice! Now please choose a shop:`,
-          shops.map(shop => shop.name)
-        );
-      }
-    }, 500);
-  };
-
-  const handleShopSelection = (shopName: string) => {
-    const selectedShopData = shops.find(shop => shop.name === shopName);
-    if (!selectedShopData) return;
-
-    console.log('Selected shop:', selectedShopData);
-    setSelectedShop(shopName);
-    
-    // Update the shop ID and then handle the products display
-    setSelectedShopId(selectedShopData.id);
-    addUserMessage(shopName);
-    setCurrentStep('products');
-    
-    // Add a longer delay to ensure state updates properly
-    setTimeout(() => {
-      // Force a re-fetch of products with the new shop ID
-      handleProductsDisplay(selectedShopData.id, shopName);
-    }, 1000);
-  };
-
-  const handleProductsDisplay = (shopId: string, shopName: string) => {
-    // This function will be called after the shop ID is set
-    console.log('Displaying products for shop ID:', shopId);
-    
-    if (productsLoading) {
-      addBotMessage(`Loading products from ${shopName}...`);
-    } else {
-      // Filter products by the specific shop ID
-      const shopProducts = products.filter(product => product.shop_id === shopId);
-      console.log('Filtered products for shop:', shopProducts);
-      
-      if (shopProducts.length === 0) {
-        addBotMessage(`Sorry, no products are currently available from ${shopName} in the ${selectedCategory} category. Please try another shop.`, shops.map(shop => shop.name));
-        setCurrentStep('shop_selection');
-      } else {
-        addBotMessage(
-          `Perfect! Here are the available ${selectedCategory.toLowerCase()} items from ${shopName}. You can add items to your cart by clicking on them:`,
-          undefined,
-          shopProducts
-        );
-      }
-    }
-  };
-
-  const handleProductAdd = (product: any) => {
-    const existingItem = cart.find(item => item.name === product.name);
-    if (existingItem) {
-      setCart(cart.map(item => 
-        item.name === product.name 
-          ? { ...item, quantity: item.quantity + 1 }
-          : item
-      ));
-    } else {
-      setCart([...cart, { ...product, quantity: 1 }]);
-    }
-    toast.success(`${product.name} added to cart!`);
-    
-    setTimeout(() => {
-      addBotMessage('Item added to cart! You can continue shopping or proceed to checkout when ready.', ['Continue Shopping', 'Proceed to Checkout']);
-    }, 500);
+  const onLogout = () => {
+    handleLogout();
+    resetForNewCustomer();
+    showWelcomeMessage();
   };
 
   const handleOptionClick = (option: string) => {
@@ -345,222 +148,44 @@ const CustomerPortal = () => {
     }
   };
 
-  const handleConfirmOrder = async () => {
-    if (!customer) return;
-    
-    try {
-      // Calculate total amount
-      const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-      
-      // Generate unique order ID and number
-      const orderNumber = `CP${Date.now().toString().slice(-6)}`;
-      
-      // Create the order in the orders table for admin panel
-      const orderData = {
-        order_number: orderNumber,
-        customer_name: customer.name,
-        customer_phone: customer.phone,
-        customer_address: customer.address,
-        shop_name: selectedShop,
-        product_details: cart.map(item => ({
-          name: item.name,
-          quantity: item.quantity,
-          price: item.price,
-          description: `${item.name} from ${selectedShop} (${selectedCategory})`
-        })),
-        total_amount: total,
-        delivery_charge: 0,
-        commission: 0,
-        payment_status: 'pending',
-        payment_method: 'cash',
-        order_status: 'pending',
-        special_instructions: `Category: ${selectedCategory}`,
-        created_by: 'Customer Portal'
-      };
-      
-      console.log('Creating order with data:', orderData);
-      
-      // Insert order into orders table
-      const { data: orderResult, error: orderError } = await supabase
-        .from('orders')
-        .insert([orderData])
-        .select()
-        .single();
-      
-      if (orderError) {
-        console.error('Order creation error:', orderError);
-        throw orderError;
-      }
-      
-      console.log('Order created successfully:', orderResult);
-      
-      addBotMessage(
-        '🎉 Order placed successfully!\n\nYour order has been automatically sent to our admin panel and will be processed shortly. You will receive updates on your order status. Thank you for choosing our service!\n\nWould you like to place another order?',
-        ['Place Another Order', 'Done for Now']
-      );
-      toast.success('Order placed and sent to admin panel!');
-      setCurrentStep('completed');
-      
-    } catch (error) {
-      console.error('Error placing order:', error);
-      addBotMessage(
-        '🎉 Order placed successfully!\n\nYour order has been automatically sent to our admin panel and will be processed shortly. You will receive updates on your order status. Thank you for choosing our service!\n\nWould you like to place another order?',
-        ['Place Another Order', 'Done for Now']
-      );
-      toast.success('Order placed and sent to admin panel!');
-      setCurrentStep('completed');
-    }
-  };
-
-  const startNewOrder = () => {
-    setMessages([]);
-    setCurrentStep('welcome');
-    setSelectedCategory('');
-    setSelectedShop('');
-    setSelectedShopId('');
-    setCart([]);
-    setInputValue('');
-    
-    // Show welcome message with category options
-    addBotMessage(`Ready for your next order! 🛒\n\nI'm here to help you place another order. Let's start by choosing a category.`, CATEGORIES.map(cat => `${cat.emoji} ${cat.name}`));
-    toast.success('Ready for your next order!');
-  };
-
-  const getTotalItems = () => {
-    return cart.reduce((sum, item) => sum + item.quantity, 0);
-  };
-
-  const getTotalAmount = () => {
-    return cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  };
-
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col max-w-sm mx-auto">
-      {/* Mobile Header - Zepto Style */}
-      <div className="bg-white shadow-sm border-b px-3 py-2 flex items-center justify-between sticky top-0 z-40">
-        <div className="flex items-center gap-2 flex-1 min-w-0">
-          <div className="flex items-center gap-1 bg-blue-600 text-white px-2 py-1 rounded text-xs font-bold flex-shrink-0">
-            <MessageCircle className="h-3 w-3" />
-            SLICKERCONNECT
-          </div>
-          <div className="min-w-0 flex-1">
-            <h1 className="text-sm font-semibold truncate">Order Assistant</h1>
-            {selectedCategory && (
-              <span className="text-xs text-gray-600 bg-gray-100 px-2 py-0.5 rounded text-nowrap">
-                {selectedCategory}
-              </span>
-            )}
-          </div>
-          {(shopsLoading || productsLoading) && (
-            <Loader2 className="h-3 w-3 animate-spin text-blue-600 flex-shrink-0" />
-          )}
-        </div>
-        
-        {/* Cart & User Info */}
-        <div className="flex items-center gap-2">
-          {/* New Order Button - Show when order is completed */}
-          {currentStep === 'completed' && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={startNewOrder}
-              className="h-6 px-2 text-xs"
-            >
-              <RotateCcw className="h-3 w-3 mr-1" />
-              New Order
-            </Button>
-          )}
-          
-          {cart.length > 0 && currentStep !== 'completed' && (
-            <div className="flex items-center gap-1 bg-blue-100 px-2 py-1 rounded-full">
-              <ShoppingCart className="h-3 w-3 text-blue-600" />
-              <span className="text-xs font-medium text-blue-800">
-                {getTotalItems()} • ₹{getTotalAmount()}
-              </span>
-            </div>
-          )}
-          {customer && (
-            <div className="flex items-center gap-1">
-              <User className="h-3 w-3 text-gray-600" />
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleLogout}
-                className="h-6 w-6 p-0"
-              >
-                <LogOut className="h-3 w-3" />
-              </Button>
-            </div>
-          )}
-        </div>
-      </div>
+      <CustomerPortalHeader
+        selectedCategory={selectedCategory}
+        shopsLoading={shopsLoading}
+        productsLoading={productsLoading}
+        currentStep={currentStep}
+        cartTotalItems={getTotalItems()}
+        cartTotalAmount={getTotalAmount()}
+        customer={customer}
+        onNewOrder={startNewOrder}
+        onLogout={onLogout}
+      />
 
-      {/* Login Form Modal - Mobile Optimized */}
-      {showLoginForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <Card className="w-full max-w-xs">
-            <CardContent className="p-4">
-              <h2 className="text-base font-semibold mb-3">Login / Register</h2>
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-xs font-medium mb-1">Phone Number</label>
-                  <Input
-                    type="tel"
-                    placeholder="Enter your phone number"
-                    value={loginPhone}
-                    onChange={(e) => setLoginPhone(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && handleLogin()}
-                    className="text-sm h-9"
-                  />
-                </div>
-                <div className="flex gap-2">
-                  <Button onClick={handleLogin} className="flex-1 h-8 text-xs">
-                    Continue
-                  </Button>
-                  <Button variant="outline" onClick={() => setShowLoginForm(false)} className="h-8 text-xs">
-                    Cancel
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+      <LoginModal
+        showLoginForm={showLoginForm}
+        loginPhone={loginPhone}
+        setLoginPhone={setLoginPhone}
+        onLogin={onLogin}
+        onCancel={() => setShowLoginForm(false)}
+      />
 
-      {/* Chat Area - Mobile Optimized */}
-      <div className="flex-1 overflow-y-auto p-2 space-y-2 pb-16">
-        {messages.map((message) => (
-          <ChatMessage
-            key={message.id}
-            message={message}
-            onOptionClick={message.type === 'bot' && message.options ? (
-              currentStep === 'welcome' ? handleCategorySelection :
-              currentStep === 'shop_selection' ? handleShopSelection : 
-              handleOptionClick
-            ) : undefined}
-            onProductAdd={message.products ? handleProductAdd : undefined}
-          />
-        ))}
-        <div ref={messagesEndRef} />
-      </div>
+      <ChatArea
+        messages={messages}
+        currentStep={currentStep}
+        messagesEndRef={messagesEndRef}
+        onCategorySelection={handleCategorySelection}
+        onShopSelection={handleShopSelection}
+        onOptionClick={handleOptionClick}
+        onProductAdd={handleProductAdd}
+      />
 
-      {/* Input Area - Mobile Optimized */}
-      {currentStep !== 'completed' && ['register', 'register_address'].includes(currentStep) && (
-        <div className="bg-white border-t p-2 fixed bottom-0 left-0 right-0">
-          <div className="flex gap-2 max-w-sm mx-auto">
-            <Input
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleRegistration()}
-              placeholder="Type your message..."
-              className="flex-1 text-sm h-8"
-            />
-            <Button onClick={handleRegistration} disabled={!inputValue.trim()} className="h-8 px-2">
-              <Send className="h-3 w-3" />
-            </Button>
-          </div>
-        </div>
-      )}
+      <OrderInputArea
+        currentStep={currentStep}
+        inputValue={inputValue}
+        setInputValue={setInputValue}
+        onSubmit={onRegistration}
+      />
     </div>
   );
 };
