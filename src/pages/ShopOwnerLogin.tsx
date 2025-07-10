@@ -19,45 +19,48 @@ const ShopOwnerLogin = () => {
   const navigate = useNavigate();
 
   const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!selectedShop) {
-      toast.error('Please select a shop');
-      return;
-    }
-    
-    if (!accessCode) {
-      toast.error('Please enter access code');
-      return;
-    }
-    
-    setIsLoading(true);
+  e.preventDefault();
 
-    // Simple demo validation - any shop with "shop123" code
-    if (accessCode === 'shop123') {
-      const shop = SHOPS.find(s => s.id === selectedShop);
-      if (shop) {
-        const sessionData = {
-          shopName: shop.name,
-          shopId: shop.id,
-          timestamp: new Date().toISOString()
-        };
-        
-        localStorage.setItem('shop_owner_session', JSON.stringify(sessionData));
-        console.log('Shop session stored:', sessionData);
-        
-        setShopName(shop.name);
-        toast.success(`Welcome to ${shop.name}!`);
-        navigate('/shop-dashboard');
-      } else {
-        toast.error('Shop not found');
-      }
-    } else {
-      toast.error('Invalid access code. Use "shop123" for demo access.');
-    }
+  if (!selectedShop) {
+    toast.error('Please select a shop');
+    return;
+  }
 
+  if (!accessCode) {
+    toast.error('Please enter access code');
+    return;
+  }
+
+  setIsLoading(true);
+
+  const shop = SHOPS.find(s => s.id === selectedShop);
+
+  if (!shop) {
+    toast.error('Shop not found');
     setIsLoading(false);
-  };
+    return;
+  }
+
+  if (accessCode === shop.accessCode) {
+    const sessionData = {
+      shopName: shop.name,
+      shopId: shop.id,
+      timestamp: new Date().toISOString()
+    };
+    
+    localStorage.setItem('shop_owner_session', JSON.stringify(sessionData));
+    console.log('Shop session stored:', sessionData);
+    
+    setShopName(shop.name);
+    toast.success(`Welcome to ${shop.name}!`);
+    navigate('/shop-dashboard');
+  } else {
+    toast.error('Invalid access code for this shop.');
+  }
+
+  setIsLoading(false);
+};
+
 
   return (
     <div className="min-h-screen relative overflow-hidden">
@@ -113,9 +116,7 @@ const ShopOwnerLogin = () => {
                 required
                 className="backdrop-blur-sm bg-white/10 border border-white/20 text-white placeholder:text-white/50 focus:border-white/40 focus:bg-white/20"
               />
-              <p className="text-xs text-white/60 mt-1">
-                Demo access code: <span className="font-mono text-white/80">shop123</span>
-              </p>
+              
             </div>
             
             <Button 
