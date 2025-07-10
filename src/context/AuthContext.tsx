@@ -37,7 +37,14 @@ const mockUsers: User[] = [
   {
     id: '4',
     name: 'Sree',
-    email: 'Sree@slickerconnect.com',
+    email: 'sree@slickerconnect.com',
+    role: 'admin',
+    avatar: '/placeholder.svg',
+  },
+  {
+    id: '4',
+    name: 'Rishi',
+    email: 'rishi@slickerconnect.com',
     role: 'admin',
     avatar: '/placeholder.svg',
   },
@@ -49,7 +56,9 @@ const userCredentials: Record<string, string> = {
   'kns13@slickerconnect.com': 'KNS1313',
   'sachu@slickerconnect.com': 'sachu123',
   'jiju@slickerconnect.com': 'jiju123',
-  'Sree@slickerconnect.com': 'Sree123',
+  'sree@slickerconnect.com': 'sree123',
+  'rishi@slickerconnect.com': 'rishi123',
+  
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
