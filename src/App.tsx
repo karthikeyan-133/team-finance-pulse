@@ -46,11 +46,13 @@ const App = () => {
             <ShopOwnerProvider>
               <BrowserRouter>
                 <Routes>
-                  <Route path="/" element={<Index />} />
-                  <Route path="/login" element={<Login />} />
-                  <Route path="/customer-portal" element={<CustomerPortal />} />
+                  {/* Main route - Customer Portal */}
+                  <Route path="/" element={<CustomerPortal />} />
                   
-                  {/* Delivery Boy Routes (separate from admin) */}
+                  {/* Admin Panel - Login redirects to admin dashboard */}
+                  <Route path="/login" element={<Login />} />
+                  
+                  {/* Delivery Boy Routes */}
                   <Route path="/delivery-boy-login" element={<DeliveryBoyLogin />} />
                   <Route path="/delivery-boy-dashboard" element={<DeliveryBoyDashboard />} />
                   
@@ -75,6 +77,7 @@ const App = () => {
                     <Route path="shop-payments" element={<ShopPaymentManagement />} />
                   </Route>
                   
+                  {/* Fallback - redirect to customer portal */}
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
               </BrowserRouter>
