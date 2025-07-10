@@ -9,6 +9,7 @@ function App() {
       <div className="min-h-screen bg-background">
         <Routes>
           <Route path="/" element={<ShopLogin />} />
+          <Route path="/shop-login" element={<ShopLogin />} />
           <Route path="/dashboard" element={<BusinessDashboard />} />
         </Routes>
         <Toaster />
