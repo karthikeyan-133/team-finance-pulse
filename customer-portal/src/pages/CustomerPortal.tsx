@@ -439,7 +439,10 @@ const CustomerPortal = () => {
       {/* Mobile Header - Zepto Style */}
       <div className="bg-white shadow-sm border-b px-3 py-2 flex items-center justify-between sticky top-0 z-40">
         <div className="flex items-center gap-2 flex-1 min-w-0">
-          <MessageCircle className="h-5 w-5 text-blue-600 flex-shrink-0" />
+          <div className="flex items-center gap-1 bg-blue-600 text-white px-2 py-1 rounded text-xs font-bold flex-shrink-0">
+            <MessageCircle className="h-3 w-3" />
+            SLICKERCONNECT
+          </div>
           <div className="min-w-0 flex-1">
             <h1 className="text-sm font-semibold truncate">Order Assistant</h1>
             {selectedCategory && (
