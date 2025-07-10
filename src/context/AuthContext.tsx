@@ -42,7 +42,7 @@ const mockUsers: User[] = [
     avatar: '/placeholder.svg',
   },
   {
-    id: '4',
+    id: '5',
     name: 'Rishi',
     email: 'rishi@slickerconnect.com',
     role: 'admin',
