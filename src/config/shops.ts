@@ -10,77 +10,92 @@ export const SHOPS: Shop[] = [
   {
     id: 'shop-1',
     name: 'Al Ameen',
-    isActive: true
+    isActive: true,
+    accessCode: 'F121BKSL13'
   },
   {
     id: 'shop-2',
     name: 'Al Cafe',
-    isActive: true
+    isActive: true,
+    accessCode: 'F122BKSL13'
   },
   {
     id: 'shop-3',
     name: 'AMR',
-    isActive: true
+    isActive: true,
+    accessCode: 'F123BKSL13'
   },
   {
     id: 'shop-4',
     name: 'Fish Shop',
-    isActive: true
+    isActive: true,
+    accessCode: 'F124BKSL13'
   },
   {
     id: 'shop-5',
     name: 'Food Dude',
-    isActive: true
+    isActive: true,
+    accessCode: 'F125BKSL13'
   },
   {
     id: 'shop-6',
     name: 'Haritham Vegetables',
-    isActive: true
+    isActive: true,
+    accessCode: 'F126BKSL13'
   },
   {
     id: 'shop-7',
     name: 'KL 70',
-    isActive: true
+    isActive: true,
+    accessCode: 'F127BKSL13'
   },
   {
     id: 'shop-8',
     name: 'Malabar Green',
-    isActive: true
+    isActive: true,
+    accessCode: 'F128BKSL13'
   },
   {
     id: 'shop-9',
     name: 'Metro Bakery',
-    isActive: true
+    isActive: true,
+    accessCode: 'F129BKSL13'
   },
   {
     id: 'shop-10',
     name: 'Milko',
-    isActive: true
+    isActive: true,
+    accessCode: 'F130BKSL13'
   },
   {
     id: 'shop-11',
     name: 'Moon Star',
-    isActive: true
+    isActive: true,
+    accessCode: 'F131BKSL13'
   },
   {
     id: 'shop-12',
     name: 'Muji Biriyani',
-    isActive: true
+    isActive: true,
+    accessCode: 'F132BKSL13'
   },
   {
     id: 'shop-13',
     name: 'Nazar',
-    isActive: true
+    isActive: true,
+    accessCode: 'F133BKSL13'
   },
   {
     id: 'shop-14',
     name: 'Thejus Bakery',
-    isActive: true
+    isActive: true,
+    accessCode: 'F134BKSL13'
   },
   {
     id: 'shop-15',
     name: 'Zyra',
-    isActive: true
+    isActive: true,
+    accessCode: 'F135BKSL13'
   },
   
   
