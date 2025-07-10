@@ -2,17 +2,10 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Store, Package, DollarSign, Clock, CheckCircle, TrendingUp, Plus, Settings } from 'lucide-react';
-import { useRealTimeShops } from '../../src/hooks/useRealTimeShops';
-import { ShopCard } from '../../src/components/shops/ShopCard';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { ShopForm } from '../../src/components/shops/ShopForm';
+import { Store, Package, DollarSign, Clock, CheckCircle, TrendingUp } from 'lucide-react';
 
 const BusinessDashboard = () => {
   const [selectedTab, setSelectedTab] = useState('dashboard');
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [editingShop, setEditingShop] = useState<any>(null);
-  const { shops, loading, error } = useRealTimeShops();
 
   // Mock data for demonstration
   const stats = {
@@ -35,11 +28,6 @@ const BusinessDashboard = () => {
       case 'delivered': return 'bg-blue-100 text-blue-800';
       default: return 'bg-gray-100 text-gray-800';
     }
-  };
-
-  const handleFormSuccess = () => {
-    setIsAddDialogOpen(false);
-    setEditingShop(null);
   };
 
   return (
@@ -190,94 +178,6 @@ const BusinessDashboard = () => {
             </CardContent>
           </Card>
         </div>
-
-        {/* Shop Management Section */}
-        <Card className="mt-8">
-          <CardHeader>
-            <div className="flex justify-between items-center">
-              <div>
-                <CardTitle className="flex items-center">
-                  <Store className="h-5 w-5 mr-2" />
-                  Shop Management
-                </CardTitle>
-                <p className="text-sm text-gray-600 mt-1">
-                  Total shops: {shops.length} | Active: {shops.filter(s => s.is_active).length}
-                </p>
-              </div>
-              <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Shop
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-2xl">
-                  <DialogHeader>
-                    <DialogTitle>Add New Shop</DialogTitle>
-                    <DialogDescription>
-                      Add a new shop to your network
-                    </DialogDescription>
-                  </DialogHeader>
-                  <ShopForm 
-                    onSuccess={handleFormSuccess}
-                    onCancel={() => setIsAddDialogOpen(false)}
-                  />
-                </DialogContent>
-              </Dialog>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto"></div>
-                <p className="mt-2 text-gray-600">Loading shops...</p>
-              </div>
-            ) : error ? (
-              <div className="text-center py-8 text-red-600">
-                <p>Error loading shops: {error}</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {shops.map(shop => (
-                  <ShopCard 
-                    key={shop.id} 
-                    shop={shop} 
-                    onEdit={setEditingShop}
-                  />
-                ))}
-              </div>
-            )}
-
-            {shops.length === 0 && !loading && (
-              <div className="text-center py-12">
-                <Store className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No shops found</h3>
-                <p className="text-gray-500">Add a new shop to get started.</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Edit Shop Dialog */}
-        {editingShop && (
-          <Dialog open={!!editingShop} onOpenChange={(open) => {
-            if (!open) setEditingShop(null);
-          }}>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>Edit Shop</DialogTitle>
-                <DialogDescription>
-                  Update shop information
-                </DialogDescription>
-              </DialogHeader>
-              <ShopForm 
-                shop={editingShop}
-                onSuccess={handleFormSuccess}
-                onCancel={() => setEditingShop(null)}
-              />
-            </DialogContent>
-          </Dialog>
-        )}
       </main>
     </div>
   );
