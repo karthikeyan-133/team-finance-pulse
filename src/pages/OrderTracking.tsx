@@ -145,6 +145,7 @@ const OrderTracking = () => {
         assigned_at: order.assigned_at || undefined,
         picked_up_at: order.picked_up_at || undefined,
         delivered_at: order.delivered_at || undefined,
+        delivery_time: order.delivery_time || undefined,
         special_instructions: order.special_instructions || undefined,
         created_by: order.created_by || 'Unknown',
         created_at: order.created_at,

@@ -27,6 +27,7 @@ export interface Order {
   ready_at?: string;
   picked_up_at?: string;
   delivered_at?: string;
+  delivery_time?: string;
   special_instructions?: string;
   created_by: string;
   created_at: string;

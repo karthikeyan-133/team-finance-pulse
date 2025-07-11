@@ -177,6 +177,7 @@ export type Database = {
           delivered_at: string | null
           delivery_boy_id: string | null
           delivery_charge: number | null
+          delivery_time: string | null
           id: string
           order_number: string
           order_status: string | null
@@ -205,6 +206,7 @@ export type Database = {
           delivered_at?: string | null
           delivery_boy_id?: string | null
           delivery_charge?: number | null
+          delivery_time?: string | null
           id?: string
           order_number: string
           order_status?: string | null
@@ -233,6 +235,7 @@ export type Database = {
           delivered_at?: string | null
           delivery_boy_id?: string | null
           delivery_charge?: number | null
+          delivery_time?: string | null
           id?: string
           order_number?: string
           order_status?: string | null

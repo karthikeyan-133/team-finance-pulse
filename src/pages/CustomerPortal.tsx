@@ -55,6 +55,7 @@ const CustomerPortal = () => {
   const [deliveryType, setDeliveryType] = useState<'urgent' | 'scheduled' | ''>('');
   const [selectedTimeSlot, setSelectedTimeSlot] = useState('');
   const [customTimeInput, setCustomTimeInput] = useState(false);
+  const [deliveryTime, setDeliveryTime] = useState('');
   const [orderHistory, setOrderHistory] = useState<any[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -419,6 +420,7 @@ const CustomerPortal = () => {
         payment_status: 'pending',
         payment_method: 'cash',
         order_status: 'pending',
+        delivery_time: deliveryTime,
         special_instructions: `Category: ${selectedCategory}${
           deliveryType === 'urgent' 
             ? ' | Delivery: Urgent (30-40 min)' 
@@ -552,6 +554,7 @@ const CustomerPortal = () => {
     
     const customTime = inputValue.trim();
     setSelectedTimeSlot(customTime);
+    setDeliveryTime(customTime);
     addUserMessage(customTime);
     setCustomTimeInput(false);
     setCurrentStep('delivery_time');
@@ -582,6 +585,7 @@ const CustomerPortal = () => {
       `👤 Name: ${customer?.name}\n` +
       `📞 Phone: ${customer?.phone}\n` +
       `🏠 Address: ${customer?.address}\n` +
+      `⏰ Delivery Time: ${deliveryTime}\n` +
       `${deliveryInfo}\n\n` +
       `🛒 Items:\n${cart.map(item => `• ${item.name} (₹${item.price}) × ${item.quantity}`).join('\n')}\n` +
       `Subtotal: ₹${total}\n` +
