@@ -529,13 +529,15 @@ const CustomerPortal = () => {
 
   const showTimeSlots = () => {
     const timeSlots = [
-      'Today 6:00-7:00 PM',
       'Today 8:00-9:00 PM',
+      'Today 9:00-10:00 PM',
+      'Tomorrow 10:00-11:00 AM',
+      'Tomorrow 2:00-3:00 PM',
       'Type Custom Time'
     ];
     
     addBotMessage(
-      `📅 Select Time Slot\n\nChoose your preferred delivery window or type your own:`,
+      `📅 Select Time Slot\n\nChoose your preferred delivery window or type your own time:`,
       timeSlots
     );
   };

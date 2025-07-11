@@ -4,6 +4,7 @@ export interface Shop {
   name: string;
   location?: string;
   isActive: boolean;
+  accessCode?: string;
 }
 
 export const SHOPS: Shop[] = [
