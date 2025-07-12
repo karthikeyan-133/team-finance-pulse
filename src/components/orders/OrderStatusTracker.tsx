@@ -15,6 +15,7 @@ interface OrderStatusTrackerProps {
     picked_up_at?: string;
     delivered_at?: string;
     delivery_time?: string;
+    created_at: string;
     customer_name: string;
     customer_address: string;
     shop_name: string;
@@ -115,6 +116,7 @@ const OrderStatusTracker: React.FC<OrderStatusTrackerProps> = ({ order, showTitl
           <div>
             <p><strong>Shop:</strong> {order.shop_name}</p>
             <p><strong>Amount:</strong> ₹{order.total_amount}</p>
+            <p><strong>Order Placed:</strong> {formatDateTime(order.created_at)}</p>
             {order.delivery_time && (
               <p><strong>Delivery Time:</strong> {order.delivery_time}</p>
             )}
