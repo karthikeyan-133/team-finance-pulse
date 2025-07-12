@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { LogOut, BarChart3, Truck, Package, Store, Zap, Menu } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import AdminNotifications from "@/components/notifications/AdminNotifications";
+import OrderNotifications from "@/components/notifications/OrderNotifications";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 const AppLayout = () => {
@@ -91,7 +92,10 @@ const AppLayout = () => {
             {/* Can add a search bar here later */}
           </div>
 
-          <AdminNotifications />
+          <div className="flex items-center gap-2">
+            <OrderNotifications />
+            <AdminNotifications />
+          </div>
           <div className="flex items-center space-x-3">
             <span className="text-sm text-foreground/90 font-medium hidden md:inline">
               {user?.email}
