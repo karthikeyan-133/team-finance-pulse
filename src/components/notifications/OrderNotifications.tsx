@@ -112,8 +112,13 @@ const OrderNotifications = () => {
   };
 
   const markAllAsRead = () => {
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    setNotifications(prev => prev.filter(n => n.read));
     setUnreadCount(0);
+  };
+
+  const markAsRead = (notificationId: string) => {
+    setNotifications(prev => prev.filter(n => n.id !== notificationId));
+    setUnreadCount(prev => Math.max(0, prev - 1));
   };
 
   const formatDateTime = (dateString: string) => {
@@ -171,9 +176,7 @@ const OrderNotifications = () => {
                   <Alert 
                     key={notification.id} 
                     className={`${!notification.read ? 'border-green-200 bg-green-50/50' : 'border-border'} hover:bg-accent/50 transition-colors cursor-pointer`}
-                    onClick={() => setNotifications(prev => 
-                      prev.map(n => n.id === notification.id ? { ...n, read: true } : n)
-                    )}
+                    onClick={() => markAsRead(notification.id)}
                   >
                     <div className="flex items-start gap-2">
                       <ShoppingCart className="h-4 w-4 mt-0.5 text-green-600" />
