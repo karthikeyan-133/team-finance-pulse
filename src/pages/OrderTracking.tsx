@@ -187,14 +187,27 @@ const OrderTracking = () => {
 
   const deleteOrder = async (orderId: string) => {
     try {
-      const { error } = await supabase
+      // First delete related shop_payments records
+      const { error: paymentsError } = await supabase
+        .from('shop_payments')
+        .delete()
+        .eq('order_id', orderId);
+
+      if (paymentsError) {
+        console.error('Error deleting shop payments:', paymentsError);
+        toast.error('Failed to delete related payments: ' + paymentsError.message);
+        return;
+      }
+
+      // Then delete the order
+      const { error: orderError } = await supabase
         .from('orders')
         .delete()
         .eq('id', orderId);
 
-      if (error) {
-        console.error('Error deleting order:', error);
-        toast.error('Failed to delete order: ' + error.message);
+      if (orderError) {
+        console.error('Error deleting order:', orderError);
+        toast.error('Failed to delete order: ' + orderError.message);
         return;
       }
 
