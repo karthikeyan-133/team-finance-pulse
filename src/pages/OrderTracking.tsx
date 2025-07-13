@@ -187,74 +187,17 @@ const OrderTracking = () => {
 
   const deleteOrder = async (orderId: string) => {
     try {
-      console.log('Starting delete process for order:', orderId);
-      
-      // First, check what shop_payments exist for this order
-      const { data: paymentsCheck, error: paymentsCheckError } = await supabase
-        .from('shop_payments')
-        .select('*')
-        .eq('order_id', orderId);
-      
-      console.log('Shop payments for this order:', paymentsCheck);
-      
-      if (paymentsCheckError) {
-        console.error('Error checking shop payments:', paymentsCheckError);
-      }
-
-      // Delete related shop_payments records first
-      const { error: paymentsError } = await supabase
-        .from('shop_payments')
-        .delete()
-        .eq('order_id', orderId);
-
-      if (paymentsError) {
-        console.error('Error deleting shop payments:', paymentsError);
-        toast.error('Failed to delete related payments: ' + paymentsError.message);
-        return;
-      }
-
-      console.log('Shop payments deleted successfully');
-
-      // Check for other foreign key relationships that might block deletion
-      const { data: orderAssignments, error: assignmentsCheckError } = await supabase
-        .from('order_assignments')
-        .select('*')
-        .eq('order_id', orderId);
-      
-      console.log('Order assignments for this order:', orderAssignments);
-      
-      if (assignmentsCheckError) {
-        console.error('Error checking order assignments:', assignmentsCheckError);
-      }
-
-      // Delete order assignments if they exist
-      if (orderAssignments && orderAssignments.length > 0) {
-        const { error: assignmentsError } = await supabase
-          .from('order_assignments')
-          .delete()
-          .eq('order_id', orderId);
-
-        if (assignmentsError) {
-          console.error('Error deleting order assignments:', assignmentsError);
-          toast.error('Failed to delete related assignments: ' + assignmentsError.message);
-          return;
-        }
-        console.log('Order assignments deleted successfully');
-      }
-
-      // Finally delete the order
-      const { error: orderError } = await supabase
+      const { error } = await supabase
         .from('orders')
         .delete()
         .eq('id', orderId);
 
-      if (orderError) {
-        console.error('Error deleting order:', orderError);
-        toast.error('Failed to delete order: ' + orderError.message);
+      if (error) {
+        console.error('Error deleting order:', error);
+        toast.error('Failed to delete order: ' + error.message);
         return;
       }
 
-      console.log('Order deleted successfully');
       toast.success('Order deleted successfully');
       fetchOrders(); // Refresh the orders list
     } catch (error) {
