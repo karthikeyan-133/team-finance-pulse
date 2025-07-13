@@ -4,7 +4,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Search, Package } from 'lucide-react';
+import { Button } from "@/components/ui/button";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Search, Package, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Order, ProductDetail } from '@/types/orders';
@@ -16,6 +18,7 @@ const OrderTracking = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [deleteOrderId, setDeleteOrderId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchOrders();
@@ -182,6 +185,27 @@ const OrderTracking = () => {
     setFilteredOrders(filtered);
   };
 
+  const deleteOrder = async (orderId: string) => {
+    try {
+      const { error } = await supabase
+        .from('orders')
+        .delete()
+        .eq('id', orderId);
+
+      if (error) {
+        console.error('Error deleting order:', error);
+        toast.error('Failed to delete order: ' + error.message);
+        return;
+      }
+
+      toast.success('Order deleted successfully');
+      fetchOrders(); // Refresh the orders list
+    } catch (error) {
+      console.error('Error deleting order:', error);
+      toast.error('Failed to delete order');
+    }
+  };
+
   const getStatusStats = () => {
     return {
       pending: orders.filter(o => o.order_status === 'pending').length,
@@ -293,12 +317,48 @@ const OrderTracking = () => {
               </div>
             ) : (
               filteredOrders.map((order) => (
-                <OrderStatusTracker key={order.id} order={order} />
+                <div key={order.id} className="relative">
+                  <OrderStatusTracker order={order} />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="absolute top-4 right-4 text-red-600 border-red-200 hover:bg-red-50"
+                    onClick={() => setDeleteOrderId(order.id)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
               ))
             )}
           </div>
         </CardContent>
       </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deleteOrderId} onOpenChange={() => setDeleteOrderId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Order</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this order? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 hover:bg-red-700"
+              onClick={() => {
+                if (deleteOrderId) {
+                  deleteOrder(deleteOrderId);
+                  setDeleteOrderId(null);
+                }
+              }}
+            >
+              Delete Order
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
