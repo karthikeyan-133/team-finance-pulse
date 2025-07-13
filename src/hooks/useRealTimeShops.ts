@@ -8,6 +8,7 @@ interface Shop {
   phone?: string;
   category: string;
   is_active: boolean;
+  is_partner: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -18,6 +19,7 @@ function normalizeShop(shop: any): Shop {
     ...shop,
     category: typeof shop.category === 'string' ? shop.category : '',
     is_active: typeof shop.is_active === 'boolean' ? shop.is_active : !!shop.is_active,
+    is_partner: typeof shop.is_partner === 'boolean' ? shop.is_partner : !!shop.is_partner,
   };
 }
 

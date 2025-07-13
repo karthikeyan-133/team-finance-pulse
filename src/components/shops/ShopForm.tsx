@@ -15,6 +15,7 @@ interface Shop {
   phone?: string;
   category: string;
   is_active: boolean;
+  is_partner: boolean;
 }
 
 interface ShopFormProps {
@@ -31,7 +32,8 @@ export const ShopForm = ({ shop, onSuccess, onCancel }: ShopFormProps) => {
     address: shop?.address || '',
     phone: shop?.phone || '',
     category: shop?.category || '',
-    is_active: shop?.is_active ?? true
+    is_active: shop?.is_active ?? true,
+    is_partner: shop?.is_partner ?? true
   });
   const [saving, setSaving] = useState(false);
 
@@ -119,14 +121,25 @@ export const ShopForm = ({ shop, onSuccess, onCancel }: ShopFormProps) => {
         </Select>
       </div>
 
-      <div className="flex items-center space-x-2">
-        <input
-          type="checkbox"
-          id="is_active"
-          checked={formData.is_active}
-          onChange={(e) => setFormData({...formData, is_active: e.target.checked})}
-        />
-        <Label htmlFor="is_active">Shop is active</Label>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="flex items-center space-x-2">
+          <input
+            type="checkbox"
+            id="is_active"
+            checked={formData.is_active}
+            onChange={(e) => setFormData({...formData, is_active: e.target.checked})}
+          />
+          <Label htmlFor="is_active">Shop is active</Label>
+        </div>
+        <div className="flex items-center space-x-2">
+          <input
+            type="checkbox"
+            id="is_partner"
+            checked={formData.is_partner}
+            onChange={(e) => setFormData({...formData, is_partner: e.target.checked})}
+          />
+          <Label htmlFor="is_partner">Partner shop (no extra charges)</Label>
+        </div>
       </div>
 
       <div className="flex gap-2 pt-4">

@@ -14,6 +14,7 @@ interface Shop {
   phone?: string;
   category: string;
   is_active: boolean;
+  is_partner: boolean;
 }
 
 interface ShopCardProps {
@@ -60,11 +61,16 @@ export const ShopCard = ({ shop, onEdit }: ShopCardProps) => {
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-2">
             <Badge variant="secondary">{shop.category}</Badge>
-            <Badge variant={shop.is_active ? "default" : "destructive"}>
-              {shop.is_active ? 'Active' : 'Inactive'}
-            </Badge>
+            <div className="flex gap-1">
+              <Badge variant={shop.is_active ? "default" : "destructive"}>
+                {shop.is_active ? 'Active' : 'Inactive'}
+              </Badge>
+              <Badge variant={shop.is_partner ? "default" : "outline"}>
+                {shop.is_partner ? 'Partner' : 'Non-Partner (+₹30)'}
+              </Badge>
+            </div>
           </div>
           
           {shop.phone && (

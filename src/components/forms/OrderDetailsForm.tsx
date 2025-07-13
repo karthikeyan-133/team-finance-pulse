@@ -11,9 +11,11 @@ import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { ProductDetail } from '@/types/orders';
+import { useRealTimeShops } from '@/hooks/useRealTimeShops';
 
 const OrderDetailsForm = () => {
   const { user } = useAuth();
+  const { shops } = useRealTimeShops();
   
   const [formData, setFormData] = useState({
     customer_name: '',
@@ -61,7 +63,12 @@ const OrderDetailsForm = () => {
   const calculateTotal = () => {
     const productTotal = products.reduce((sum, product) => sum + (product.quantity * product.price), 0);
     const deliveryCharge = parseFloat(formData.delivery_charge) || 0;
-    return productTotal + deliveryCharge;
+    
+    // Add extra charge for non-partner shops
+    const selectedShop = shops.find(shop => shop.name === formData.shop_name);
+    const extraCharge = selectedShop && !selectedShop.is_partner ? 30 : 0;
+    
+    return productTotal + deliveryCharge + extraCharge;
   };
 
   const generateOrderNumber = () => {
@@ -192,13 +199,18 @@ const OrderDetailsForm = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="shop_name">Shop Name *</Label>
-                <Input
-                  id="shop_name"
-                  name="shop_name"
-                  value={formData.shop_name}
-                  onChange={handleInputChange}
-                  required
-                />
+                <Select value={formData.shop_name} onValueChange={(value) => handleSelectChange('shop_name', value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a shop" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {shops.map(shop => (
+                      <SelectItem key={shop.id} value={shop.name}>
+                        {shop.name} {!shop.is_partner && '(Non-Partner +₹30)'}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <Label htmlFor="shop_phone">Shop Phone</Label>
@@ -361,8 +373,21 @@ const OrderDetailsForm = () => {
 
           {/* Order Total */}
           <div className="bg-gray-50 p-4 rounded-lg">
-            <div className="text-lg font-medium">
-              Total Amount: ₹{calculateTotal().toFixed(2)}
+            <div className="space-y-2">
+              <div className="text-lg font-medium">
+                Total Amount: ₹{calculateTotal().toFixed(2)}
+              </div>
+              {(() => {
+                const selectedShop = shops.find(shop => shop.name === formData.shop_name);
+                if (selectedShop && !selectedShop.is_partner) {
+                  return (
+                    <div className="text-sm text-orange-600">
+                      * Includes ₹30 extra charge for non-partner shop
+                    </div>
+                  );
+                }
+                return null;
+              })()}
             </div>
           </div>
 

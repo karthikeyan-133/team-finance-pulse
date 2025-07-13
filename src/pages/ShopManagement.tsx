@@ -14,12 +14,17 @@ const categories = ['Food', 'Grocery', 'Vegetables', 'Meat'];
 const ShopManagement = () => {
   const { shops, loading, error } = useRealTimeShops();
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [selectedPartnerStatus, setSelectedPartnerStatus] = useState<string>('all');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingShop, setEditingShop] = useState<any>(null);
 
-  const filteredShops = shops.filter(shop => 
-    selectedCategory === 'all' || shop.category === selectedCategory
-  );
+  const filteredShops = shops.filter(shop => {
+    const categoryMatch = selectedCategory === 'all' || shop.category === selectedCategory;
+    const partnerMatch = selectedPartnerStatus === 'all' || 
+      (selectedPartnerStatus === 'partner' && shop.is_partner) ||
+      (selectedPartnerStatus === 'non-partner' && !shop.is_partner);
+    return categoryMatch && partnerMatch;
+  });
 
   const handleFormSuccess = () => {
     setIsAddDialogOpen(false);
@@ -98,6 +103,19 @@ const ShopManagement = () => {
                   {categories.map(category => (
                     <SelectItem key={category} value={category}>{category}</SelectItem>
                   ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="partner-filter">Filter by Partnership</Label>
+              <Select value={selectedPartnerStatus} onValueChange={setSelectedPartnerStatus}>
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="All Shops" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Shops</SelectItem>
+                  <SelectItem value="partner">Partner Shops</SelectItem>
+                  <SelectItem value="non-partner">Non-Partner Shops</SelectItem>
                 </SelectContent>
               </Select>
             </div>

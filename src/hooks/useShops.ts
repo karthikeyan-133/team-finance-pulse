@@ -9,6 +9,7 @@ interface Shop {
   phone?: string;
   category: string;
   is_active: boolean;
+  is_partner: boolean;
 }
 
 export const useShops = (category?: string) => {
