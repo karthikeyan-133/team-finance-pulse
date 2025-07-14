@@ -371,7 +371,7 @@ const CustomerPortal = () => {
       );
       // Show delivery options immediately
       showDeliveryOptions();
-    } else if (option.includes('Urgent Delivery') || option.includes('Scheduled Delivery')) {
+    } else if (option.includes('Urgent Delivery (Charge Applicable RS:30') || option.includes('Scheduled Delivery')) {
       handleDeliveryTypeSelection(option);
     } else if (option.includes('Today') || option.includes('Tomorrow')) {
       handleTimeSlotSelection(option);
