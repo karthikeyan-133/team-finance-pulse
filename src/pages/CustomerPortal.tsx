@@ -71,6 +71,13 @@ const CustomerPortal = () => {
     scrollToBottom();
   }, [messages]);
 
+  // Effect to display products when they finish loading after shop selection
+  useEffect(() => {
+    if (currentStep === 'products' && selectedShopId && selectedShop && !productsLoading && products.length > 0) {
+      handleProductsDisplay(selectedShopId, selectedShop);
+    }
+  }, [products, productsLoading, currentStep, selectedShopId, selectedShop]);
+
   useEffect(() => {
     // Check if customer is already logged in
     const savedCustomer = localStorage.getItem('customer_data');
@@ -278,31 +285,28 @@ const CustomerPortal = () => {
     addUserMessage(shopName);
     setCurrentStep('products');
     
-    // Show products immediately without loading delay
-    handleProductsDisplay(selectedShopData.id, shopName);
+    // Products will be displayed via useEffect when they finish loading
   };
 
   const handleProductsDisplay = (shopId: string, shopName: string) => {
     // This function will be called after the shop ID is set
     console.log('Displaying products for shop ID:', shopId);
     
-    // Filter products by the specific shop ID
-    const shopProducts = products.filter(product => product.shop_id === shopId);
+    // Show loading message while products are being fetched
+    if (productsLoading) {
+      addBotMessage(`Loading products from ${shopName}...`);
+      return;
+    }
+    
+    // Filter products by the specific shop ID and category
+    const shopProducts = products.filter(product => 
+      product.shop_id === shopId && product.category === selectedCategory
+    );
     console.log('Filtered products for shop:', shopProducts);
     
     if (shopProducts.length === 0) {
-      // Check if products might still be loading
-      const latestProducts = products.filter(product => product.shop_id === shopId);
-      if (latestProducts.length === 0) {
-        addBotMessage(`Sorry, no products are currently available from ${shopName} in the ${selectedCategory} category. Please try another shop.`, shops.map(shop => shop.name));
-        setCurrentStep('shop_selection');
-      } else {
-        addBotMessage(
-          `Perfect! Here are the available ${selectedCategory.toLowerCase()} items from ${shopName}. You can add items to your cart by clicking on them:`,
-          undefined,
-          latestProducts
-        );
-      }
+      addBotMessage(`Sorry, no products are currently available from ${shopName} in the ${selectedCategory} category. Please try another shop.`, shops.map(shop => shop.name));
+      setCurrentStep('shop_selection');
     } else {
       addBotMessage(
         `Perfect! Here are the available ${selectedCategory.toLowerCase()} items from ${shopName}. You can add items to your cart by clicking on them:`,

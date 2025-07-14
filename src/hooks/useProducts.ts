@@ -61,13 +61,8 @@ export const useProducts = (shopId?: string, category?: string) => {
       }
     };
 
-    // Only fetch if shopId is provided (for Customer Portal use case)
-    if (shopId) {
-      fetchProducts();
-    } else {
-      // If no shopId provided, still fetch but don't filter by shop
-      fetchProducts();
-    }
+    // Always fetch products - filter by shopId and category if provided
+    fetchProducts();
   }, [shopId, category]);
 
   return { products, loading, error };
