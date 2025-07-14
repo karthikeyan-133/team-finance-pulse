@@ -333,7 +333,55 @@ const CustomerPortal = () => {
       ? '\n\n⚠️ Note: This is a non-partner shop. An additional charge of ₹30 will be applied to your order.' 
       : '';
     
-    addBotMessage(`Item added to cart! You can continue shopping or proceed to checkout when ready.${extraChargeMessage}`, ['Continue Shopping', 'Proceed to Checkout']);
+    addBotMessage(`Item added to cart! You can continue shopping or proceed to checkout when ready.${extraChargeMessage}`, ['Continue Shopping', 'View Cart', 'Proceed to Checkout']);
+  };
+
+  const handleRemoveFromCart = (productName: string) => {
+    const existingItem = cart.find(item => item.name === productName);
+    if (existingItem && existingItem.quantity > 1) {
+      // Reduce quantity by 1
+      setCart(cart.map(item => 
+        item.name === productName 
+          ? { ...item, quantity: item.quantity - 1 }
+          : item
+      ));
+      toast.success(`Reduced ${productName} quantity by 1`);
+    } else {
+      // Remove item completely
+      setCart(cart.filter(item => item.name !== productName));
+      toast.success(`${productName} removed from cart`);
+    }
+    
+    // Show updated cart
+    showCart();
+  };
+
+  const showCart = () => {
+    if (cart.length === 0) {
+      addBotMessage('Your cart is empty! 🛒\n\nWould you like to continue shopping?', ['Continue Shopping']);
+      return;
+    }
+
+    const selectedShopData = shops.find(shop => shop.name === selectedShop);
+    const isPartnerShop = selectedShopData?.is_partner !== false;
+    const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    
+    const cartItems = cart.map(item => 
+      `• ${item.name} - ₹${item.price} × ${item.quantity} = ₹${item.price * item.quantity}`
+    ).join('\n');
+
+    const extraChargeMessage = !isPartnerShop 
+      ? '\n⚠️ Non-Partner Shop: Additional ₹30 charge will apply' 
+      : '';
+    
+    addBotMessage(
+      `🛒 Your Cart:\n\n${cartItems}\n\nSubtotal: ₹${total}${extraChargeMessage}\n\nWhat would you like to do?`,
+      [
+        'Continue Shopping',
+        'Remove Item',
+        'Proceed to Checkout'
+      ]
+    );
   };
 
   const handleOptionClick = (option: string) => {
@@ -392,6 +440,22 @@ const CustomerPortal = () => {
       showOrderSummary();
     } else if (option === 'Continue Shopping') {
       addBotMessage('Great! Feel free to add more items to your cart.');
+    } else if (option === 'View Cart') {
+      showCart();
+    } else if (option === 'Remove Item') {
+      if (cart.length === 0) {
+        addBotMessage('Your cart is empty! Nothing to remove.', ['Continue Shopping']);
+        return;
+      }
+      
+      addBotMessage(
+        'Which item would you like to remove?\n\nSelect an item below:',
+        cart.map(item => `❌ ${item.name} (Qty: ${item.quantity})`)
+      );
+    } else if (option.startsWith('❌ ')) {
+      // Handle item removal
+      const itemName = option.replace('❌ ', '').split(' (Qty:')[0];
+      handleRemoveFromCart(itemName);
     } else if (option === 'Confirm Order') {
       handleConfirmOrder();
     }
