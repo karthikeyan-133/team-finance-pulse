@@ -63,24 +63,6 @@ const CustomerPortal = () => {
   const { shops, loading: shopsLoading } = useShops(selectedCategory);
   const { products, loading: productsLoading } = useProducts(selectedShopId, selectedCategory);
 
-  // Handle products display when they're loaded
-  useEffect(() => {
-    if (selectedShopId && !productsLoading && currentStep === 'products') {
-      console.log('Products loaded for shop:', selectedShopId, products);
-      
-      if (products.length === 0) {
-        addBotMessage(`Sorry, no products are currently available from ${selectedShop} in the ${selectedCategory} category. Please try another shop.`, shops.map(shop => shop.name));
-        setCurrentStep('shop_selection');
-      } else {
-        addBotMessage(
-          `Perfect! Here are the available ${selectedCategory.toLowerCase()} items from ${selectedShop}. You can add items to your cart by clicking on them:`,
-          undefined,
-          products
-        );
-      }
-    }
-  }, [selectedShopId, products, productsLoading, currentStep]);
-
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -304,8 +286,30 @@ const CustomerPortal = () => {
     // This function will be called after the shop ID is set
     console.log('Displaying products for shop ID:', shopId);
     
-    // Show loading message first
-    addBotMessage(`Loading ${selectedCategory.toLowerCase()} items from ${shopName}...`);
+    // Filter products by the specific shop ID
+    const shopProducts = products.filter(product => product.shop_id === shopId);
+    console.log('Filtered products for shop:', shopProducts);
+    
+    if (shopProducts.length === 0) {
+      // Check if products might still be loading
+      const latestProducts = products.filter(product => product.shop_id === shopId);
+      if (latestProducts.length === 0) {
+        addBotMessage(`Sorry, no products are currently available from ${shopName} in the ${selectedCategory} category. Please try another shop.`, shops.map(shop => shop.name));
+        setCurrentStep('shop_selection');
+      } else {
+        addBotMessage(
+          `Perfect! Here are the available ${selectedCategory.toLowerCase()} items from ${shopName}. You can add items to your cart by clicking on them:`,
+          undefined,
+          latestProducts
+        );
+      }
+    } else {
+      addBotMessage(
+        `Perfect! Here are the available ${selectedCategory.toLowerCase()} items from ${shopName}. You can add items to your cart by clicking on them:`,
+        undefined,
+        shopProducts
+      );
+    }
   };
 
   const handleProductAdd = (product: any) => {
