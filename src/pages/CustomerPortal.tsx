@@ -325,7 +325,15 @@ const CustomerPortal = () => {
     }
     toast.success(`${product.name} added to cart!`);
     
-    addBotMessage('Item added to cart! You can continue shopping or proceed to checkout when ready.', ['Continue Shopping', 'Proceed to Checkout']);
+    // Check if selected shop is partner or not
+    const selectedShopData = shops.find(shop => shop.name === selectedShop);
+    const isPartnerShop = selectedShopData?.is_partner !== false;
+    
+    const extraChargeMessage = !isPartnerShop 
+      ? '\n\n⚠️ Note: This is a non-partner shop. An additional charge of ₹30 will be applied to your order.' 
+      : '';
+    
+    addBotMessage(`Item added to cart! You can continue shopping or proceed to checkout when ready.${extraChargeMessage}`, ['Continue Shopping', 'Proceed to Checkout']);
   };
 
   const handleOptionClick = (option: string) => {
