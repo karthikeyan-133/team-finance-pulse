@@ -71,13 +71,6 @@ const CustomerPortal = () => {
     scrollToBottom();
   }, [messages]);
 
-  // Effect to display products when they finish loading after shop selection
-  useEffect(() => {
-    if (currentStep === 'products' && selectedShopId && selectedShop && !productsLoading && products.length > 0) {
-      handleProductsDisplay(selectedShopId, selectedShop);
-    }
-  }, [products, productsLoading, currentStep, selectedShopId, selectedShop]);
-
   useEffect(() => {
     // Check if customer is already logged in
     const savedCustomer = localStorage.getItem('customer_data');
@@ -285,28 +278,31 @@ const CustomerPortal = () => {
     addUserMessage(shopName);
     setCurrentStep('products');
     
-    // Products will be displayed via useEffect when they finish loading
+    // Show products immediately without loading delay
+    handleProductsDisplay(selectedShopData.id, shopName);
   };
 
   const handleProductsDisplay = (shopId: string, shopName: string) => {
     // This function will be called after the shop ID is set
     console.log('Displaying products for shop ID:', shopId);
     
-    // Show loading message while products are being fetched
-    if (productsLoading) {
-      addBotMessage(`Loading products from ${shopName}...`);
-      return;
-    }
-    
-    // Filter products by the specific shop ID and category
-    const shopProducts = products.filter(product => 
-      product.shop_id === shopId && product.category === selectedCategory
-    );
+    // Filter products by the specific shop ID
+    const shopProducts = products.filter(product => product.shop_id === shopId);
     console.log('Filtered products for shop:', shopProducts);
     
     if (shopProducts.length === 0) {
-      addBotMessage(`Sorry, no products are currently available from ${shopName} in the ${selectedCategory} category. Please try another shop.`, shops.map(shop => shop.name));
-      setCurrentStep('shop_selection');
+      // Check if products might still be loading
+      const latestProducts = products.filter(product => product.shop_id === shopId);
+      if (latestProducts.length === 0) {
+        addBotMessage(`Sorry, no products are currently available from ${shopName} in the ${selectedCategory} category. Please try another shop.`, shops.map(shop => shop.name));
+        setCurrentStep('shop_selection');
+      } else {
+        addBotMessage(
+          `Perfect! Here are the available ${selectedCategory.toLowerCase()} items from ${shopName}. You can add items to your cart by clicking on them:`,
+          undefined,
+          latestProducts
+        );
+      }
     } else {
       addBotMessage(
         `Perfect! Here are the available ${selectedCategory.toLowerCase()} items from ${shopName}. You can add items to your cart by clicking on them:`,
@@ -375,7 +371,7 @@ const CustomerPortal = () => {
       );
       // Show delivery options immediately
       showDeliveryOptions();
-    } else if (option.includes('Urgent Delivery (Charge Applicable RS:30') || option.includes('Scheduled Delivery')) {
+    } else if (option.includes('Urgent Delivery') || option.includes('Scheduled Delivery')) {
       handleDeliveryTypeSelection(option);
     } else if (option.includes('Today') || option.includes('Tomorrow')) {
       handleTimeSlotSelection(option);
@@ -397,10 +393,15 @@ const CustomerPortal = () => {
     if (!customer) return;
     
     try {
+      // Find selected shop details to check partner status
+      const selectedShopData = shops.find(shop => shop.name === selectedShop);
+      const isPartnerShop = selectedShopData?.is_partner !== false;
+      
       // Calculate total amount
       const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
       const urgentDeliveryCharge = deliveryType === 'urgent' ? 30 : 0;
-      const finalTotal = total + urgentDeliveryCharge;
+      const nonPartnerCharge = !isPartnerShop ? 30 : 0;
+      const finalTotal = total + urgentDeliveryCharge + nonPartnerCharge;
       
       // Generate unique order ID and number
       const orderNumber = `CP${Date.now().toString().slice(-6)}`;
@@ -419,7 +420,7 @@ const CustomerPortal = () => {
           description: `${item.name} from ${selectedShop} (${selectedCategory})`
         })),
         total_amount: finalTotal,
-        delivery_charge: urgentDeliveryCharge,
+        delivery_charge: urgentDeliveryCharge + nonPartnerCharge,
         commission: 0,
         payment_status: 'pending',
         payment_method: 'cash',
@@ -431,7 +432,7 @@ const CustomerPortal = () => {
             : deliveryType === 'scheduled' 
             ? ` | Delivery: Scheduled (${selectedTimeSlot})` 
             : ''
-        }`,
+        }${!isPartnerShop ? ' | Non-Partner Shop Charge: ₹30' : ''}`,
         created_by: 'Customer Portal'
       };
       
@@ -571,9 +572,15 @@ const CustomerPortal = () => {
 
   const showOrderSummary = () => {
     setCurrentStep('confirm');
+    
+    // Find selected shop details to check partner status
+    const selectedShopData = shops.find(shop => shop.name === selectedShop);
+    const isPartnerShop = selectedShopData?.is_partner !== false;
+    
     const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
     const urgentDeliveryCharge = deliveryType === 'urgent' ? 30 : 0;
-    const finalTotal = total + urgentDeliveryCharge;
+    const nonPartnerCharge = !isPartnerShop ? 30 : 0;
+    const finalTotal = total + urgentDeliveryCharge + nonPartnerCharge;
     
     let deliveryInfo = '';
     if (deliveryType === 'urgent') {
@@ -582,10 +589,12 @@ const CustomerPortal = () => {
       deliveryInfo = `🚚 Delivery: Scheduled (${selectedTimeSlot}) - Free`;
     }
     
+    const partnerStatus = isPartnerShop ? '✅ Partner Shop' : '⚠️ Non-Partner Shop';
+    
     addBotMessage(
       `Perfect! Here's your order summary:\n\n` +
       `📁 Category: ${selectedCategory}\n` +
-      `📍 Shop: ${selectedShop}\n` +
+      `📍 Shop: ${selectedShop} (${partnerStatus})\n` +
       `👤 Name: ${customer?.name}\n` +
       `📞 Phone: ${customer?.phone}\n` +
       `🏠 Address: ${customer?.address}\n` +
@@ -594,6 +603,7 @@ const CustomerPortal = () => {
       `🛒 Items:\n${cart.map(item => `• ${item.name} (₹${item.price}) × ${item.quantity}`).join('\n')}\n` +
       `Subtotal: ₹${total}\n` +
       (urgentDeliveryCharge > 0 ? `Delivery Charge: ₹${urgentDeliveryCharge}\n` : '') +
+      (!isPartnerShop ? `Non-Partner Shop Charge: ₹${nonPartnerCharge}\n` : '') +
       `\n💰 Total: ₹${finalTotal}\n\n` +
       `Would you like to confirm this order?`,
       ['Confirm Order', 'Edit Order']
