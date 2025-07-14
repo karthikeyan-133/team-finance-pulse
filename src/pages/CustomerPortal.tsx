@@ -393,15 +393,10 @@ const CustomerPortal = () => {
     if (!customer) return;
     
     try {
-      // Find selected shop details to check partner status
-      const selectedShopData = shops.find(shop => shop.name === selectedShop);
-      const isPartnerShop = selectedShopData?.is_partner !== false;
-      
       // Calculate total amount
       const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
       const urgentDeliveryCharge = deliveryType === 'urgent' ? 30 : 0;
-      const nonPartnerCharge = !isPartnerShop ? 30 : 0;
-      const finalTotal = total + urgentDeliveryCharge + nonPartnerCharge;
+      const finalTotal = total + urgentDeliveryCharge;
       
       // Generate unique order ID and number
       const orderNumber = `CP${Date.now().toString().slice(-6)}`;
@@ -420,7 +415,7 @@ const CustomerPortal = () => {
           description: `${item.name} from ${selectedShop} (${selectedCategory})`
         })),
         total_amount: finalTotal,
-        delivery_charge: urgentDeliveryCharge + nonPartnerCharge,
+        delivery_charge: urgentDeliveryCharge,
         commission: 0,
         payment_status: 'pending',
         payment_method: 'cash',
@@ -432,7 +427,7 @@ const CustomerPortal = () => {
             : deliveryType === 'scheduled' 
             ? ` | Delivery: Scheduled (${selectedTimeSlot})` 
             : ''
-        }${!isPartnerShop ? ' | Non-Partner Shop Charge: ₹30' : ''}`,
+        }`,
         created_by: 'Customer Portal'
       };
       
@@ -572,15 +567,9 @@ const CustomerPortal = () => {
 
   const showOrderSummary = () => {
     setCurrentStep('confirm');
-    
-    // Find selected shop details to check partner status
-    const selectedShopData = shops.find(shop => shop.name === selectedShop);
-    const isPartnerShop = selectedShopData?.is_partner !== false;
-    
     const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
     const urgentDeliveryCharge = deliveryType === 'urgent' ? 30 : 0;
-    const nonPartnerCharge = !isPartnerShop ? 30 : 0;
-    const finalTotal = total + urgentDeliveryCharge + nonPartnerCharge;
+    const finalTotal = total + urgentDeliveryCharge;
     
     let deliveryInfo = '';
     if (deliveryType === 'urgent') {
@@ -589,12 +578,10 @@ const CustomerPortal = () => {
       deliveryInfo = `🚚 Delivery: Scheduled (${selectedTimeSlot}) - Free`;
     }
     
-    const partnerStatus = isPartnerShop ? '✅ Partner Shop' : '⚠️ Non-Partner Shop';
-    
     addBotMessage(
       `Perfect! Here's your order summary:\n\n` +
       `📁 Category: ${selectedCategory}\n` +
-      `📍 Shop: ${selectedShop} (${partnerStatus})\n` +
+      `📍 Shop: ${selectedShop}\n` +
       `👤 Name: ${customer?.name}\n` +
       `📞 Phone: ${customer?.phone}\n` +
       `🏠 Address: ${customer?.address}\n` +
@@ -603,7 +590,6 @@ const CustomerPortal = () => {
       `🛒 Items:\n${cart.map(item => `• ${item.name} (₹${item.price}) × ${item.quantity}`).join('\n')}\n` +
       `Subtotal: ₹${total}\n` +
       (urgentDeliveryCharge > 0 ? `Delivery Charge: ₹${urgentDeliveryCharge}\n` : '') +
-      (!isPartnerShop ? `Non-Partner Shop Charge: ₹${nonPartnerCharge}\n` : '') +
       `\n💰 Total: ₹${finalTotal}\n\n` +
       `Would you like to confirm this order?`,
       ['Confirm Order', 'Edit Order']
