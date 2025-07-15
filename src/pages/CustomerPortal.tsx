@@ -516,7 +516,7 @@ const CustomerPortal = () => {
       {/* Mobile Header - Zepto Style */}
       <div className="bg-white shadow-sm border-b px-3 py-2 flex items-center justify-between sticky top-0 z-40">
         <div className="flex items-center gap-2 flex-1 min-w-0">
-          <MessageCircle className="h-5 w-5 text-blue-600 flex-shrink-0" />
+          <img src="/lovable-uploads/1bce2b84-91de-467d-b543-bc74a5bdffd6.png" alt="Slicker Connect Logo" className="h-5 w-5 flex-shrink-0" />
           <div className="min-w-0 flex-1">
             <h1 className="text-sm font-semibold truncate">Slicker Connect </h1>
             {selectedCategory && <span className="text-xs text-gray-600 bg-gray-100 px-2 py-0.5 rounded text-nowrap">
