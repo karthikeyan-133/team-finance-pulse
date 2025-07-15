@@ -290,6 +290,14 @@ const CustomerPortal = () => {
     const shopProducts = products.filter(product => product.shop_id === shopId);
     console.log('Filtered products for shop:', shopProducts);
     
+    // Check if selected shop is partner or not for extra charge message
+    const selectedShopData = shops.find(shop => shop.name === shopName);
+    const isPartnerShop = selectedShopData?.is_partner !== false;
+    
+    const extraChargeMessage = !isPartnerShop 
+      ? '\n\n⚠️ Note: This is a non-partner shop. An additional charge of ₹30 will be applied to your order.' 
+      : '';
+    
     if (shopProducts.length === 0) {
       // Check if products might still be loading
       const latestProducts = products.filter(product => product.shop_id === shopId);
@@ -298,14 +306,14 @@ const CustomerPortal = () => {
         setCurrentStep('shop_selection');
       } else {
         addBotMessage(
-          `Perfect! Here are the available ${selectedCategory.toLowerCase()} items from ${shopName}. You can add items to your cart by clicking on them:`,
+          `Perfect! Here are the available ${selectedCategory.toLowerCase()} items from ${shopName}. You can add items to your cart by clicking on them:${extraChargeMessage}`,
           undefined,
           latestProducts
         );
       }
     } else {
       addBotMessage(
-        `Perfect! Here are the available ${selectedCategory.toLowerCase()} items from ${shopName}. You can add items to your cart by clicking on them:`,
+        `Perfect! Here are the available ${selectedCategory.toLowerCase()} items from ${shopName}. You can add items to your cart by clicking on them:${extraChargeMessage}`,
         undefined,
         shopProducts
       );
