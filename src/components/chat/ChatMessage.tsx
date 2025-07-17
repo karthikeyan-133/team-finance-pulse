@@ -27,14 +27,14 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onOptionClick, onPro
     <div className={`flex ${isBot ? 'justify-start' : 'justify-end'} mb-2`}>
       <div className={`flex items-start gap-2 max-w-xs ${isBot ? 'flex-row' : 'flex-row-reverse'}`}>
         {/* Avatar */}
-        <div className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center ${
+        <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
           isBot ? 'bg-blue-100' : 'bg-gray-100'
         }`}>
           {isBot ? (
             <img 
               src="/lovable-uploads/1bce2b84-91de-467d-b543-bc74a5bdffd6.png" 
               alt="Slicker Connect" 
-              className="h-4 w-4 rounded-full object-cover" 
+              className="h-6 w-6 rounded-full object-cover" 
             />
           ) : (
             <User className="h-3 w-3 text-gray-600" />
