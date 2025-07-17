@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Bot, User } from 'lucide-react';
+import { User } from 'lucide-react';
 import ProductCard from './ProductCard';
 
 interface Message {
@@ -31,7 +31,11 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onOptionClick, onPro
           isBot ? 'bg-blue-100' : 'bg-gray-100'
         }`}>
           {isBot ? (
-            <Bot className="h-3 w-3 text-blue-600" />
+            <img 
+              src="/lovable-uploads/1bce2b84-91de-467d-b543-bc74a5bdffd6.png" 
+              alt="Slicker Connect" 
+              className="h-4 w-4 rounded-full object-cover" 
+            />
           ) : (
             <User className="h-3 w-3 text-gray-600" />
           )}
